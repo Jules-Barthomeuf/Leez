@@ -313,8 +313,16 @@
 
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes'];
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
+  let currentViewName = 'dashboard';
+  // true pendant qu'on applique une route lue depuis location.hash (popstate
+  // ou chargement initial) : evite que showView() ne repousse une nouvelle
+  // entree d'historique en reponse a une navigation qui VIENT deja de
+  // l'historique -- sans ce garde-fou, le bouton "precedent" avancerait
+  // aussitot au lieu de reculer.
+  let syncingRoute = false;
   // Cles "<fonctionnalite>-<dossierId>" deja animees une fois PENDANT cette
   // session (reinitialisee au rechargement de la page, jamais persistee) --
   // le Récapitulatif et la Vérification ne rejouent leur effet "generation
@@ -378,6 +386,7 @@
   }
 
   function showView(name) {
+    currentViewName = name;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + name).classList.add('active');
     if (name === 'dashboard') updateAgentShellHeight();
@@ -405,8 +414,57 @@
     // flottant sur une page sans rapport.
     document.getElementById('dataChatFab').style.display = (name === 'extract') ? 'flex' : 'none';
     if (name !== 'extract') closeDataChatPanel();
+    if (name === 'settings') loadSettingsForm();
+    if (name === 'account') loadAccountForm();
+    if (!syncingRoute) updateLocationHash();
   }
   function goDossierPage(name) { dossierMode = true; showView(name); }
+
+  // ---------- routage par ancre (#dossiers/<id>/<sous-vue>, #settings, etc.) ----------
+  // Reflete la vue active dans l'URL -- permet au bouton precedent/suivant
+  // du navigateur de naviguer entre panneaux, et de partager/rafraichir sur
+  // un panneau precis au lieu de toujours retomber sur le tableau de bord.
+  // history.pushState() (contrairement a location.hash=...) ne declenche
+  // jamais 'popstate' ni 'hashchange' lui-meme -- seule une vraie navigation
+  // (precedent/suivant) le fait, donc aucun risque de boucle avec showView()
+  // ci-dessus.
+  function updateLocationHash() {
+    const isDossierView = DOSSIER_SUBVIEWS.includes(currentViewName) || (currentViewName === 'analyze' && dossierMode);
+    let hash = '';
+    if (isDossierView && currentDoc) hash = `#dossiers/${currentDoc.id}/${currentViewName}`;
+    else if (currentViewName !== 'dashboard') hash = `#${currentViewName}`;
+    if (location.hash === hash) return;
+    history.pushState(null, '', location.pathname + location.search + hash);
+  }
+  async function applyRouteFromHash() {
+    const parts = location.hash.replace(/^#/, '').split('/').filter(Boolean);
+    syncingRoute = true;
+    try {
+      if (parts[0] === 'dossiers' && parts[1]) {
+        const id = parts[1];
+        const subview = parts[2] && (DOSSIER_SUBVIEWS.includes(parts[2]) || parts[2] === 'analyze') ? parts[2] : 'deal';
+        if (!currentDoc || currentDoc.id !== id) {
+          try {
+            currentDoc = await fetchDocument(id);
+            applyCurrentDocRenders();
+          } catch {
+            showView('dossiers');
+            return;
+          }
+        }
+        dossierMode = true;
+        showView(subview);
+      } else if (TOP_LEVEL_VIEWS.includes(parts[0])) {
+        if (parts[0] === 'analyze') dossierMode = false;
+        showView(parts[0]);
+      } else {
+        showView('dashboard');
+      }
+    } finally {
+      syncingRoute = false;
+    }
+  }
+  window.addEventListener('popstate', applyRouteFromHash);
 
   document.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.view === 'analyze') dossierMode = false;
@@ -415,15 +473,16 @@
   document.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => {
     if (btn.dataset.go === 'analyze') dossierMode = false;
     showView(btn.dataset.go);
-    if (btn.dataset.go === 'settings') loadSettingsForm();
-    if (btn.dataset.go === 'account') loadAccountForm();
   }));
   document.querySelectorAll('[data-go-dossier]').forEach(btn => btn.addEventListener('click', () => goDossierPage(btn.dataset.goDossier)));
   // La vue AI Agent est deja "active" en dur dans le HTML (premier ecran
   // affiche) -- mais sans cet appel, showView() n'est jamais invoque avant
   // un premier clic, donc le soulignement bleu du lien de nav correspondant
-  // n'apparaissait qu'apres avoir change puis repris cette vue.
-  showView('dashboard');
+  // n'apparaissait qu'apres avoir change puis repris cette vue. Sans hash
+  // dans l'URL, applyRouteFromHash() retombe elle-meme sur showView('dashboard') --
+  // avec un hash (lien partage, rafraichissement, retour navigateur), elle
+  // restaure directement le bon panneau (et le bon dossier le cas echeant).
+  applyRouteFromHash();
 
   // ================= DONNÉES ================= //
   async function fetchDocuments() {
