@@ -18,19 +18,44 @@ function cf(value, page, quote) {
 
 let pool = null;
 
+function parseArgs() {
+  const args = {};
+  const argv = process.argv.slice(2);
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i].startsWith('--')) {
+      args[argv[i].slice(2)] = argv[i + 1];
+      i++;
+    }
+  }
+  return args;
+}
+
 async function seedDemo() {
   // require() différé après la résolution de DATABASE_URL -- en local sans
   // Postgres installé, démarre (ou rejoint) le Postgres embarqué.
   if (!process.env.DATABASE_URL) await require('../localPostgres').ensureLocalPostgres();
   const db = require('../db');
   pool = db.pool;
-  const { createDocument, updateDocument, clearDemoDocuments, findOrCreateWorkspace } = db;
+  const { createDocument, updateDocument, clearDemoDocuments, findOrCreateWorkspace, getUserByEmail } = db;
 
-  // Meme nom que le workspace de bootstrap cree par la migration
-  // 008_add_workspace_scoping.js : un compte local cree sans --workspace
-  // explicite (voir create-user.js) atterrit dans ce meme espace et voit
-  // donc le dossier demo directement.
-  const workspaceId = await findOrCreateWorkspace('Espace par défaut');
+  const { email } = parseArgs();
+  let workspaceId;
+  if (email) {
+    // Rattache au workspace du compte donne plutot qu'a un nom fixe -- sur
+    // un environnement partage (Render), deviner un nom de workspace serait
+    // fragile : si aucun workspace de ce nom n'existe, findOrCreateWorkspace
+    // en creerait un nouveau, invisible du compte vise.
+    const user = await getUserByEmail(email);
+    if (!user) throw new Error(`Aucun compte pour ${email}.`);
+    if (!user.workspace_id) throw new Error(`${email} n'est rattache a aucun fonds pour l'instant (voir /admin.html).`);
+    workspaceId = user.workspace_id;
+  } else {
+    // Meme nom que le workspace de bootstrap cree par la migration
+    // 008_add_workspace_scoping.js : un compte local cree sans --workspace
+    // explicite (voir create-user.js) atterrit dans ce meme espace et voit
+    // donc le dossier demo directement.
+    workspaceId = await findOrCreateWorkspace('Espace par défaut');
+  }
   await clearDemoDocuments(workspaceId);
 
   const id = uuidv4();
