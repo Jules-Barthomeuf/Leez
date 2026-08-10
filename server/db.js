@@ -1,8 +1,24 @@
 const { Pool } = require('pg');
 
+// SSL uniquement pour un hote *.render.com (connexion EXTERNE) -- le
+// render.yaml de ce depot alimente DATABASE_URL avec l'URL INTERNE (reseau
+// prive Render, fromDatabase.property: connectionString), qui ne supporte
+// pas du tout SSL ("The server does not support SSL connections" si on le
+// force). Se baser sur NODE_ENV seul forcait SSL a tort sur cette URL
+// interne. Postgres local (embarque ou docker-compose) n'a jamais de host
+// *.render.com donc reste toujours en clair, comme avant.
+function needsSsl(connectionString) {
+  if (!connectionString) return false;
+  try {
+    return new URL(connectionString).hostname.endsWith('.render.com');
+  } catch {
+    return false;
+  }
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: needsSsl(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false,
 });
 
 // Colonnes JSONB : pg lit deja ces colonnes comme des objets/tableaux JS
@@ -40,10 +56,14 @@ async function createWorkspace(name) {
   return rows[0].id;
 }
 
-async function createUser({ id, workspaceId, email, passwordHash }) {
+// workspaceId peut etre null (auto-inscription personnelle en attente
+// d'assignation par un administrateur -- voir POST /auth/signup) ; name
+// peut aussi etre null (create-user.js / "Ajouter un membre" ne le
+// demandent pas, seule l'auto-inscription publique le collecte).
+async function createUser({ id, workspaceId = null, email, passwordHash, name = null }) {
   await pool.query(
-    'INSERT INTO users (id, workspace_id, email, password_hash) VALUES ($1, $2, $3, $4)',
-    [id, workspaceId, email, passwordHash]
+    'INSERT INTO users (id, workspace_id, email, password_hash, name) VALUES ($1, $2, $3, $4, $5)',
+    [id, workspaceId, email, passwordHash, name]
   );
 }
 // lower(email) cote requete (et non en JS) : s'appuie sur le meme index
@@ -71,6 +91,34 @@ async function getUserByGoogleId(googleId) {
 // un utilisateur trouve par email.
 async function linkGoogleId(userId, googleId) {
   await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, userId]);
+}
+
+// ---------- administration globale (SUPER_ADMIN_EMAIL uniquement) ----------
+// Reservees a routes/admin.js (voir requireSuperAdmin) : jamais scopees par
+// workspace, contrairement a tout le reste de db.js -- c'est precisement
+// leur role, donner une vue transverse a tous les fonds pour rattacher un
+// compte auto-inscrit (workspace_id NULL) au bon fonds.
+async function listAllWorkspaces() {
+  const { rows } = await pool.query(`
+    SELECT w.id, w.name, w.created_at, COUNT(u.id)::int AS member_count
+    FROM workspaces w
+    LEFT JOIN users u ON u.workspace_id = w.id
+    GROUP BY w.id
+    ORDER BY w.created_at DESC
+  `);
+  return rows;
+}
+async function listAllUsers() {
+  const { rows } = await pool.query(`
+    SELECT u.id, u.email, u.name, u.workspace_id, w.name AS workspace_name, u.created_at, u.last_login_at
+    FROM users u
+    LEFT JOIN workspaces w ON w.id = u.workspace_id
+    ORDER BY u.workspace_id IS NULL DESC, u.created_at DESC
+  `);
+  return rows;
+}
+async function assignUserWorkspace(userId, workspaceId) {
+  await pool.query('UPDATE users SET workspace_id = $1 WHERE id = $2', [workspaceId, userId]);
 }
 async function listUsersByWorkspace(workspaceId) {
   const { rows } = await pool.query(
@@ -198,6 +246,7 @@ module.exports = {
   pool,
   findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
   getUserByGoogleId, linkGoogleId,
+  listAllWorkspaces, listAllUsers, assignUserWorkspace,
   listUsersByWorkspace, deleteUser, getWorkspace,
   createDocument, updateDocument, getDocument, deleteDocument, listDocuments, clearDemoDocuments,
   getSetting, setSetting,
