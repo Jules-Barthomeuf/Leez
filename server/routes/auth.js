@@ -1,10 +1,11 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createWorkspace, createUser } = require('../db');
+const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser } = require('../db');
 const { verifyPassword, hashPassword } = require('../auth/passwords');
 const google = require('../auth/google');
 const { asyncHandler } = require('../utils/asyncHandler');
 const analytics = require('../services/analytics');
+const { isSuperAdmin } = require('../auth/middleware');
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ function establishSession(req, res, user, method, onDone) {
     req.session.userId = user.id;
     req.session.workspaceId = user.workspace_id;
     req.session.email = user.email;
+    req.session.name = user.name || null;
     touchUserLogin(user.id).catch(() => {});
     analytics.identify(user.id, { email: user.email, workspaceId: user.workspace_id });
     analytics.track('user_logged_in', user.id, { workspaceId: user.workspace_id, method });
@@ -45,19 +47,20 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
   });
 }));
 
-// Auto-inscription publique : cree un NOUVEAU workspace (jamais une
-// jointure d'un workspace existant par son nom, voir createWorkspace dans
-// db.js) et son premier utilisateur. Les membres suivants du meme fonds
-// rejoignent ensuite via "Mon compte" -> "Ajouter un membre" (deja
-// scope au workspace de l'admin connecte), pas via cette route.
+// Auto-inscription publique : cree un compte PERSONNEL, sans fonds
+// (workspace_id NULL) -- ne cree jamais de workspace elle-meme,
+// contrairement a l'ancienne version. Un administrateur (SUPER_ADMIN_EMAIL,
+// voir routes/admin.js) cree les fonds et y rattache chaque compte
+// auto-inscrit. Tant qu'un compte n'est pas rattache, l'app affiche un
+// ecran d'attente (voir requireWorkspace) plutot que le tableau de bord.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 router.post('/auth/signup', asyncHandler(async (req, res) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
   const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  const workspaceName = typeof req.body?.workspaceName === 'string' ? req.body.workspaceName.trim() : '';
 
-  if (!email || !password || !workspaceName) {
-    return res.status(400).json({ error: 'Email, mot de passe et nom du fonds requis.' });
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Nom, email et mot de passe requis.' });
   }
   if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Adresse email invalide." });
   if (password.length < 8) return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
@@ -65,13 +68,12 @@ router.post('/auth/signup', asyncHandler(async (req, res) => {
   const existing = await getUserByEmail(email);
   if (existing) return res.status(409).json({ error: 'Un compte existe déjà avec cette adresse email.' });
 
-  const workspaceId = await createWorkspace(workspaceName);
   const passwordHash = await hashPassword(password);
   const id = uuidv4();
-  await createUser({ id, workspaceId, email, passwordHash });
-  const user = { id, workspace_id: workspaceId, email };
+  await createUser({ id, workspaceId: null, email, passwordHash, name });
+  const user = { id, workspace_id: null, email, name };
 
-  analytics.track('signup_completed', user.id, { workspaceId });
+  analytics.track('signup_completed', user.id, {});
   establishSession(req, res, user, 'signup', (err) => {
     if (err) return res.status(500).json({ error: 'Erreur lors de la connexion.' });
     res.status(201).json({ email: user.email, workspaceId: user.workspace_id });
@@ -139,14 +141,35 @@ router.post('/auth/logout', (req, res) => {
   });
 });
 
-router.get('/auth/me', (req, res) => {
+router.get('/auth/me', asyncHandler(async (req, res) => {
   if (!req.session?.userId) return res.status(401).json({ error: 'Non authentifié.' });
+  // Resynchronise workspaceId depuis la base a chaque appel (plutot que de
+  // se fier au seul cache de session) : un administrateur peut rattacher un
+  // compte auto-inscrit a un fonds (routes/admin.js) PENDANT que ce compte
+  // reste connecte -- sans cette resynchronisation, l'ecran d'attente ne se
+  // debloquerait jamais avant une deconnexion/reconnexion manuelle. La
+  // mutation de req.session ci-dessous est persistee automatiquement par
+  // express-session en fin de requete, donc les routes /api suivantes
+  // (requireWorkspace inclus) en beneficient aussi immediatement.
+  const user = await getUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Non authentifié.' });
+  req.session.workspaceId = user.workspace_id;
   // id inclus pour que le client puisse s'identifier aupres de PostHog avec
   // le MEME distinctId que celui utilise cote serveur (user.id) -- sans
   // ca, les evenements client et serveur d'une meme personne se
-  // retrouveraient sur deux profils PostHog distincts.
-  res.json({ id: req.session.userId, email: req.session.email, workspaceId: req.session.workspaceId });
-});
+  // retrouveraient sur deux profils PostHog distincts. workspaceId peut
+  // etre null (compte auto-inscrit pas encore rattache a un fonds -- voir
+  // requireWorkspace) : le frontend affiche alors un ecran d'attente.
+  // isSuperAdmin permet au frontend de proposer discretement le lien vers
+  // /admin.html, la vraie protection reste server-side (requireSuperAdmin).
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name || null,
+    workspaceId: user.workspace_id,
+    isSuperAdmin: isSuperAdmin(user.email),
+  });
+}));
 
 // Changement de mot de passe depuis la page "Mon compte" -- montee avant le
 // requireAuth global (comme le reste de /api/auth/*), donc la verification

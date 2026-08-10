@@ -39,9 +39,10 @@ async function main() {
   }
 
   const sessionMiddleware = require('./auth/session');
-  const { requireAuth } = require('./auth/middleware');
+  const { requireAuth, requireWorkspace } = require('./auth/middleware');
   const authRouter = require('./routes/auth');
   const publicConfigRouter = require('./routes/publicConfig');
+  const adminRouter = require('./routes/admin');
   const workspaceRouter = require('./routes/workspace');
   const documentsRouter = require('./routes/documents');
   const settingsRouter = require('./routes/settings');
@@ -65,6 +66,15 @@ async function main() {
   app.use('/api', publicConfigRouter);
   app.use('/api', requireAuth);
 
+  // adminRouter AVANT requireWorkspace : reserve a SUPER_ADMIN_EMAIL (voir
+  // requireSuperAdmin dans adminRouter lui-meme), l'administrateur de la
+  // plateforme n'a pas besoin d'appartenir lui-meme a un fonds pour creer
+  // des fonds et y rattacher des comptes auto-inscrits.
+  app.use('/api', adminRouter);
+  // Tout ce qui suit manipule les dossiers/reglages d'UN fonds precis :
+  // un compte auto-inscrit pas encore rattache (workspaceId null) ne doit
+  // jamais les atteindre (voir requireWorkspace).
+  app.use('/api', requireWorkspace);
   app.use('/api', workspaceRouter);
   app.use('/api', documentsRouter);
   app.use('/api', settingsRouter);

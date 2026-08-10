@@ -32,15 +32,22 @@ npm run dev      # avec rechargement automatique (nodemon)
 npm start
 ```
 
-Ouvrir http://localhost:3000 — redirige vers `/login.html`. Cliquez "Créer un
-compte" pour créer le premier fonds et son premier utilisateur (auto-
-inscription publique : l'email/mot de passe suffit, aucune validation
-manuelle nécessaire). Les analystes suivants du même fonds sont ensuite
-invités depuis "Mon compte" → "Ajouter un membre" par ce premier utilisateur,
-pas par une nouvelle auto-inscription. L'en-tête indique si la clé API est
-bien détectée. Déposez un PDF texte natif (pas un scan) de plusieurs
-dizaines de pages ; le statut se met à jour automatiquement pendant
-l'extraction.
+Ouvrir http://localhost:3000 — redirige vers `/login.html`. Deux façons de
+créer un compte :
+- **Auto-inscription** (`/signup.html`, lien "Créer un compte") : n'importe
+  qui peut créer un compte personnel (nom, email, mot de passe), mais il
+  n'est rattaché à **aucun fonds** au départ — l'écran "En attente
+  d'assignation" s'affiche jusqu'à ce que l'administrateur de la plateforme
+  (`SUPER_ADMIN_EMAIL`, par défaut `jules.btmf@gmail.com`) crée le fonds
+  correspondant et l'y rattache depuis `/admin.html` (accessible via "Mon
+  compte" → "Administration" une fois connecté avec cet email).
+- Une fois rattaché à un fonds, chaque membre peut ensuite inviter ses
+  collègues directement dans son propre fonds via "Mon compte" → "Ajouter
+  un membre" (pas besoin de repasser par l'administrateur).
+
+L'en-tête indique si la clé API est bien détectée. Déposez un PDF texte
+natif (pas un scan) de plusieurs dizaines de pages ; le statut se met à
+jour automatiquement pendant l'extraction.
 
 ## Déploiement (pilote multi-utilisateurs, Render)
 
@@ -61,12 +68,11 @@ vous — ce n'est pas une étape que l'agent effectue seul).
    (marquées `sync: false` dans `render.yaml`, donc jamais committées).
 4. Premier déploiement : les migrations s'appliquent automatiquement
    (`preDeployCommand`) avant que le service ne prenne le trafic.
-5. Créez le premier compte soit directement sur `/signup.html` (auto-
-   inscription publique — crée un nouveau fonds), soit via l'onglet "Shell"
-   du service Render pour rattacher un compte à un fonds existant :
-   ```bash
-   node server/scripts/create-user.js --email vous@fonds.fr --password '...' --workspace "Nom du fonds"
-   ```
+5. Connectez-vous avec `SUPER_ADMIN_EMAIL` (créez ce compte via
+   `/signup.html`, ou via l'onglet "Shell" du service Render :
+   `node server/scripts/create-user.js --email jules.btmf@gmail.com --password '...' --workspace "Administration"`),
+   puis allez sur `/admin.html` pour créer les fonds et y rattacher les
+   comptes qui s'auto-inscrivent ensuite sur `/signup.html`.
 6. (Optionnel) Analytics — créez un projet sur
    [eu.posthog.com](https://eu.posthog.com), copiez sa clé projet dans
    `POSTHOG_API_KEY` (Environment du service Render), laissez `POSTHOG_HOST`

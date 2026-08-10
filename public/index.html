@@ -5,8 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Leez — Analyse immobilière</title>
 <link rel="stylesheet" href="/css/leez.css">
+<link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
+
+<div class="login-shell" id="pendingAssignmentScreen" style="display:none;position:fixed;inset:0;z-index:9999;">
+  <div class="login-card">
+    <a class="login-logo" href="/">Leez</a>
+    <h1>En attente d'assignation</h1>
+    <p class="login-sub">Votre compte a bien été créé. Un administrateur doit encore vous rattacher à l'espace de travail de votre fonds avant que vous puissiez accéder à vos dossiers — vous serez redirigé automatiquement une fois cela fait.</p>
+    <button type="button" class="btn btn-outline login-submit" id="pendingLogoutBtn">Se déconnecter</button>
+  </div>
+</div>
 
 <div class="app" id="appShell">
   <header class="nav">
@@ -538,8 +548,9 @@
               <label class="label">Email</label>
               <input type="email" id="accountEmail" disabled>
             </div>
-            <div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <button class="btn btn-outline" id="accountLogoutBtn" style="margin-top:6px;">Se déconnecter</button>
+              <a class="btn btn-outline" id="accountAdminLink" href="/admin.html" style="margin-top:6px;display:none;">Administration</a>
             </div>
           </div>
 

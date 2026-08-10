@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leez — Administration</title>
+<link rel="stylesheet" href="/css/leez.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-row">
+    <a class="nav-logo" href="/">Leez</a>
+    <div class="nav-right">
+      <a class="btn btn-ghost" href="/index.html">Retour à l'app</a>
+      <button class="btn btn-ghost" id="adminLogoutBtn">Se déconnecter</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-content">
+  <div class="view-head"><h1>Administration</h1></div>
+  <p class="admin-sub">Réservé à l'administrateur de la plateforme. Créez les fonds et rattachez-y les comptes auto-inscrits.</p>
+
+  <div id="adminDenied" class="login-error" style="display:none;">Accès refusé — cette page est réservée à l'administrateur de la plateforme.</div>
+
+  <div id="adminBody" style="display:none;">
+    <div class="panel settings-form">
+      <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Nouveau fonds</h3></div>
+      <div class="settings-field">
+        <label class="label" for="adminNewWorkspaceName">Nom du fonds</label>
+        <input type="text" id="adminNewWorkspaceName" placeholder="Ex. Fonds Immobilier Alpha">
+      </div>
+      <div>
+        <button class="btn btn-solid" id="adminCreateWorkspaceBtn">Créer le fonds</button>
+      </div>
+      <div class="admin-feedback" id="adminWorkspaceFeedback" style="display:none;"></div>
+    </div>
+
+    <div class="panel settings-form" style="margin-top:20px;">
+      <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Fonds existants</h3></div>
+      <div id="adminWorkspaceList" class="admin-list"></div>
+    </div>
+
+    <div class="panel settings-form" style="margin-top:20px;">
+      <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Comptes</h3></div>
+      <div id="adminUserList" class="admin-list"></div>
+      <div class="admin-feedback" id="adminUserFeedback" style="display:none;"></div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>

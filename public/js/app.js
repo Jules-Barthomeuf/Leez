@@ -16,6 +16,41 @@
     if (res.status === 401 && !String(args[0]).startsWith('/api/auth/')) location.href = '/login.html';
     return res;
   };
+
+  // ---------- garde : compte sans fonds assigne ----------
+  // Un compte auto-inscrit (POST /auth/signup, voir public/signup.html)
+  // n'a pas de workspaceId tant qu'un administrateur ne l'a pas rattache a
+  // un fonds (routes/admin.js) -- toutes les routes /api scopees par
+  // workspace renverraient 403 en boucle si on laissait le reste de l'app
+  // demarrer normalement. Recouvre simplement tout l'ecran plutot que de
+  // conditionner chacune des ~30 routines d'initialisation existantes.
+  (async () => {
+    const me = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!me || me.workspaceId) return;
+    const screen = document.getElementById('pendingAssignmentScreen');
+    screen.style.display = 'flex';
+    document.getElementById('pendingLogoutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/login.html';
+    });
+    if (me.isSuperAdmin) {
+      const adminLink = document.createElement('a');
+      adminLink.href = '/admin.html';
+      adminLink.className = 'btn btn-solid login-submit';
+      adminLink.textContent = 'Aller au panneau d\'administration';
+      adminLink.style.marginBottom = '10px';
+      screen.querySelector('.login-card').insertBefore(adminLink, document.getElementById('pendingLogoutBtn'));
+    }
+    // /auth/me resynchronise workspaceId depuis la base a chaque appel (voir
+    // routes/auth.js) -- un simple sondage suffit donc a detecter qu'un
+    // administrateur vient de rattacher ce compte a un fonds, sans que la
+    // personne ait besoin de se reconnecter manuellement.
+    const poll = setInterval(async () => {
+      const fresh = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
+      if (fresh?.workspaceId) { clearInterval(poll); location.reload(); }
+    }, 8000);
+  })();
+
   // ---------- analytics (PostHog, optionnel) ----------
   // Charge PostHog dynamiquement, seulement si une cle est configuree cote
   // serveur (POSTHOG_API_KEY absente = no-op complet, rien n'est charge ni
@@ -2133,6 +2168,7 @@
       fetch('/api/workspace/members').then(r => r.ok ? r.json() : []).catch(() => []),
     ]);
     if (me) document.getElementById('accountEmail').value = me.email;
+    document.getElementById('accountAdminLink').style.display = me?.isSuperAdmin ? '' : 'none';
     document.getElementById('accountWorkspaceLabel').textContent = ws ? `ESPACE DE TRAVAIL — ${ws.name.toUpperCase()}` : 'ESPACE DE TRAVAIL';
     renderAccountMembers(Array.isArray(members) ? members : []);
   }

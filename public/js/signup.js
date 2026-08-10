@@ -29,7 +29,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          workspaceName: document.getElementById('signupWorkspace').value.trim(),
+          name: document.getElementById('signupName').value.trim(),
           email: document.getElementById('signupEmail').value.trim(),
           password: document.getElementById('signupPassword').value,
         }),

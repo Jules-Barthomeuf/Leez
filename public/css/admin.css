@@ -1,0 +1,23 @@
+/* Page d'administration -- reutilise les tokens/panels/nav de leez.css,
+   CSS propre minimal ici (memes conventions que login.css). */
+.admin-content{max-width:720px;margin:0 auto;padding:32px 24px 60px;}
+.admin-sub{font-size:.85rem;color:var(--text-muted);margin:0 0 24px;line-height:1.5;}
+.admin-list{display:flex;flex-direction:column;gap:0;}
+.admin-row{
+  display:flex;align-items:center;gap:14px;padding:12px 0;
+  border-bottom:1px solid var(--border-soft);
+}
+.admin-row:last-child{border-bottom:none;}
+.admin-row-main{flex:1;min-width:0;}
+.admin-row-title{font-size:.88rem;color:var(--text);}
+.admin-row-sub{font-size:.76rem;color:var(--text-faint);margin-top:2px;}
+.admin-row-unassigned{color:var(--amber);}
+.admin-row select{
+  background:var(--bg-soft);border:1px solid var(--border-strong);color:var(--text);
+  font-family:var(--sans);font-size:.82rem;padding:7px 10px;outline:none;flex-shrink:0;
+}
+.admin-row select:focus{border-color:var(--trace);}
+.admin-empty{font-size:.82rem;color:var(--text-faint);padding:8px 0;}
+.admin-feedback{margin-top:14px;padding:11px 13px;font-size:.82rem;}
+.admin-feedback.ok{background:rgba(122,168,116,.12);border:1px solid rgba(122,168,116,.35);color:var(--green,#7aa874);}
+.admin-feedback.error{background:var(--pink-dim);border:1px solid rgba(226,99,92,.35);color:var(--pink);}

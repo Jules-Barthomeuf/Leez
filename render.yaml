@@ -42,6 +42,11 @@ services:
         value: production
       - key: SESSION_SECRET
         generateValue: true
+      # Pas un secret (juste un email) -- seul ce compte accede a
+      # /admin.html (creation de fonds, rattachement des comptes
+      # auto-inscrits). Changez la valeur ici si necessaire.
+      - key: SUPER_ADMIN_EMAIL
+        value: jules.btmf@gmail.com
       - key: UPLOAD_DIR
         value: /var/data/uploads
       # Secrets saisis manuellement dans le dashboard Render après la
