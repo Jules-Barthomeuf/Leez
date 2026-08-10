@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leez — Créer un compte</title>
+<link rel="stylesheet" href="/css/leez.css">
+<link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+
+<div class="login-shell">
+  <div class="login-card">
+    <a class="login-logo" href="/">Leez</a>
+    <h1>Créer un compte</h1>
+    <p class="login-sub">Créez l'espace de travail de votre fonds — vous pourrez ensuite y inviter vos analystes.</p>
+
+    <form id="signupForm" novalidate>
+      <label for="signupWorkspace">Nom du fonds</label>
+      <input type="text" id="signupWorkspace" name="workspaceName" autocomplete="organization" required>
+
+      <label for="signupEmail">Email</label>
+      <input type="email" id="signupEmail" name="email" autocomplete="username" required>
+
+      <label for="signupPassword">Mot de passe</label>
+      <div class="password-field">
+        <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="8" required>
+        <button type="button" class="password-toggle" data-toggle-password="signupPassword" aria-label="Afficher le mot de passe">
+          <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.88 4.24A11.6 11.6 0 0 1 12 4c6.5 0 10.5 8 10.5 8a13.7 13.7 0 0 1-3.15 4.31M6.1 6.1A13.7 13.7 0 0 0 1.5 12s4 8 10.5 8a10.9 10.9 0 0 0 4.32-.86"/></svg>
+        </button>
+      </div>
+      <p class="login-hint">8 caractères minimum.</p>
+
+      <div class="login-error" id="signupError" style="display:none;"></div>
+
+      <button type="submit" class="btn btn-solid login-submit" id="signupSubmit">Créer le compte</button>
+    </form>
+
+    <p class="login-footnote">Déjà un compte ? <a href="/login.html">Se connecter</a></p>
+  </div>
+</div>
+
+<script src="/js/signup.js"></script>
+</body>
+</html>

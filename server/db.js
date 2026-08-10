@@ -30,6 +30,15 @@ async function findOrCreateWorkspace(name) {
   const { rows: inserted } = await pool.query('INSERT INTO workspaces (name) VALUES ($1) RETURNING id', [name]);
   return inserted[0].id;
 }
+// Toujours un NOUVEAU workspace (jamais une jointure par nom, contrairement
+// a findOrCreateWorkspace) -- utilise par l'auto-inscription publique
+// (POST /auth/signup) : le nom d'un fonds n'est pas un secret, deux fonds
+// distincts peuvent choisir le meme nom, et les faire rejoindre le meme
+// workspace romprait l'isolation des dossiers entre eux.
+async function createWorkspace(name) {
+  const { rows } = await pool.query('INSERT INTO workspaces (name) VALUES ($1) RETURNING id', [name]);
+  return rows[0].id;
+}
 
 async function createUser({ id, workspaceId, email, passwordHash }) {
   await pool.query(
@@ -52,6 +61,16 @@ async function getUserById(id) {
 }
 async function updateUserPassword(id, passwordHash) {
   await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, id]);
+}
+async function getUserByGoogleId(googleId) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE google_id = $1', [googleId]);
+  return rows[0] || null;
+}
+// Associe un compte Google a un compte DEJA existant (jamais de creation :
+// voir 010_add_google_id.js) -- appele au premier login Google reussi pour
+// un utilisateur trouve par email.
+async function linkGoogleId(userId, googleId) {
+  await pool.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, userId]);
 }
 async function listUsersByWorkspace(workspaceId) {
   const { rows } = await pool.query(
@@ -177,7 +196,8 @@ async function countKbChunks() {
 
 module.exports = {
   pool,
-  findOrCreateWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
+  findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
+  getUserByGoogleId, linkGoogleId,
   listUsersByWorkspace, deleteUser, getWorkspace,
   createDocument, updateDocument, getDocument, deleteDocument, listDocuments, clearDemoDocuments,
   getSetting, setSetting,

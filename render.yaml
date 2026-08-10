@@ -57,3 +57,11 @@ services:
         sync: false
       - key: POSTHOG_HOST
         value: https://eu.i.posthog.com
+      # Connexion Google, optionnelle -- le bouton reste masque cote client
+      # tant que ces deux variables ne sont pas renseignees. Redirect URI a
+      # enregistrer cote Google Cloud Console : https://<domaine
+      # Render>/api/auth/google/callback.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

@@ -13,6 +13,7 @@ router.get('/public-config', (req, res) => {
   res.json({
     posthogKey: process.env.POSTHOG_API_KEY || null,
     posthogHost: process.env.POSTHOG_HOST || 'https://eu.i.posthog.com',
+    googleEnabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
   });
 });
 

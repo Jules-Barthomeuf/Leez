@@ -3,6 +3,33 @@
   // existe encore (ex: retour arriere apres connexion).
   fetch('/api/auth/me').then(r => { if (r.ok) location.href = '/index.html'; }).catch(() => {});
 
+  // Bouton "Se connecter avec Google" masque par defaut -- affiche
+  // seulement si GOOGLE_CLIENT_ID/SECRET sont configures cote serveur
+  // (voir /api/public-config).
+  fetch('/api/public-config').then(r => r.json()).then(cfg => {
+    if (cfg.googleEnabled) {
+      document.getElementById('loginGoogleDivider').style.display = 'flex';
+      document.getElementById('loginGoogleBtn').style.display = 'flex';
+    }
+  }).catch(() => {});
+
+  // Erreurs renvoyees par le callback OAuth (redirection cote serveur,
+  // pas un fetch -- l'information voyage donc par la query string).
+  const GOOGLE_ERROR_MESSAGES = {
+    google_no_account: "Aucun compte Leez n'est associé à cette adresse Google. Contactez l'administrateur de votre fonds pour qu'il crée votre compte, puis reconnectez-vous avec Google.",
+    google_email_unverified: "Votre adresse Google n'est pas vérifiée -- impossible de l'utiliser pour se connecter.",
+    google_state_mismatch: "La connexion Google a expiré ou a été interrompue -- réessayez.",
+    google_exchange_failed: "La connexion avec Google a échoué -- réessayez.",
+    google_disabled: "La connexion avec Google n'est pas activée sur ce serveur.",
+    google_session_error: "Erreur lors de l'ouverture de la session -- réessayez.",
+  };
+  const errorCode = new URLSearchParams(location.search).get('error');
+  if (errorCode) {
+    const redirectErrorEl = document.getElementById('loginErrorRedirect');
+    redirectErrorEl.textContent = GOOGLE_ERROR_MESSAGES[errorCode] || 'Une erreur est survenue lors de la connexion.';
+    redirectErrorEl.style.display = 'block';
+  }
+
   const form = document.getElementById('loginForm');
   const errorEl = document.getElementById('loginError');
   const submitBtn = document.getElementById('loginSubmit');

@@ -1,9 +1,17 @@
 require('dotenv').config();
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Necessaire derriere le proxy TLS-terminating de Render : sans ca,
+// req.protocol resterait "http" meme pour une vraie requete HTTPS, ce qui
+// casserait a la fois la construction de l'URI de redirection Google
+// OAuth (doit correspondre exactement a ce qui est enregistre cote
+// Google) et la detection secure des cookies de session.
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.warn('\n⚠️  ANTHROPIC_API_KEY absente. Copiez .env.example en .env et renseignez votre clé Anthropic avant d\'importer un document.\n');
@@ -45,6 +53,7 @@ async function main() {
   const webPageRouter = require('./routes/webPage');
 
   app.use(express.json());
+  app.use(cookieParser());
   app.use(sessionMiddleware);
 
   // /api/auth/* et /api/public-config sont accessibles SANS session --

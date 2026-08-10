@@ -32,9 +32,15 @@ npm run dev      # avec rechargement automatique (nodemon)
 npm start
 ```
 
-Ouvrir http://localhost:3000 — l'en-tête indique si la clé API est bien
-détectée. Déposez un PDF texte natif (pas un scan) de plusieurs dizaines de
-pages ; le statut se met à jour automatiquement pendant l'extraction.
+Ouvrir http://localhost:3000 — redirige vers `/login.html`. Cliquez "Créer un
+compte" pour créer le premier fonds et son premier utilisateur (auto-
+inscription publique : l'email/mot de passe suffit, aucune validation
+manuelle nécessaire). Les analystes suivants du même fonds sont ensuite
+invités depuis "Mon compte" → "Ajouter un membre" par ce premier utilisateur,
+pas par une nouvelle auto-inscription. L'en-tête indique si la clé API est
+bien détectée. Déposez un PDF texte natif (pas un scan) de plusieurs
+dizaines de pages ; le statut se met à jour automatiquement pendant
+l'extraction.
 
 ## Déploiement (pilote multi-utilisateurs, Render)
 
@@ -55,7 +61,9 @@ vous — ce n'est pas une étape que l'agent effectue seul).
    (marquées `sync: false` dans `render.yaml`, donc jamais committées).
 4. Premier déploiement : les migrations s'appliquent automatiquement
    (`preDeployCommand`) avant que le service ne prenne le trafic.
-5. Créez les premiers comptes via l'onglet "Shell" du service Render :
+5. Créez le premier compte soit directement sur `/signup.html` (auto-
+   inscription publique — crée un nouveau fonds), soit via l'onglet "Shell"
+   du service Render pour rattacher un compte à un fonds existant :
    ```bash
    node server/scripts/create-user.js --email vous@fonds.fr --password '...' --workspace "Nom du fonds"
    ```
@@ -64,6 +72,19 @@ vous — ce n'est pas une étape que l'agent effectue seul).
    `POSTHOG_API_KEY` (Environment du service Render), laissez `POSTHOG_HOST`
    tel quel. Sans cette clé, l'app fonctionne normalement, aucun appel
    PostHog n'est jamais tenté.
+7. (Optionnel) Connexion avec Google — sur
+   [console.cloud.google.com](https://console.cloud.google.com), créez un
+   projet, "APIs & Services" → "Identifiants" → "Créer des identifiants" →
+   "ID client OAuth" → type "Application Web". Dans "URI de redirection
+   autorisées", ajoutez `https://<votre-domaine-render>/api/auth/google/callback`.
+   Renseignez `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` dans l'Environment
+   du service Render. **La connexion Google ne crée jamais de compte elle-
+   même** (contrairement à `/signup.html`) : elle échoue proprement si aucun
+   compte n'existe déjà pour cet email (créé au préalable via `/signup.html`,
+   l'étape 5, ou "Mon compte" → "Ajouter un membre") — elle ne fait
+   qu'associer ce compte existant à Google au premier login réussi. Sans ces
+   deux variables, le bouton "Se connecter avec Google" reste simplement
+   masqué.
 
 En local, aucune de ces étapes n'est nécessaire : `npm start` démarre un
 Postgres embarqué automatiquement (voir `server/localPostgres.js`).
