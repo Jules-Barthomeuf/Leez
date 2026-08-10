@@ -1,0 +1,35 @@
+{
+  "name": "leez",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Leez — extraction reelle de memorandums de vente immobiliers, avec citation et verification anti-hallucination.",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon server/index.js",
+    "start": "node server/index.js",
+    "test:verification": "node server/services/verification.test.js",
+    "test:vendor-claims": "node server/services/vendorClaims.test.js",
+    "seed:demo": "node server/scripts/seed-demo.js",
+    "create:user": "node server/scripts/create-user.js",
+    "kb:ingest": "node server/scripts/ingest-knowledge-base.js",
+    "migrate": "node-pg-migrate --migrations-dir server/migrations"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "bcryptjs": "^3.0.3",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.19.0",
+    "multer": "^1.4.5-lts.1",
+    "node-pg-migrate": "^9.0.0",
+    "pdfjs-dist": "^4.9.155",
+    "pg": "^8.23.0",
+    "posthog-node": "^5.48.1",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "embedded-postgres": "^18.4.0-beta.17",
+    "nodemon": "^3.1.9"
+  }
+}

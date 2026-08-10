@@ -1,0 +1,186 @@
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// Colonnes JSONB : pg lit deja ces colonnes comme des objets/tableaux JS
+// (parseur jsonb natif, aucun JSON.parse manuel necessaire en lecture).
+// En ECRITURE en revanche, on stringify explicitement avant de passer la
+// valeur en parametre -- la serialisation par defaut de `pg` pour un
+// tableau JS produit une syntaxe de tableau Postgres ({a,b,c}), pas un
+// tableau JSON ([...]), ce qui casserait toutes nos colonnes qui stockent
+// des arrays (etat_locatif_json, t12_json, pages_json, etc.).
+const JSONB_COLUMNS = new Set([
+  'pages_json', 'fiche_identite_json', 'etat_locatif_json',
+  't12_json', 'mix_json', 'expiry_json', 'indicateurs_json', 'consistency_json', 'red_flags_json',
+  'contexte_narratif_json', 'simulation_json', 'vendor_claims_json',
+  'presentation_hidden_cards_json', 'deal_recap_json',
+]);
+
+// ---------- espaces de travail & comptes nominatifs ----------
+// Un workspace = l'espace partage d'un fonds (tous ses analystes voient les
+// memes dossiers). findOrCreateWorkspace sert aux scripts hors-ligne
+// (seed-demo.js, create-user.js) qui n'ont pas de session pour connaitre le
+// workspace courant -- ils identifient/creent le leur par son nom.
+async function findOrCreateWorkspace(name) {
+  const { rows } = await pool.query('SELECT id FROM workspaces WHERE name = $1', [name]);
+  if (rows[0]) return rows[0].id;
+  const { rows: inserted } = await pool.query('INSERT INTO workspaces (name) VALUES ($1) RETURNING id', [name]);
+  return inserted[0].id;
+}
+
+async function createUser({ id, workspaceId, email, passwordHash }) {
+  await pool.query(
+    'INSERT INTO users (id, workspace_id, email, password_hash) VALUES ($1, $2, $3, $4)',
+    [id, workspaceId, email, passwordHash]
+  );
+}
+// lower(email) cote requete (et non en JS) : s'appuie sur le meme index
+// unique idx_users_email_lower que la contrainte d'unicite (002_create_users.js).
+async function getUserByEmail(email) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE lower(email) = lower($1)', [email]);
+  return rows[0] || null;
+}
+async function touchUserLogin(id) {
+  await pool.query('UPDATE users SET last_login_at = now() WHERE id = $1', [id]);
+}
+async function getUserById(id) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+async function updateUserPassword(id, passwordHash) {
+  await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, id]);
+}
+async function listUsersByWorkspace(workspaceId) {
+  const { rows } = await pool.query(
+    'SELECT id, email, created_at, last_login_at FROM users WHERE workspace_id = $1 ORDER BY created_at ASC',
+    [workspaceId]
+  );
+  return rows;
+}
+// Scope par workspace_id (pas seulement l'id) : empeche de retirer un
+// utilisateur d'un AUTRE espace de travail meme si son id etait devine.
+async function deleteUser(id, workspaceId) {
+  await pool.query('DELETE FROM users WHERE id = $1 AND workspace_id = $2', [id, workspaceId]);
+}
+async function getWorkspace(id) {
+  const { rows } = await pool.query('SELECT * FROM workspaces WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+
+async function getSetting(key, workspaceId) {
+  const { rows } = await pool.query('SELECT value FROM settings WHERE key = $1 AND workspace_id = $2', [key, workspaceId]);
+  return rows[0] ? rows[0].value : null;
+}
+async function setSetting(key, value, workspaceId) {
+  await pool.query(
+    `INSERT INTO settings (workspace_id, key, value) VALUES ($1, $2, $3)
+     ON CONFLICT (workspace_id, key) DO UPDATE SET value = excluded.value`,
+    [workspaceId, key, JSON.stringify(value)]
+  );
+}
+
+async function createDocument({ id, filename, workspaceId }) {
+  await pool.query(
+    'INSERT INTO documents (id, filename, uploaded_at, status, workspace_id) VALUES ($1, $2, $3, $4, $5)',
+    [id, filename, new Date().toISOString(), 'uploaded', workspaceId]
+  );
+}
+
+// `workspaceId` fait partie de la clause WHERE (pas seulement de la lecture
+// prealable) : meme si un appelant a deja verifie l'appartenance du dossier
+// via getDocument, une double-verification au niveau de l'ecriture coute
+// rien et evite qu'une regression future n'ouvre une ecriture inter-workspace.
+async function updateDocument(id, fields, workspaceId) {
+  const keys = Object.keys(fields);
+  if (keys.length === 0) return;
+  const set = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const values = keys.map(k => {
+    const v = fields[k];
+    return JSONB_COLUMNS.has(k) && v !== null && v !== undefined ? JSON.stringify(v) : v;
+  });
+  await pool.query(
+    `UPDATE documents SET ${set} WHERE id = $${keys.length + 1} AND workspace_id = $${keys.length + 2}`,
+    [...values, id, workspaceId]
+  );
+}
+
+async function getDocument(id, workspaceId) {
+  const { rows } = await pool.query('SELECT * FROM documents WHERE id = $1 AND workspace_id = $2', [id, workspaceId]);
+  return rows[0] || null;
+}
+
+async function deleteDocument(id, workspaceId) {
+  await pool.query('DELETE FROM documents WHERE id = $1 AND workspace_id = $2', [id, workspaceId]);
+}
+
+async function listDocuments(workspaceId) {
+  const { rows } = await pool.query(`
+    SELECT id, filename, uploaded_at, status, error_message, page_count,
+           fiche_identite_json, indicateurs_json, is_demo
+    FROM documents WHERE workspace_id = $1 ORDER BY uploaded_at DESC
+  `, [workspaceId]);
+  return rows;
+}
+
+// Utilise par seed-demo.js (idempotent : supprime le dossier de demo
+// precedent avant d'en recreer un dans le meme workspace) -- remplace
+// l'ancien acces direct db.prepare(...) sur l'instance SQLite brute, qui
+// n'a pas d'equivalent avec le Pool pg.
+async function clearDemoDocuments(workspaceId) {
+  await pool.query('DELETE FROM documents WHERE is_demo = true AND workspace_id = $1', [workspaceId]);
+}
+
+// ---------- documents annexes (baux, DPE, titre de propriete, etc.) ----------
+async function createSupportingDocument({ id, documentId, category, type, filename, mimeType }) {
+  await pool.query(
+    `INSERT INTO supporting_documents (id, document_id, category, type, filename, uploaded_at, mime_type)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, documentId, category, type, filename, new Date().toISOString(), mimeType || 'application/pdf']
+  );
+}
+async function listSupportingDocuments(documentId) {
+  const { rows } = await pool.query('SELECT * FROM supporting_documents WHERE document_id = $1 ORDER BY uploaded_at ASC', [documentId]);
+  return rows;
+}
+async function getSupportingDocument(id) {
+  const { rows } = await pool.query('SELECT * FROM supporting_documents WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+async function deleteSupportingDocument(id) {
+  await pool.query('DELETE FROM supporting_documents WHERE id = $1', [id]);
+}
+
+// ---------- base de connaissances RAG (kb_chunks) ----------
+async function insertKbChunk({ id, sourceFile, theme, sectionTitle, articleRef, pageStart, pageEnd, content, embedding }) {
+  await pool.query(
+    `INSERT INTO kb_chunks (id, source_file, theme, section_title, article_ref, page_start, page_end, content, embedding, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [id, sourceFile, theme, sectionTitle, articleRef, pageStart, pageEnd, content, JSON.stringify(embedding), new Date().toISOString()]
+  );
+}
+async function listKbChunks() {
+  const { rows } = await pool.query('SELECT * FROM kb_chunks');
+  return rows; // embedding deja parse (colonne jsonb)
+}
+async function clearKbChunks() {
+  await pool.query('DELETE FROM kb_chunks');
+}
+async function countKbChunks() {
+  // COUNT(*) revient en bigint -> pg le donne en string (evite une perte de
+  // precision silencieuse sur de tres gros volumes) : reconversion explicite.
+  const { rows } = await pool.query('SELECT COUNT(*) AS n FROM kb_chunks');
+  return parseInt(rows[0].n, 10);
+}
+
+module.exports = {
+  pool,
+  findOrCreateWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
+  listUsersByWorkspace, deleteUser, getWorkspace,
+  createDocument, updateDocument, getDocument, deleteDocument, listDocuments, clearDemoDocuments,
+  getSetting, setSetting,
+  createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument,
+  insertKbChunk, listKbChunks, clearKbChunks, countKbChunks,
+};

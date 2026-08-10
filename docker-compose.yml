@@ -1,0 +1,19 @@
+# Postgres local pour le developpement -- meme moteur qu'en production
+# (Render Postgres managé), un seul chemin de code, pas de divergence
+# SQLite/Postgres. Lancer avec `docker compose up -d`, puis
+# `npx node-pg-migrate up` pour creer le schema (voir server/migrations/).
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: leez
+      POSTGRES_PASSWORD: leez
+      POSTGRES_DB: leez
+    ports:
+      - "5432:5432"
+    volumes:
+      - leez_pgdata:/var/lib/postgresql/data
+
+volumes:
+  leez_pgdata:

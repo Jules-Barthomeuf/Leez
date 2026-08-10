@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leez — Analyse immobilière</title>
+<link rel="stylesheet" href="/css/leez.css">
+</head>
+<body>
+
+<div class="app" id="appShell">
+  <header class="nav">
+    <div class="nav-row">
+      <a class="nav-logo" href="/">Leez</a>
+      <ul class="nav-links">
+        <li><button data-view="dashboard">AI Agent</button></li>
+        <li><button data-view="dossiers">Dossiers</button></li>
+        <li><button data-view="ingest">Importer</button></li>
+        <li><button data-view="analyze">Simulateur</button></li>
+      </ul>
+      <div class="nav-right">
+        <span class="nav-status" id="navStatus">Vérification…</span>
+        <button class="btn btn-ghost" data-go="account">Mon compte</button>
+        <button class="btn btn-ghost" data-go="settings">⚙ Réglages du fonds</button>
+        <button class="btn btn-outline" data-go="ingest">+ Nouveau dossier</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="main-shell">
+      <div class="dossier-rail" id="sharedRail" style="display:none;">
+        <button class="drail-item" data-rail="deal" data-go-dossier="deal">Sommaire</button>
+        <button class="drail-item" data-rail="extract" data-go-dossier="extract">Données</button>
+        <button class="drail-item" data-rail="audit" data-go-dossier="audit">Points d'attention</button>
+        <button class="drail-item" data-rail="verification" data-go-dossier="verification">Vérification</button>
+        <button class="drail-item" id="presentationRailBtn">Présentation</button>
+        <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
+        <button class="drail-item" data-rail="notes" data-go-dossier="notes">Notes</button>
+        <button class="drail-item" data-rail="documents" data-go-dossier="documents">Documents</button>
+      </div>
+
+      <div class="main-content">
+        <div class="breadcrumb" id="sharedBreadcrumb" style="display:none;">
+          <button data-go="dossiers">Dossiers</button>
+          <span class="sep">/</span>
+          <span class="current" id="breadcrumbName">—</span>
+          <span class="chip conf-mid" id="demoChip" style="display:none;">DÉMONSTRATION</span>
+        </div>
+
+        <!-- ================= DASHBOARD ================= -->
+        <section class="view active" id="view-dashboard">
+          <div class="agent-web-layout" id="agentWebLayout">
+            <div class="agent-shell" id="agentShell">
+              <div class="agent-intro" id="agentIntro">
+                <div class="agent-hero-title">Que puis-je faire pour vous ?</div>
+              </div>
+              <div class="assistant-chat-log" id="assistantChatLog">
+                <div class="assistant-chat-empty" id="assistantChatEmpty"></div>
+              </div>
+              <div class="agent-prompt-dock">
+                <div class="agent-dossier-bar">
+                  <div class="agent-dossier-left dl-hidden" id="assistantDossierLeft">
+                    <span class="label">DOSSIER</span>
+                    <div class="agent-dossier-combo" id="assistantDossierCombo" data-value="">
+                      <button type="button" class="agent-dossier-trigger" id="assistantDossierTrigger" aria-haspopup="dialog">
+                        <span id="assistantDossierTriggerLabel">Aucun — mode général</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="agent-input-card">
+                  <div class="agent-attach-chip" id="assistantAttachChip" style="display:none;">
+                    <img id="assistantAttachChipImg" alt="">
+                    <span id="assistantAttachChipName"></span>
+                    <button type="button" id="assistantAttachChipRemove" aria-label="Retirer l'image">✕</button>
+                  </div>
+                  <textarea id="assistantInput" class="agent-textarea" rows="1" placeholder="Assignez une tâche ou posez une question…"></textarea>
+                  <input type="file" id="assistantAttachInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+                  <div class="agent-input-toolbar">
+                    <button type="button" class="agent-attach-btn" id="assistantAttachBtn" aria-label="Joindre une image" title="Joindre une image">+</button>
+                    <button type="button" class="agent-send-btn" id="assistantSendBtn" aria-label="Envoyer">↑</button>
+                  </div>
+                </div>
+                <div class="agent-quick-actions">
+                  <button type="button" class="agent-quick-btn" data-agent-quick="generate_presentation">📊 Générer la présentation</button>
+                  <button type="button" class="agent-quick-btn agent-quick-toggle" id="agentWebToggle" data-agent-quick="web">🌐 Rechercher sur le web</button>
+                  <button type="button" class="agent-quick-btn" data-agent-quick="dossier">📁 Choisir un dossier</button>
+                </div>
+              </div>
+            </div>
+            <div class="agent-web-source-panel" id="agentWebSourcePanel">
+              <div class="agent-web-source-head">
+                <span class="label" id="agentWebSourceLabel">—</span>
+                <div class="agent-web-source-actions">
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="agent-web-source-tab-link" id="agentWebSourceOpenTab" title="Ouvrir dans un nouvel onglet">↗</a>
+                  <button class="source-modal-close" id="agentWebSourceClose" aria-label="Fermer">✕</button>
+                </div>
+              </div>
+              <div class="agent-web-source-hint" id="agentWebSourceHint" style="display:none;"></div>
+              <iframe id="agentWebSourceFrame" class="agent-web-source-frame" title="Page source (recherche web)"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VÉRIFICATION ================= -->
+        <section class="view" id="view-verification">
+          <div class="view-head"><div><h1>Vérification</h1><div class="label">AFFIRMATIONS DU VENDEUR CONFRONTÉES À DES SOURCES EXTERNES RÉELLES</div></div></div>
+
+          <div class="panel">
+            <div class="memo-generate-prompt" id="verificationGeneratePrompt">
+              <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut repérer les affirmations marketing du vendeur dans ce document (ex. « quartier en forte croissance », « demande locative soutenue »), vérifier leur citation dans le texte réel, puis rechercher pour chacune des sources externes indépendantes afin de la confronter à la réalité du marché.</p>
+              <button class="btn btn-solid" id="verificationGenerateBtn">Analyser les affirmations du vendeur</button>
+            </div>
+            <div id="verificationStatus" class="label" style="display:none;padding:0 24px 18px;"></div>
+            <div class="audit-cards" id="verificationCards" style="display:none;"></div>
+          </div>
+        </section>
+
+        <!-- ================= DOSSIERS ================= -->
+        <section class="view" id="view-dossiers">
+          <div class="view-head">
+            <div>
+              <h1>Dossiers</h1>
+              <div class="label" id="dossiersCount">—</div>
+            </div>
+            <button class="btn btn-outline" data-go="ingest">+ Nouveau dossier</button>
+          </div>
+          <div class="dossiers-list" id="dossiersList"></div>
+        </section>
+
+        <!-- ================= SOMMAIRE (DEAL) ================= -->
+        <section class="view" id="view-deal">
+          <div id="dealBody"></div>
+        </section>
+
+        <!-- ================= IMPORTER ================= -->
+        <section class="view" id="view-ingest">
+          <div class="ingest-shell">
+            <div class="ingest-hero">
+              <h1>Importer un dossier</h1>
+              <p>Le mémorandum de vente (OM) est le seul document analysé automatiquement : Leez en extrait chaque donnée avec sa page source et vérifie chaque citation contre le texte réel. Les autres documents sont simplement stockés dans le dossier, consultables tels quels dans l'onglet « Documents ».</p>
+            </div>
+
+            <div class="ingest-section-label">Commercialisation</div>
+            <div class="ingest-om-row">
+              <div class="dropzone" id="dropzone">
+                <div class="primary">Offering Memorandum (OM) — glissez un PDF, ou cliquez pour parcourir</div>
+                <div class="secondary">PDF texte natif · jusqu'à 32 Mo · déclenche l'analyse automatique</div>
+                <input type="file" id="fileInput" accept="application/pdf">
+              </div>
+              <button class="btn btn-solid" id="ingestSubmitBtn" disabled>Importer le dossier</button>
+              <button class="btn btn-outline" id="ingestTestBtn" type="button" title="Prévisualiser l'écran de chargement sans importer ni consommer de crédits">Test</button>
+            </div>
+
+            <div class="ingest-dossier-picker" id="ingestDossierPicker" style="display:none;">
+              <span class="label">AUCUN OM DANS CET IMPORT — CHOISISSEZ LE DOSSIER DESTINATAIRE</span>
+              <select id="ingestDossierSelect"><option value="">Sélectionner un dossier…</option></select>
+            </div>
+
+            <div id="supportingCategories"></div>
+
+            <div class="import-overlay" id="statusCard" style="display:none;" role="status" aria-live="polite">
+              <div class="import-overlay-inner">
+                <span class="status-badge" id="statusBadge" style="display:none;">—</span>
+
+                <div class="import-visual">
+                  <div class="import-doc">
+                    <div class="import-doc-lines"><span></span><span></span><span></span><span></span></div>
+                    <div class="import-scan"></div>
+                  </div>
+                  <div class="import-checkmark" id="importCheckmark">
+                    <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"></circle><path d="M14 27l7 7 17-17"></path></svg>
+                  </div>
+                </div>
+
+                <div class="status-title" id="statusTitle">—</div>
+                <div class="status-file" id="statusFile"></div>
+                <div class="status-phase-label" id="statusPhaseLabel"></div>
+                <div class="status-subphrase" id="statusSubPhrase"></div>
+                <div class="status-track"><div class="status-fill" id="statusFill"></div></div>
+                <div class="import-status-pct" id="statusPct"></div>
+                <div class="status-method-note">Méthode RAG (recherche puis génération ancrée sur le texte réel du document) : chaque donnée est extraite du texte source puis vérifiée automatiquement par recoupement avec celui-ci — contrairement à un chatbot IA classique, qui peut répondre sans lien garanti avec vos documents. Le modèle est utilisé ici de façon spécialisée pour l'immobilier et l'investissement : au-delà de la simple extraction, il mobilise ce contexte sectoriel pour signaler les points qui méritent l'attention de l'analyste.</div>
+                <div class="status-error-msg" id="statusError" style="display:none;"></div>
+                <div class="status-overlay-actions">
+                  <button class="btn btn-solid" id="statusRetryBtn" style="display:none;">Relancer</button>
+                  <button class="btn btn-outline" id="statusCloseBtn" style="display:none;">Fermer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= EXTRAIRE ================= -->
+        <section class="view" id="view-extract">
+          <div class="view-head"><div><h1>Données extraites</h1></div></div>
+
+          <div class="extract-tabs">
+            <button class="etab active" data-etab="identite">Fiche signalétique</button>
+            <button class="etab" data-etab="contexte">Contexte</button>
+            <button class="etab" data-etab="rentroll">État locatif</button>
+            <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
+            <button class="etab" data-etab="mix">Répartition des surfaces</button>
+            <button class="etab" data-etab="metrics">Indicateurs clés</button>
+          </div>
+
+          <div class="extract-split">
+            <div class="extract-grid-side">
+              <div class="extract-toolbar">
+                <span class="label" id="etabLabel">FICHE SIGNALÉTIQUE DU BIEN</span>
+                <div class="extract-toolbar-right">
+                  <button class="btn btn-ghost" id="editUndoBtn" disabled>↺ Annuler la dernière modification</button>
+                  <span class="label" id="etabHint">DONNÉES ISSUES DE LA DESCRIPTION DU BIEN</span>
+                </div>
+              </div>
+
+              <div class="extract-scroll" data-pane="identite"><div id="paneIdentite"></div></div>
+              <div class="extract-scroll" data-pane="contexte" style="display:none;">
+                <div class="memo-generate-prompt" id="contexteGeneratePrompt">
+                  <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut rédiger une synthèse en plusieurs paragraphes du contexte de la vente (motif, processus, historique de détention, profil d'acquéreur recherché), à partir du texte réel du document. Chaque paragraphe est appuyé par des citations vérifiées individuellement — cette synthèse est une lecture rédigée, pas une donnée extraite au même titre que la fiche d'identité.</p>
+                  <button class="btn btn-solid" id="contexteGenerateBtn">Générer l'analyse du contexte</button>
+                </div>
+                <div id="contexteBody" style="display:none;padding:20px;"></div>
+              </div>
+              <div class="extract-scroll" data-pane="rentroll" style="display:none;">
+                <table class="rr-table">
+                  <thead><tr>
+                    <th>Lot</th><th>Locataire</th><th>Type</th><th class="num">Surface m²</th><th class="num">% total loyer</th><th class="num">Loyer facial €/m²/an</th><th class="num">Loyer écon. €/m²/an</th><th class="num">Loyer mensuel</th><th class="num">Loyer annuel</th><th>Indexation</th><th>Prise d'effet</th><th>Échéance</th><th>Prochaine échéance triennale</th><th>Sources</th>
+                  </tr></thead>
+                  <tbody id="rrBody"></tbody>
+                </table>
+              </div>
+              <div class="extract-scroll" data-pane="t12" style="display:none;">
+                <table>
+                  <thead><tr><th>Poste</th><th class="num">Montant</th><th>Source</th></tr></thead>
+                  <tbody id="t12Body"></tbody>
+                </table>
+              </div>
+              <div class="extract-scroll" data-pane="mix" style="display:none;">
+                <table>
+                  <thead><tr><th>Tranche de surface</th><th class="num">Lots</th><th class="num">Surface totale</th><th class="num">Loyer moyen/m²</th></tr></thead>
+                  <tbody id="mixBody"></tbody>
+                </table>
+              </div>
+              <div class="extract-scroll" data-pane="metrics" style="display:none;">
+                <table class="metric-table">
+                  <thead><tr><th>Indicateur</th><th class="num">Valeur</th><th>Source</th><th style="text-align:center;">État</th></tr></thead>
+                  <tbody id="metricsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="ai-side" id="aiSide">
+              <div class="ai-side-head">
+                <div class="ai-mode-tabs">
+                  <button type="button" class="ai-mode-tab active" data-ai-mode="ia">Commentaire IA</button>
+                  <button type="button" class="ai-mode-tab" data-ai-mode="notes">Notes</button>
+                </div>
+              </div>
+              <div class="ai-comment-body" id="aiCommentBody">
+                <div class="ai-comment-placeholder"><p>Cliquez sur un élément pour visualiser les commentaires de l'IA.</p></div>
+              </div>
+              <div class="ai-notes-body" id="aiNotesBody" style="display:none;">
+                <textarea id="aiNotesTextarea" class="notes-textarea" placeholder="Notes libres sur ce dossier — commencez une ligne par /tag pour la classer (ex. /question)…"></textarea>
+              </div>
+            </div>
+
+            <div class="ai-side" id="tenantInsightSide" style="display:none;">
+              <div class="ai-side-head">
+                <span class="label">AI Insight</span>
+              </div>
+              <div class="ai-comment-body" id="tenantInsightBody">
+                <div class="ai-comment-placeholder"><p>Lancez l'agent en cliquant sur un élément.</p></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= AUDIT ================= -->
+        <section class="view" id="view-audit">
+          <div class="view-head"><div><h1>Points d'attention</h1><div class="label">CE QUI MÉRITE VOTRE ATTENTION AVANT DE DÉCIDER</div></div></div>
+
+          <div class="interp-layout" id="auditLayout">
+            <div class="interp-main" id="auditMain">
+
+              <div class="panel audit-banner" id="auditBanner">
+                <div class="audit-banner-head">
+                  <span class="audit-verdict-dot" id="auditVerdictDot"></span>
+                  <div style="flex:1;">
+                    <div class="audit-verdict-label" id="auditVerdictLabel"></div>
+                    <div class="audit-counts" id="auditCounts"></div>
+                  </div>
+                </div>
+                <p class="audit-phrase" id="auditPhrase"></p>
+              </div>
+
+              <div class="panel" style="margin-top:20px;">
+                <div class="panel-head"><h3>Alertes</h3><span class="label">TRIÉES PAR GRAVITÉ · SOURCÉES</span></div>
+                <div class="audit-cards" id="auditCards"></div>
+              </div>
+
+              <div class="panel" style="margin-top:20px;padding:22px 24px;">
+                <div class="panel-head" style="padding:0 0 14px;"><h3 style="font-size:1.05rem;">Points à creuser</h3><span class="label">CE QUI MANQUE POUR DÉCIDER</span></div>
+                <div id="auditQuestions"></div>
+              </div>
+            </div>
+
+            <div class="interp-source-panel" id="auditSourcePanel">
+              <div class="interp-source-head">
+                <span class="label">Page <span id="auditSourcePageNum"></span> du document source</span>
+                <button class="source-modal-close" id="auditSourceClose" aria-label="Fermer">✕</button>
+              </div>
+              <div class="source-modal-body">
+                <iframe id="auditSourceFrame" class="source-modal-frame" title="Page source du document"></iframe>
+                <div class="source-modal-text" id="auditSourceText" style="display:none;"></div>
+                <div class="source-modal-quote" id="auditSourceQuote" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VÉRIFICATION ================= -->
+        <section class="view" id="view-verification">
+          <div class="view-head"><div><h1>Vérification</h1><div class="label">AFFIRMATIONS DU VENDEUR CONFRONTÉES À DES SOURCES EXTERNES RÉELLES</div></div></div>
+
+          <div class="panel">
+            <div class="memo-generate-prompt" id="verificationGeneratePrompt">
+              <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut repérer les affirmations marketing du vendeur dans ce document (ex. « quartier en forte croissance », « demande locative soutenue »), vérifier leur citation dans le texte réel, puis rechercher pour chacune des sources externes indépendantes afin de la confronter à la réalité du marché.</p>
+              <button class="btn btn-solid" id="verificationGenerateBtn">Analyser les affirmations du vendeur</button>
+            </div>
+            <div id="verificationStatus" class="label" style="display:none;padding:0 24px 18px;"></div>
+            <div class="audit-cards" id="verificationCards" style="display:none;"></div>
+          </div>
+        </section>
+
+        <!-- ================= SIMULATEUR ================= -->
+        <section class="view" id="view-analyze">
+          <div class="sim-scenario-bar" id="simScenarioBar">
+            <span class="label">DOSSIER AFFICHÉ</span>
+            <select id="simDossierSelect"><option value="">Mode par défaut</option></select>
+          </div>
+
+          <div class="view-head">
+            <h1>Simulateur</h1>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button class="btn btn-ghost" id="simReset">↺ Réinitialiser</button>
+              <button class="btn btn-solid" id="simLockBtn">🔒 Verrouiller pour la présentation</button>
+            </div>
+          </div>
+
+          <div class="panel sim-capex-hint" id="simCapexHint" style="display:none;">
+            <span class="dot amber"></span>
+            <div style="flex:1;"><span id="simCapexHintText"></span></div>
+            <button class="btn btn-ghost" id="simCapexHintApply">Intégrer au modèle →</button>
+            <button class="btn btn-ghost" id="simCapexHintClose">✕</button>
+          </div>
+
+          <div class="sim-layout">
+            <aside class="sim-side panel">
+              <div class="sim-scenario">
+                <span class="label">Scénario</span>
+                <div class="name" id="simScenarioName">Mode par défaut</div>
+              </div>
+
+              <div class="sim-section" data-section="bien">
+                <button class="sim-section-head" type="button"><span class="title">Bien</span><span class="chev">▾</span></button>
+                <div class="sim-section-body" id="secBien"></div>
+              </div>
+              <div class="sim-section collapsed" data-section="acquisition">
+                <button class="sim-section-head" type="button"><span class="title">Acquisition</span><span class="chev">▾</span></button>
+                <div class="sim-section-body" id="secAcquisition"></div>
+              </div>
+              <div class="sim-section collapsed" data-section="exploitation">
+                <button class="sim-section-head" type="button"><span class="title">Exploitation</span><span class="chev">▾</span></button>
+                <div class="sim-section-body" id="secExploitation"></div>
+              </div>
+              <div class="sim-section collapsed" data-section="financement">
+                <button class="sim-section-head" type="button"><span class="title">Financement</span><span class="chev">▾</span></button>
+                <div class="sim-section-body" id="secFinancement"></div>
+              </div>
+              <div class="sim-section collapsed" data-section="sortie">
+                <button class="sim-section-head" type="button"><span class="title">Sortie</span><span class="chev">▾</span></button>
+                <div class="sim-section-body" id="secSortie"></div>
+              </div>
+            </aside>
+
+            <div class="sim-main">
+              <div class="sim-tabs">
+                <button class="stab active" data-stab="overview">Vue d'ensemble</button>
+                <button class="stab" data-stab="visuels">Visuels</button>
+                <button class="stab" data-stab="tableau">Business plan</button>
+                <button class="stab" data-stab="copilote">Copilote<span class="stab-badge" id="simCopiloteBadge" style="display:none;"></span></button>
+              </div>
+
+              <div data-simpane="overview">
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">ALERTES SUR LES HYPOTHÈSES</span></div>
+                  <div class="audit-cards" id="simAlertsPanel"></div>
+                </div>
+
+                <div class="kpi-hero-grid" id="kpiHeroGrid"></div>
+
+                <div class="panel sim-table-panel" style="margin-top:18px;">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">EMPLOIS &amp; RESSOURCES</span></div>
+                  <div class="split-panels">
+                    <div class="sim-table-wrap"><table class="sim-table" id="msUsesTable"></table></div>
+                    <div class="sim-table-wrap"><table class="sim-table" id="msSourcesTable"></table></div>
+                  </div>
+                </div>
+
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">SYNTHÈSE DE SORTIE</span></div>
+                  <div class="kpi-hero-grid" id="msExitPanel"></div>
+                </div>
+              </div>
+
+              <div data-simpane="visuels" style="display:none;">
+                <div class="visuels-grid">
+                  <div class="chart-card">
+                    <div class="chart-card-head"><span class="label">EMPLOIS</span></div>
+                    <div class="donut-block">
+                      <div class="donut-chart" id="msUsesDonut"><div class="donut-hole"><div class="donut-total" id="msUsesDonutTotal"></div><div class="label">TOTAL</div></div></div>
+                      <div class="donut-legend" id="msUsesDonutLegend"></div>
+                    </div>
+                  </div>
+                  <div class="chart-card">
+                    <div class="chart-card-head"><span class="label">RESSOURCES</span></div>
+                    <div class="donut-block">
+                      <div class="donut-chart" id="msSourcesDonut"><div class="donut-hole"><div class="donut-total" id="msSourcesDonutTotal"></div><div class="label">TOTAL</div></div></div>
+                      <div class="donut-legend" id="msSourcesDonutLegend"></div>
+                    </div>
+                  </div>
+
+                  <div class="chart-card">
+                    <div class="chart-card-head"><span class="label">LOYERS NETS &amp; CASH-FLOW NET</span></div>
+                    <svg class="chart-svg" id="msCashflowChart" preserveAspectRatio="none"></svg>
+                    <div class="chart-legend"><span><span class="legend-swatch" style="background:var(--trace);"></span>Loyers encaissés</span><span><span class="legend-swatch" style="background:var(--green);"></span>Cash-flow disponible</span></div>
+                  </div>
+                  <div class="chart-card">
+                    <div class="chart-card-head"><span class="label">CAPITAL RESTANT DÛ</span></div>
+                    <svg class="chart-svg" id="msDebtChart" preserveAspectRatio="none"></svg>
+                    <div class="chart-legend"><span><span class="legend-swatch" style="background:var(--pink);"></span>Capital restant dû en fin d'année</span></div>
+                  </div>
+
+                  <div class="chart-card full">
+                    <div class="chart-card-head"><span class="label">RÉCUPÉRATION DE L'APPORT</span></div>
+                    <svg class="chart-svg" id="msDistributionChart" preserveAspectRatio="none"></svg>
+                    <div class="chart-legend"><span><span class="legend-swatch" style="background:var(--trace);"></span>Cash-flow cumulé</span><span><span class="legend-swatch ref"></span>Apport</span></div>
+                  </div>
+                </div>
+
+                <div id="simCustomChartsSection" style="display:none;">
+                  <div class="panel-head" style="padding:26px 24px 0;"><span class="label">GRAPHIQUES CRÉÉS AVEC L'IA</span></div>
+                  <div class="visuels-grid" id="simCustomChartsGrid"></div>
+                </div>
+              </div>
+
+              <div data-simpane="tableau" style="display:none;">
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">BUSINESS PLAN</span><span class="label" id="simHoldLabel">SUR N ANS</span></div>
+                  <div class="sim-table-wrap"><table class="sim-table" id="simTableDetail"></table></div>
+                </div>
+              </div>
+
+              <div data-simpane="copilote" style="display:none;">
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;">
+                    <span class="label">ASSISTANT</span>
+                    <button class="btn btn-ghost" id="simSuggestBtn">Que devrais-je regarder ? →</button>
+                  </div>
+                  <div class="sim-chat-log" id="simChatLog"></div>
+                </div>
+
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">SCÉNARIOS &amp; SENSIBILITÉ</span></div>
+                  <div id="simScenariosPanel"></div>
+                  <div style="margin-top:18px;" id="simSensitivityGrid"></div>
+                </div>
+
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">ANALYSE DE SENSIBILITÉ (TORNADO)</span></div>
+                  <div class="tornado-chart" id="simTornadoChart"></div>
+                  <div class="kpi-hero-grid" id="simStressPanel" style="margin-top:18px;"></div>
+                </div>
+
+                <div class="panel sim-table-panel">
+                  <div class="panel-head" style="padding:0 0 4px;"><span class="label">COMMENTAIRE IA</span></div>
+                  <button class="btn btn-ghost" id="simNarrativeBtn">Générer un commentaire IA →</button>
+                  <p id="simNarrativeOutput" class="sim-narrative-output" style="display:none;"></p>
+                </div>
+              </div>
+
+              <div class="sim-disclaimer">Cet outil sert à des fins de projection financière éditable ; les hypothèses sont saisies par vous et n'engagent que votre propre analyse. Amortissement fiscal linéaire du bâti sur 25 ans (part foncière exclue à 20 %) et barème IS 15 %/25 % (seuil 42 500 €) : conventions standard pour un véhicule de détention à l'IS, pas une donnée vérifiée du dossier.</div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ================= DOCUMENTS ANNEXES ================= -->
+        <section class="view" id="view-documents">
+          <div class="view-head">
+            <div><h1>Documents</h1><div class="label">STOCKÉS TELS QUELS · AUCUNE EXTRACTION</div></div>
+            <button class="btn btn-outline" data-go="ingest">+ Ajouter des documents</button>
+          </div>
+          <div id="supportingDocsList"></div>
+        </section>
+
+
+        <!-- ================= NOTES ================= -->
+        <section class="view" id="view-notes">
+          <div class="view-head">
+            <div><h1>Notes</h1><div class="label">NOTES LIBRES DE L'ANALYSTE · ENREGISTRÉES AUTOMATIQUEMENT</div></div>
+            <span class="label" id="notesSavedStatus" style="display:none;">Enregistré</span>
+          </div>
+          <div class="notes-split">
+            <div class="panel notes-panel">
+              <div class="notes-panel-head">
+                <span class="label">ÉCRITURE LIBRE</span>
+                <span class="label">COMMENCEZ UNE LIGNE PAR /TAG POUR LA CLASSER — EX. /QUESTION, /RISQUE, /VENDEUR</span>
+              </div>
+              <textarea id="notesTextarea" class="notes-textarea" placeholder="Prenez vos notes ici — observations, questions pour le vendeur, points à vérifier…&#10;&#10;/question loyer facial ou économique dans le T12 ?"></textarea>
+            </div>
+            <div class="panel notes-sorted-panel">
+              <div class="notes-panel-head"><span class="label">TRIÉ PAR SECTION</span></div>
+              <div id="notesSections" class="notes-sections"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= MON COMPTE ================= -->
+        <section class="view" id="view-account">
+          <div class="account-content">
+          <div class="view-head"><div><h1>Mon compte</h1><div class="label" id="accountWorkspaceLabel">ESPACE DE TRAVAIL</div></div></div>
+
+          <div class="panel settings-form">
+            <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Identifiants</h3></div>
+            <div class="settings-field">
+              <label class="label">Email</label>
+              <input type="email" id="accountEmail" disabled>
+            </div>
+            <div>
+              <button class="btn btn-outline" id="accountLogoutBtn" style="margin-top:6px;">Se déconnecter</button>
+            </div>
+          </div>
+
+          <div class="panel settings-form" style="margin-top:20px;">
+            <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Changer de mot de passe</h3></div>
+            <div class="settings-field">
+              <label class="label" for="accountCurrentPassword">Mot de passe actuel</label>
+              <div class="password-field">
+                <input type="password" id="accountCurrentPassword" autocomplete="current-password">
+                <button type="button" class="password-toggle" data-toggle-password="accountCurrentPassword" aria-label="Afficher le mot de passe">
+                  <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.88 4.24A11.6 11.6 0 0 1 12 4c6.5 0 10.5 8 10.5 8a13.7 13.7 0 0 1-3.15 4.31M6.1 6.1A13.7 13.7 0 0 0 1.5 12s4 8 10.5 8a10.9 10.9 0 0 0 4.32-.86"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label class="label" for="accountNewPassword">Nouveau mot de passe</label>
+              <div class="password-field">
+                <input type="password" id="accountNewPassword" autocomplete="new-password">
+                <button type="button" class="password-toggle" data-toggle-password="accountNewPassword" aria-label="Afficher le mot de passe">
+                  <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.88 4.24A11.6 11.6 0 0 1 12 4c6.5 0 10.5 8 10.5 8a13.7 13.7 0 0 1-3.15 4.31M6.1 6.1A13.7 13.7 0 0 0 1.5 12s4 8 10.5 8a10.9 10.9 0 0 0 4.32-.86"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label class="label" for="accountNewPasswordConfirm">Confirmer le nouveau mot de passe</label>
+              <div class="password-field">
+                <input type="password" id="accountNewPasswordConfirm" autocomplete="new-password">
+                <button type="button" class="password-toggle" data-toggle-password="accountNewPasswordConfirm" aria-label="Afficher le mot de passe">
+                  <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.88 4.24A11.6 11.6 0 0 1 12 4c6.5 0 10.5 8 10.5 8a13.7 13.7 0 0 1-3.15 4.31M6.1 6.1A13.7 13.7 0 0 0 1.5 12s4 8 10.5 8a10.9 10.9 0 0 0 4.32-.86"/></svg>
+                </button>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-solid" id="accountPasswordSaveBtn" style="margin-top:6px;">Mettre à jour le mot de passe</button>
+              <span class="label" id="accountPasswordFeedback" style="margin-left:14px;display:none;"></span>
+            </div>
+          </div>
+
+          <div class="panel" style="padding:26px 28px;margin-top:20px;">
+            <div class="panel-head" style="padding:0 0 16px;"><h3 style="font-size:1rem;">Membres de l'espace de travail</h3></div>
+            <div id="accountMembersList"></div>
+
+            <div class="settings-form" style="padding:20px 0 0;border-top:1px solid var(--border-soft);margin-top:20px;">
+              <div class="label" style="margin-bottom:4px;">AJOUTER UN MEMBRE</div>
+              <div class="settings-field">
+                <label class="label" for="accountNewMemberEmail">Email</label>
+                <input type="email" id="accountNewMemberEmail" placeholder="collegue@fonds.fr">
+              </div>
+              <div class="settings-field">
+                <label class="label" for="accountNewMemberPassword">Mot de passe initial</label>
+                <div class="password-field">
+                  <input type="password" id="accountNewMemberPassword" placeholder="8 caractères minimum">
+                  <button type="button" class="password-toggle" data-toggle-password="accountNewMemberPassword" aria-label="Afficher le mot de passe">
+                    <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.88 4.24A11.6 11.6 0 0 1 12 4c6.5 0 10.5 8 10.5 8a13.7 13.7 0 0 1-3.15 4.31M6.1 6.1A13.7 13.7 0 0 0 1.5 12s4 8 10.5 8a10.9 10.9 0 0 0 4.32-.86"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <button class="btn btn-outline" id="accountAddMemberBtn" style="margin-top:6px;">Ajouter</button>
+                <span class="label" id="accountMemberFeedback" style="margin-left:14px;display:none;"></span>
+              </div>
+            </div>
+          </div>
+          </div>
+        </section>
+
+        <!-- ================= RÉGLAGES DU FONDS ================= -->
+        <section class="view" id="view-settings">
+          <div class="view-head"><div><h1>Réglages du fonds</h1><div class="label">CRITÈRES D'INVESTISSEMENT UTILISÉS PAR L'ONGLET AUDIT</div></div></div>
+          <div class="panel settings-form">
+            <div class="settings-field">
+              <label class="label" for="settingsTailleMin">Taille de deal minimum (€)</label>
+              <input type="number" id="settingsTailleMin" placeholder="ex : 30000000">
+            </div>
+            <div class="settings-field">
+              <label class="label" for="settingsTailleMax">Taille de deal maximum (€)</label>
+              <input type="number" id="settingsTailleMax" placeholder="ex : 150000000">
+            </div>
+            <div class="settings-field">
+              <label class="label" for="settingsTypologies">Typologies ciblées (séparées par des virgules)</label>
+              <input type="text" id="settingsTypologies" placeholder="ex : Bureau, Logistique">
+            </div>
+            <div class="settings-field">
+              <label class="label" for="settingsLocalisation">Localisation ciblée (texte libre)</label>
+              <input type="text" id="settingsLocalisation" placeholder="ex : Paris QCA">
+            </div>
+            <div class="settings-field">
+              <label class="label" for="settingsRendement">Rendement cible minimum (%)</label>
+              <input type="number" step="0.1" id="settingsRendement" placeholder="ex : 5.5">
+            </div>
+            <button class="btn btn-solid" id="settingsSaveBtn" style="margin-top:20px;">Enregistrer</button>
+            <span class="label" id="settingsSaved" style="margin-left:14px;display:none;color:var(--green);">Enregistré.</span>
+            <p style="font-size:.78rem;color:var(--text-faint);margin-top:18px;line-height:1.5;">Laissez un champ vide pour ne pas l'appliquer au filtrage. Sans critère renseigné, l'onglet Points d'attention n'affiche aucune alerte de non-conformité.</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Copilote du Simulateur (barre flottante) -- deplace hors de #view-analyze
+     (bien qu'il n'y soit visible que sur cette vue, voir showView() dans
+     app.js) : nichee a l'interieur d'une .view, elle heritait d'un bug reel
+     ou l'animation d'entree de la vue (.view{animation:fade...}, qui anime
+     transform) cree brievement un nouveau contexte de positionnement pour
+     tout descendant position:fixed -- la barre se retrouvait alors
+     positionnee par rapport a la (tres haute) section plutot qu'au viewport,
+     et "sautait" une fois l'animation terminee. Placee ici, au meme niveau
+     que les autres overlays de l'app (aucun n'anime de transform), elle
+     reste fixe a l'ecran sans ce risque, quoi qu'il se passe dans les vues. -->
+<div class="sim-float-chat" id="simFloatChat" style="display:none;">
+  <div class="sim-float-reply" id="simFloatReply" style="display:none;">
+    <button class="sim-float-reply-close" id="simFloatReplyClose" type="button" aria-label="Fermer">✕</button>
+    <div class="sim-float-reply-text" id="simFloatReplyText"></div>
+    <a href="#" class="sim-float-reply-link" id="simFloatReplyLink" style="display:none;">Voir les changements →</a>
+  </div>
+  <div class="sim-float-bar">
+    <button class="sim-float-handle" id="simFloatHandle" type="button" aria-label="Déplacer la barre">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </button>
+    <input type="text" id="simFloatInput" class="sim-float-input" placeholder="Demandez quelque chose au simulateur…" autocomplete="off">
+    <button class="sim-float-send" id="simFloatSend" type="button" aria-label="Envoyer">↵</button>
+  </div>
+</div>
+
+<div class="source-modal" id="sourceModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="sourceModalBackdrop"></div>
+  <div class="source-modal-panel">
+    <button class="source-modal-close" id="sourceModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head"><span class="label">Page <span id="sourceModalPageNum"></span> du document source</span></div>
+    <div class="source-modal-body">
+      <iframe id="sourceModalFrame" class="source-modal-frame" title="Page source du document"></iframe>
+      <div class="source-modal-text" id="sourceModalText" style="display:none;"></div>
+      <div class="source-modal-quote" id="sourceModalQuote" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Choix du dossier pour l'Assistant global (AI Agent) -- une vraie
+     pop-up centree, pas un petit menu deroulant au-dessus du prompt : soit
+     ouverte automatiquement par une action qui a besoin d'un dossier
+     ("génère la présentation" sans dossier deja choisi), soit par un clic
+     manuel sur l'indicateur "DOSSIER" une fois qu'un dossier est deja
+     selectionne. -->
+<div class="source-modal" id="assistantDossierModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="assistantDossierModalBackdrop"></div>
+  <div class="source-modal-panel dossier-modal-panel">
+    <button class="source-modal-close" id="assistantDossierModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head"><span class="label">CHOISIR UN DOSSIER</span></div>
+    <div class="formula-modal-body" id="assistantDossierModalBody"></div>
+  </div>
+</div>
+
+<div class="source-modal" id="mandateModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="mandateModalBackdrop"></div>
+  <div class="source-modal-panel formula-modal-panel mandate-modal-panel">
+    <button class="source-modal-close" id="mandateModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head">
+      <span class="label">CONFORMITÉ AUX CRITÈRES D'INVESTISSEMENT</span>
+      <div class="mandate-verdict-badge" id="mandateModalVerdict"></div>
+    </div>
+    <div class="formula-modal-body">
+      <div id="mandateModalCriteria"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Insight (recherche web sur un locataire, État locatif) : resultat
+     complet affiche ici plutot que dans le panneau lateral, qui ne fait que
+     grandir avec le texte -- voir runTenantInsight dans app.js. -->
+<div class="source-modal" id="tenantInsightModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="tenantInsightModalBackdrop"></div>
+  <div class="source-modal-panel formula-modal-panel tenant-insight-modal-panel">
+    <button class="source-modal-close" id="tenantInsightModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head">
+      <span class="label">AI INSIGHT — LOCATAIRE</span>
+      <div class="tenant-insight-modal-name" id="tenantInsightModalName"></div>
+    </div>
+    <div class="formula-modal-body" id="tenantInsightModalBody"></div>
+  </div>
+</div>
+
+<!-- Notifications de taches d'arriere-plan (recherches de l'agent IA) :
+     permet de lancer une recherche puis de naviguer ailleurs sans attendre
+     -- voir showToast/updateToast dans app.js. -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- Assistant flottant du dossier (onglet Donnees) : meme moteur que l'AI
+     Agent (Q/R sur le dossier + mode recherche web), mais dans un panneau
+     qui glisse depuis la droite et couvre la page plutot qu'une page
+     dediee -- reste ouvrable/refermable sans perdre la conversation, voir
+     sendDataChatQuestion dans app.js. -->
+<button type="button" class="data-chat-fab" id="dataChatFab" aria-label="Ouvrir l'assistant du dossier" style="display:none;">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+</button>
+<div class="data-chat-panel" id="dataChatPanel" aria-hidden="true">
+  <div class="data-chat-head">
+    <span class="label">Assistant du dossier</span>
+    <button type="button" class="data-chat-close" id="dataChatClose" aria-label="Fermer">✕</button>
+  </div>
+  <div class="data-chat-log" id="dataChatLog">
+    <div class="assistant-chat-empty" id="dataChatEmpty"><p>Posez une question sur ce dossier, ou activez la recherche web pour des données de marché (ex. « cherche la moyenne des loyers du secteur et donne-moi les sources »).</p></div>
+  </div>
+  <div class="data-chat-dock">
+    <div class="agent-input-card" style="max-width:none;">
+      <textarea id="dataChatInput" class="agent-textarea" rows="1" placeholder="Posez une question sur ce dossier…"></textarea>
+      <div class="agent-input-toolbar">
+        <button type="button" class="agent-quick-btn agent-quick-toggle" id="dataChatWebToggle">🌐 Recherche web</button>
+        <button type="button" class="agent-send-btn" id="dataChatSendBtn" aria-label="Envoyer">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="source-modal" id="formulaModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="formulaModalBackdrop"></div>
+  <div class="source-modal-panel formula-modal-panel">
+    <button class="source-modal-close" id="formulaModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head">
+      <span class="label">FORMULE &amp; TRAÇABILITÉ</span>
+      <h3 id="formulaModalTitle" style="margin:6px 0 0;font-family:var(--serif);font-weight:400;font-size:1.25rem;color:var(--text);"></h3>
+    </div>
+    <div class="formula-modal-body">
+      <div class="formula-expr" id="formulaModalExpr"></div>
+      <p class="formula-desc" id="formulaModalDesc"></p>
+      <div class="formula-vars-title">VARIABLES UTILISÉES DANS CE CALCUL</div>
+      <div id="formulaModalVars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Visionneuse plein écran des photos du bien affichées sur le Sommaire
+     (voir loadDealPhotos/openPhotoModal dans app.js) -- même patron que
+     formulaModal, contenu remplacé par une simple image. -->
+<div class="source-modal" id="photoModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="photoModalBackdrop"></div>
+  <div class="source-modal-panel photo-modal-panel">
+    <button class="source-modal-close" id="photoModalClose" aria-label="Fermer">✕</button>
+    <img class="photo-modal-img" id="photoModalImg" alt="">
+  </div>
+</div>
+
+<!-- Écran de chargement pour la génération du Contexte -- même animation
+     (document qui se scanne, titre qui défile, coche de fin) que l'import
+     d'un dossier, réutilisée telle quelle. Placé hors de .app comme les
+     modales pour rester visible quelle que soit la vue active. -->
+<div class="import-overlay" id="contexteOverlay" style="display:none;" role="status" aria-live="polite">
+  <div class="import-overlay-inner">
+    <div class="import-visual">
+      <div class="import-doc">
+        <div class="import-doc-lines"><span></span><span></span><span></span><span></span></div>
+        <div class="import-scan"></div>
+      </div>
+      <div class="import-checkmark">
+        <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"></circle><path d="M14 27l7 7 17-17"></path></svg>
+      </div>
+    </div>
+    <div class="status-title" id="contexteOverlayTitle">—</div>
+    <div class="status-error-msg" id="contexteOverlayError" style="display:none;"></div>
+    <button class="btn btn-outline" id="contexteOverlayCloseBtn" style="display:none;">Fermer</button>
+  </div>
+</div>
+
+<!-- Écran de chargement pour la génération de la Présentation comité -- même
+     animation (document qui se scanne, titre qui défile, coche de fin) que
+     l'import d'un dossier / la génération du Contexte, réutilisée telle
+     quelle. Placé hors de .app comme les modales pour rester visible quelle
+     que soit la vue active. -->
+<div class="import-overlay" id="presentationOverlay" style="display:none;" role="status" aria-live="polite">
+  <div class="import-overlay-inner">
+    <div class="import-visual">
+      <div class="import-doc">
+        <div class="import-doc-lines"><span></span><span></span><span></span><span></span></div>
+        <div class="import-scan"></div>
+      </div>
+      <div class="import-checkmark">
+        <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"></circle><path d="M14 27l7 7 17-17"></path></svg>
+      </div>
+    </div>
+    <div class="status-title" id="presentationOverlayTitle">—</div>
+    <div class="status-error-msg" id="presentationOverlayError" style="display:none;"></div>
+    <button class="btn btn-outline" id="presentationOverlayCloseBtn" style="display:none;">Fermer</button>
+  </div>
+</div>
+
+<!-- Présentation comité, design sombre -- peuplée dynamiquement depuis les
+     VRAIES données vérifiées du dossier (buildDeckHTML/openPresentationDeck
+     dans app.js) juste avant l'ouverture, jamais de contenu d'exemple codé
+     en dur. Placé hors de .app comme les autres overlays pour rester
+     visible quelle que soit la vue active. -->
+<div class="dp-overlay" id="deckPreviewOverlay" style="display:none;">
+  <div class="dp-toolbar">
+    <span class="dp-badge" id="dpBadge">PRÉSENTATION COMITÉ — DONNÉES VÉRIFIÉES</span>
+    <div class="dp-toolbar-right">
+      <button class="dp-tool-btn dp-preview-btn" id="dpPreviewModeBtn" type="button" title="Le copilote répond avec des règles locales simples au lieu d'appeler le modèle — pratique pour tester la navigation, la date du comité ou une correction de champ sans consommer de crédits API.">🧪 Mode aperçu</button>
+      <button class="dp-tool-btn" id="dpPrintBtn">Imprimer / Exporter en PDF</button>
+      <button class="dp-tool-btn" id="dpFullscreenBtn">⛶ Plein écran</button>
+      <button class="dp-tool-btn" id="dpExportBtn">Exporter → Google Slides</button>
+      <button class="dp-tool-btn dp-close" id="dpCloseBtn" aria-label="Fermer">✕</button>
+    </div>
+  </div>
+
+  <div class="dp-stage" id="dpStage"></div>
+
+  <div class="dp-nav">
+    <button class="dp-nav-btn" id="dpPrevBtn" aria-label="Slide précédente">←</button>
+    <div class="dp-counter"><span id="dpCurrent">1</span> / <span id="dpTotal">1</span></div>
+    <button class="dp-nav-btn" id="dpNextBtn" aria-label="Slide suivante">→</button>
+  </div>
+
+  <!-- Copilote de la Présentation -- exactement le meme composant (barre
+       flottante deplacable, bulle de reponse) que #simFloatChat sur le
+       Simulateur : memes classes .sim-float-*, meme comportement de
+       glisser-deposer, meme patron "le modele choisit uniquement QUELLE
+       operation, le client l'execute avec des fonctions deja existantes"
+       (voir dpApplyOp dans app.js). Jamais de reecriture d'une donnee
+       verifiee du dossier -- uniquement la navigation/l'affichage de la
+       presentation elle-meme. -->
+  <div class="sim-float-chat" id="dpFloatChat">
+    <div class="sim-float-reply" id="dpFloatReply" style="display:none;">
+      <button class="sim-float-reply-close" id="dpFloatReplyClose" type="button" aria-label="Fermer">✕</button>
+      <div class="sim-float-reply-text" id="dpFloatReplyText"></div>
+    </div>
+    <!-- Image jointe au prochain message (ex: "mets cette image en fond") --
+         upload reel differe a l'envoi du message, une fois l'intention
+         (couverture / carte de situation) determinee par le copilote --
+         voir dpApplyOp('attach_photo') dans app.js. -->
+    <div class="dp-attach-chip" id="dpAttachChip" style="display:none;">
+      <span id="dpAttachChipName"></span>
+      <button type="button" id="dpAttachChipRemove" aria-label="Retirer l'image">✕</button>
+    </div>
+    <div class="sim-float-bar">
+      <button class="sim-float-handle" id="dpFloatHandle" type="button" aria-label="Déplacer la barre">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </button>
+      <button type="button" class="dp-attach-btn" id="dpAttachBtn" aria-label="Joindre une image" title="Joindre une image">📎</button>
+      <input type="file" id="dpAttachInput" accept="image/*" style="display:none;">
+      <input type="text" id="dpFloatInput" class="sim-float-input" placeholder="Demandez quelque chose à la présentation… ex. « mets cette image en fond »" autocomplete="off">
+      <button class="sim-float-send" id="dpFloatSend" type="button" aria-label="Envoyer">↵</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zone imprimable, peuplée dynamiquement au clic sur un bouton d'export ; masquée à l'écran, seule visible à l'impression -->
+<div id="printSheet"></div>
+
+<script src="/js/app.js"></script>
+<script src="/js/simulator.js"></script>
+</body>
+</html>

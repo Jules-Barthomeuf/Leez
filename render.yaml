@@ -1,0 +1,59 @@
+# Blueprint de déploiement Render (région Frankfurt/EU) -- voir
+# https://render.com/docs/blueprint-spec. Pour déployer : créer un compte
+# Render, connecter ce dépôt, "New +" → "Blueprint", Render détecte ce
+# fichier automatiquement. Les variables marquées `sync: false` doivent
+# être saisies manuellement dans le dashboard Render après la création
+# (jamais commitées ici).
+databases:
+  - name: leez-db
+    region: frankfurt
+    # Le plan gratuit Render n'a ni sauvegarde automatique ni persistance
+    # garantie (expire au bout de 30 jours) -- inacceptable même pour un
+    # pilote. basic-256mb est le plus petit plan payant, largement
+    # suffisant pour quelques dossiers/quelques utilisateurs, et inclut
+    # les sauvegardes automatiques quotidiennes.
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: leez
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install
+    startCommand: node server/index.js
+    # Migrations appliquées après le build, avant que le nouveau déploiement
+    # ne prenne le trafic -- jamais de version de code qui tourne contre un
+    # schéma pas encore à jour.
+    preDeployCommand: npx node-pg-migrate --migrations-dir server/migrations up
+    healthCheckPath: /healthz
+    disk:
+      name: uploads
+      # Hors du checkout (le code est redéployé à chaque fois, ce chemin
+      # doit survivre aux déploiements) -- voir UPLOAD_DIR ci-dessous et
+      # server/routes/documents.js.
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: leez-db
+        property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      # Secrets saisis manuellement dans le dashboard Render après la
+      # création du service (jamais commités) :
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      # PostHog est optionnel -- server/services/analytics.js et le
+      # snippet client se désactivent proprement si POSTHOG_API_KEY est
+      # absente. Ne renseigner qu'une fois le compte PostHog créé.
+      - key: POSTHOG_API_KEY
+        sync: false
+      - key: POSTHOG_HOST
+        value: https://eu.i.posthog.com
