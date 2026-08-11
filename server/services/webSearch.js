@@ -47,17 +47,6 @@ Rends ensuite ton verdict selon le schema demande :
 - donnees_insuffisantes : aucune source pertinente n'a ete trouvee pour statuer.
 justification : 1 a 3 phrases en francais, ancrees dans ce que tu as reellement trouve pendant la recherche, jamais une supposition presentee comme un fait.`;
 
-const SYSTEM_PROMPT_TENANT = `Tu es le module de recherche web dedie a la solvabilite/reputation des locataires, pour l'assistant d'un outil d'analyse immobiliere. On te donne le nom d'une entreprise locataire (extrait d'un etat locatif reel) et, si disponible, son activite declaree et le contexte de l'immeuble qu'elle occupe. Utilise l'outil de recherche web pour trouver des informations publiques fiables sur CETTE entreprise precise (pas une entreprise homonyme differente) : forme juridique, taille/effectifs, sante financiere connue (chiffre d'affaires, procedures collectives, notation si publique), actualite recente (rachat, difficulte, expansion), reputation sectorielle.
-
-Consignes de redaction :
-- Redige un resume clair et concis en francais (quelques courts paragraphes) -- jamais un mur de texte, jamais de markdown mal forme.
-- Va droit a la reponse. Ne raconte jamais ton processus de recherche ("je lance une recherche", "voici ma methode", etc.) -- l'analyste ne voit que le resultat final.
-- Si plusieurs entreprises portent un nom proche, precise a laquelle tu te refers (secteur/ville/SIREN si trouve) plutot que de risquer une confusion entre deux entites differentes.
-- Va droit a l'essentiel pour un analyste evaluant le risque locataire (capacite a payer le loyer dans la duree) -- pas une biographie complete de l'entreprise.
-- Ne cite pas chaque page consultee : les liens cliquables fournis separement suffisent comme reference.
-- Si tu ne trouves rien d'exploitable sur cette entreprise precise (nom trop generique, entite non referencee publiquement, enseigne locale sans presence web...), dis-le clairement en une phrase plutot que d'improviser une appreciation.
-- Ne reponds jamais de memoire sur un point qui necessiterait une verification -- cherche.`;
-
 const verdictSchema = {
   type: 'object',
   properties: {
@@ -65,6 +54,48 @@ const verdictSchema = {
     justification: { type: 'string' },
   },
   required: ['verdict', 'justification'],
+  additionalProperties: false,
+};
+
+// Prompt de l'agent "locataires" (orchestration multi-agents, voir
+// agents/locataires.js) : exige un tableau de constats atomiques, CHACUN
+// rattache a une seule source verifiable -- c'est ce que consomme
+// agent_findings (une ligne = un fait = une source), pas un blob de texte
+// a decouper cote code.
+const SYSTEM_PROMPT_TENANT_FINDINGS = `Tu es le module de recherche web dedie a la solvabilite/reputation des locataires, pour l'assistant d'un outil d'analyse immobiliere destine a des fonds d'investissement. On te donne le nom d'une entreprise locataire (extrait d'un etat locatif reel) et, si disponible, son activite declaree et le contexte de l'immeuble qu'elle occupe. Utilise l'outil de recherche web pour trouver des informations publiques fiables sur CETTE entreprise precise (pas une entreprise homonyme differente).
+
+Rends chaque information trouvee comme un constat SEPARE et ATOMIQUE dans le tableau "findings", jamais un paragraphe unique qui melange plusieurs sources. Pour chaque constat :
+- aspect : solidite_financiere (CA, resultat, procedures collectives, notation), actualite (rachat, difficulte, expansion recente), reputation (avis, image de marque, litiges connus), ou forme_juridique (SIREN, forme sociale, groupe d'appartenance).
+- note : 1-2 phrases factuelles en francais, ancrees dans ce que tu as reellement trouve -- jamais une supposition presentee comme un fait.
+- source_url : l'URL exacte de la page qui appuie CE constat precis (jamais une source generique si tu en as consulte plusieurs -- une ligne par source).
+- source_label : nom lisible de la source (ex. "Infogreffe", "Le Figaro", "site officiel de l'entreprise").
+- source_date : date de publication/mise a jour de l'information si trouvee (format AAAA-MM-JJ), sinon chaine vide.
+
+Consignes :
+- Si plusieurs entreprises portent un nom proche, precise a laquelle tu te refers (secteur/ville/SIREN si trouve) plutot que de risquer une confusion entre deux entites differentes.
+- Ne renvoie AUCUN element du tableau si tu n'as rien trouve d'exploitable sur cette entreprise precise (nom trop generique, entite non referencee publiquement...) -- un tableau vide est le bon resultat dans ce cas, jamais une supposition pour "remplir".
+- Va droit a l'essentiel pour un analyste evaluant le risque locataire (capacite a payer le loyer dans la duree) -- pas une biographie complete de l'entreprise. Limite-toi a 1-4 constats les plus pertinents, pas une liste exhaustive.`;
+
+const tenantFindingsSchema = {
+  type: 'object',
+  properties: {
+    findings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          aspect: { type: 'string', enum: ['solidite_financiere', 'actualite', 'reputation', 'forme_juridique'] },
+          note: { type: 'string' },
+          source_url: { type: 'string' },
+          source_label: { type: 'string' },
+          source_date: { type: 'string' },
+        },
+        required: ['aspect', 'note', 'source_url', 'source_label', 'source_date'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['findings'],
   additionalProperties: false,
 };
 
@@ -163,32 +194,52 @@ async function verifyClaimAgainstWeb({ claimText, quote, dealContext }) {
   return { verdict, justification: String(justification || ''), sources };
 }
 
-// "AI Insight" (onglet Données > État locatif, clic sur une ligne) --
-// recherche web ciblee sur UN locataire precis, distincte de la recherche
-// generale (answerWithWebSearch) par son prompt (solvabilite/reputation
-// d'entreprise, pas marche immobilier) et par le tag de fiabilite applique
-// a chaque source (meme logique deterministe que le verificateur
-// d'affirmations du vendeur, jamais laisse au jugement du modele).
-async function researchTenant({ tenantName, activite, dealContext, onTextDelta }) {
+// Recherche web ciblee sur UN locataire precis (agent "locataires" de
+// l'orchestration multi-agents, voir agents/locataires.js) -- distincte de
+// la recherche generale (answerWithWebSearch) par son prompt (solvabilite/
+// reputation d'entreprise, pas marche immobilier) et par le tag de
+// fiabilite applique a chaque source (meme logique deterministe que le
+// verificateur d'affirmations du vendeur, jamais laisse au jugement du
+// modele). Sortie structuree en constats atomiques (voir
+// SYSTEM_PROMPT_TENANT_FINDINGS ci-dessous) : agent_findings exige une
+// ligne = un fait = une source, pas un blob de texte a decouper cote code.
+// Meme combo outil de recherche web + sortie structuree que
+// verifyClaimAgainstWeb (deja confirme fonctionner sur ce modele/API), mais
+// schema en tableau de constats atomiques plutot qu'un verdict unique.
+// Retourne les constats BRUTS (avant filtrage) : c'est
+// agentOutputValidation.js qui applique la regle "pas de source_url =>
+// rejete", jamais cette fonction elle-meme.
+async function researchTenantFindings({ tenantName, activite, dealContext }) {
   const question = `Locataire a rechercher : "${String(tenantName || '').slice(0, 200)}"${activite ? ` (activite declaree dans le bail : ${String(activite).slice(0, 200)})` : ''}`;
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 2048,
-    system: withDealContext(SYSTEM_PROMPT_TENANT, dealContext),
+    system: withDealContext(SYSTEM_PROMPT_TENANT_FINDINGS, dealContext),
     tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
+    output_config: { format: { type: 'json_schema', schema: tenantFindingsSchema } },
     messages: [{ role: 'user', content: question }],
   });
-  if (onTextDelta) stream.on('text', onTextDelta);
   const message = await stream.finalMessage();
   if (message.stop_reason === 'refusal') {
     throw new Error('Le modele a refuse cette requete (stop_reason=refusal).');
   }
-  let answer = '';
-  for (const block of message.content || []) {
-    if (block.type === 'text') answer += block.text;
+  const textBlock = message.content.find(b => b.type === 'text');
+  if (!textBlock) {
+    throw new Error(`Aucune reponse structuree du modele (stop_reason=${message.stop_reason}).`);
   }
-  const sources = extractSources(message.content).map(s => ({ ...s, reliability: classifySourceReliability(s.url) }));
-  return { answer: answer.trim(), sources };
+  const { findings } = JSON.parse(textBlock.text);
+  const tokenCost = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0);
+  return {
+    findings: (findings || []).map(f => ({
+      kind: 'tenant_health',
+      payload: { aspect: f.aspect, note: f.note },
+      source_url: f.source_url,
+      source_label: f.source_label,
+      source_date: f.source_date || null,
+      source_tier: classifySourceReliability(f.source_url),
+    })),
+    tokenCost,
+  };
 }
 
-module.exports = { answerWithWebSearch, verifyClaimAgainstWeb, researchTenant };
+module.exports = { answerWithWebSearch, verifyClaimAgainstWeb, researchTenantFindings };

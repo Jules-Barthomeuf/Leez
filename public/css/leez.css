@@ -1268,6 +1268,38 @@ td.cell-linked{position:relative;}
 .account-content{max-width:640px;margin:0 auto;}
 .account-content .view-head{justify-content:center;text-align:center;}
 
+/* Ecran Agents (Lot 1 -- version minimale, sans animation, voir spec
+   §7.1/§8) : liste plutot que la constellation circulaire prevue pour le
+   Lot 5, memes tokens/panels que le reste de l'app. */
+.agents-list{display:flex;flex-direction:column;gap:14px;}
+.agent-node{
+  background:var(--surface);border:1px solid var(--border-strong);padding:18px 22px;
+}
+.agent-node-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.agent-node-name{font-family:var(--serif);font-size:1.05rem;color:var(--text);flex:1;min-width:160px;}
+.agent-node-status{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;}
+.agent-node-status.st-idle{color:var(--text-faint);background:var(--bg-soft);}
+.agent-node-status.st-soon{color:var(--text-faint);background:var(--bg-soft);}
+.agent-node-status.st-queued{color:var(--trace);background:var(--trace-dim);}
+.agent-node-status.st-running{color:var(--trace);background:var(--trace-dim);}
+.agent-node-status.st-succeeded{color:var(--green);background:var(--green-dim);}
+.agent-node-status.st-insufficient_data{color:var(--amber);background:var(--amber-dim);}
+.agent-node-status.st-failed{color:var(--pink);background:var(--pink-dim);}
+.agent-node-status.st-cancelled{color:var(--text-faint);background:var(--bg-soft);}
+.agent-node-step{font-size:.8rem;color:var(--text-muted);margin-top:8px;}
+.agent-node-progress{height:3px;background:var(--bg-soft);margin-top:8px;overflow:hidden;}
+.agent-node-progress-bar{height:100%;background:var(--trace);transition:width .3s var(--ease);}
+.agent-node-actions{display:flex;gap:10px;margin-top:12px;}
+.agent-finding{
+  margin-top:12px;padding:11px 13px;background:var(--bg-soft);border:1px solid var(--border-soft);
+  font-size:.82rem;color:var(--text-muted);
+}
+.agent-finding-head{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;color:var(--text-faint);margin-bottom:4px;}
+.agent-finding a{color:var(--trace);text-decoration:underline;text-underline-offset:2px;}
+.agent-tier{padding:1px 7px;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;}
+.agent-tier.officielle{color:var(--green);background:var(--green-dim);}
+.agent-tier.a_confirmer{color:var(--amber);background:var(--amber-dim);}
+
 /* Bouton oeil / oeil barre pour afficher-masquer un mot de passe -- meme
    patron sur /login.html et la page Mon compte (les deux chargent
    leez.css). */

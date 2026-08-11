@@ -52,6 +52,9 @@ async function main() {
   const assistantRouter = require('./routes/assistant');
   const presentationRouter = require('./routes/presentation');
   const webPageRouter = require('./routes/webPage');
+  const agentsRouter = require('./routes/agents');
+  const { sweepStaleAgentRuns } = require('./services/agentRunner');
+  await sweepStaleAgentRuns();
 
   app.use(express.json());
   app.use(cookieParser());
@@ -84,6 +87,7 @@ async function main() {
   app.use('/api', assistantRouter);
   app.use('/api', presentationRouter);
   app.use('/api', webPageRouter);
+  app.use('/api', agentsRouter);
   // Page d'atterrissage publique à la racine ; l'application (Dashboard,
   // Dossiers, etc.) reste servie telle quelle sur /index.html. Ces fichiers
   // statiques (HTML/JS/CSS) ne portent aucune donnee de dossier -- la vraie

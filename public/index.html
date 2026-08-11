@@ -48,6 +48,7 @@
         <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
         <button class="drail-item" data-rail="notes" data-go-dossier="notes">Notes</button>
         <button class="drail-item" data-rail="documents" data-go-dossier="documents">Documents</button>
+        <button class="drail-item" data-rail="agents" data-go-dossier="agents">Agents</button>
       </div>
 
       <div class="main-content">
@@ -499,6 +500,15 @@
             <button class="btn btn-outline" data-go="ingest">+ Ajouter des documents</button>
           </div>
           <div id="supportingDocsList"></div>
+        </section>
+
+        <!-- ================= AGENTS ================= -->
+        <section class="view" id="view-agents">
+          <div class="view-head">
+            <div><h1>Agents</h1><div class="label" id="agentsSourcesTotal">TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ</div></div>
+            <button class="btn btn-solid" id="agentsLaunchAllBtn">Lancer les agents disponibles</button>
+          </div>
+          <div id="agentsList" class="agents-list"></div>
         </section>
 
 

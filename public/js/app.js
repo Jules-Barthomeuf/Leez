@@ -312,11 +312,21 @@
   }).catch(() => {});
 
   // ================= ROUTEUR ================= //
-  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes'];
+  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes', 'agents'];
   const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
   let currentViewName = 'dashboard';
+  // Declares ici (et non plus loin, pres du reste du code de l'ecran
+  // Agents) : showView() est appelee des le tout debut du script (voir
+  // applyRouteFromHash() au boot) et reference ces deux variables via
+  // stopAgentsPolling() -- avec `let` plus bas dans le fichier, cet appel
+  // precoce tombait dans leur zone morte temporelle ("Cannot access before
+  // initialization"), qui interrompait silencieusement showView() avant
+  // qu'elle n'atteigne son propre appel a updateLocationHash() en fin de
+  // fonction (routage par ancre casse des le premier chargement de page).
+  let agentsPollTimer = null;
+  let availableAgentTypes = [];
   // true pendant qu'on applique une route lue depuis location.hash (popstate
   // ou chargement initial) : evite que showView() ne repousse une nouvelle
   // entree d'historique en reponse a une navigation qui VIENT deja de
@@ -416,6 +426,7 @@
     if (name !== 'extract') closeDataChatPanel();
     if (name === 'settings') loadSettingsForm();
     if (name === 'account') loadAccountForm();
+    if (name === 'agents') renderAgentsScreen(); else stopAgentsPolling();
     if (!syncingRoute) updateLocationHash();
   }
   function goDossierPage(name) { dossierMode = true; showView(name); }
@@ -1163,36 +1174,153 @@
     document.getElementById('toastStack')?.querySelector(`[data-toast-id="${CSS.escape(id)}"]`)?.remove();
   }
 
+  // ================= AGENTS (orchestration multi-agents) =================
+  // Ecran "Agents" (rail du dossier) -- version minimale du Lot 1 (spec
+  // "Leez -- orchestration multi-agents" §8) : liste plutot que la
+  // constellation animee du Lot 5, mais deja adossee au vrai statut serveur
+  // (agent_runs/agent_findings), pas une simulation. Un seul agent
+  // reellement lancable pour l'instant (`locataires`) -- les 5 autres
+  // s'affichent en "Bientôt disponible" (`availableAgentTypes` vient du
+  // serveur, jamais code en dur cote client : un futur Lot 2 les active
+  // sans toucher a ce fichier).
+  const AGENT_LABELS = {
+    marche: 'Marché', locataires: 'Locataires', comparables: 'Comparables',
+    urbanisme: 'Urbanisme', contradiction: 'Contradiction', synthese: 'Synthèse',
+  };
+  const ALL_AGENT_TYPES = Object.keys(AGENT_LABELS);
+  const AGENT_STATUS_LABELS = {
+    queued: 'En file', running: 'En cours', succeeded: 'Terminé',
+    insufficient_data: 'Données insuffisantes', failed: 'Échec', cancelled: 'Annulé',
+  };
+  const AGENT_TIER_LABELS = { officielle: 'Source officielle', a_confirmer: 'À vérifier vous-même' };
+  const AGENT_ASPECT_LABELS = {
+    solidite_financiere: 'Solidité financière', actualite: 'Actualité',
+    reputation: 'Réputation', forme_juridique: 'Forme juridique',
+  };
+  // agentsPollTimer/availableAgentTypes : declares plus haut dans le
+  // fichier (voir le commentaire pres de currentViewName) -- pas ici, pour
+  // eviter la zone morte temporelle au premier appel de showView().
+
+  function renderAgentFindingHTML(f) {
+    const tierLabel = AGENT_TIER_LABELS[f.sourceTier] || f.sourceTier;
+    const dateLabel = f.sourceDate ? new Date(f.sourceDate).toLocaleDateString('fr-FR') : 'date inconnue';
+    const note = f.payload?.note || JSON.stringify(f.payload);
+    const who = f.payload?.tenantName ? `<b>${escapeHtml(f.payload.tenantName)}</b> — ` : '';
+    const aspectLabel = AGENT_ASPECT_LABELS[f.payload?.aspect] || f.payload?.aspect || f.kind;
+    return `<div class="agent-finding">
+      <div class="agent-finding-head">
+        <span>${who}${escapeHtml(aspectLabel)}</span>
+        <span class="agent-tier ${escapeHtml(f.sourceTier)}">${escapeHtml(tierLabel)}</span>
+      </div>
+      <p>${escapeHtml(note)}</p>
+      <a href="${escapeHtml(f.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.sourceLabel || f.sourceUrl)} — ${dateLabel} →</a>
+    </div>`;
+  }
+
+  function renderAgentsList(state) {
+    availableAgentTypes = state.availableAgentTypes || [];
+    const list = document.getElementById('agentsList');
+    let totalSources = 0;
+    list.innerHTML = ALL_AGENT_TYPES.map(agentType => {
+      const runsForType = state.runs.filter(r => r.agentType === agentType);
+      const run = runsForType[runsForType.length - 1]; // le plus recent lance
+      const available = availableAgentTypes.includes(agentType);
+      let statusKey = 'idle', statusLabel = 'Pas encore lancé';
+      if (!available) { statusKey = 'soon'; statusLabel = 'Bientôt disponible'; }
+      else if (run) { statusKey = run.status; statusLabel = AGENT_STATUS_LABELS[run.status] || run.status; }
+      if (run && (run.status === 'succeeded' || run.status === 'insufficient_data')) totalSources += run.sourcesCount || 0;
+
+      const progressPct = run && run.stepsTotal ? Math.round((run.stepsDone / run.stepsTotal) * 100) : 0;
+      const showProgress = run && ['running', 'queued'].includes(run.status);
+      const canLaunch = available && (!run || ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status));
+      const canCancel = run && ['queued', 'running'].includes(run.status);
+
+      const findingsHTML = run && run.findings?.length ? run.findings.map(renderAgentFindingHTML).join('') : '';
+      const errorHTML = run && run.status === 'failed' && run.errorMessage
+        ? `<p class="agent-node-step" style="color:var(--pink);">${escapeHtml(run.errorMessage)}</p>` : '';
+      const emptyHTML = run && run.status === 'insufficient_data' ? `<p class="agent-node-step">Aucune donnée exploitable trouvée.</p>` : '';
+      const stepHTML = run && run.currentStepLabel
+        ? `<div class="agent-node-step">${escapeHtml(run.currentStepLabel)} (${run.stepsDone}/${run.stepsTotal})</div>` : '';
+
+      return `<div class="agent-node" data-agent-type="${agentType}">
+        <div class="agent-node-head">
+          <span class="agent-node-name">${AGENT_LABELS[agentType]}</span>
+          <span class="agent-node-status st-${statusKey}">${escapeHtml(statusLabel)}</span>
+        </div>
+        ${stepHTML}
+        ${showProgress ? `<div class="agent-node-progress"><div class="agent-node-progress-bar" style="width:${progressPct}%;"></div></div>` : ''}
+        ${errorHTML}${emptyHTML}
+        <div class="agent-node-actions">
+          ${canLaunch ? `<button class="btn btn-outline" data-launch-agent="${agentType}">Lancer</button>` : ''}
+          ${canCancel ? `<button class="btn btn-outline" data-cancel-run="${run.id}">Annuler</button>` : ''}
+        </div>
+        ${findingsHTML}
+      </div>`;
+    }).join('');
+
+    const n = totalSources;
+    document.getElementById('agentsSourcesTotal').textContent = n > 0 ? `${n} SOURCE${n > 1 ? 'S' : ''} COLLECTÉE${n > 1 ? 'S' : ''}` : 'TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ';
+
+    list.querySelectorAll('[data-launch-agent]').forEach(btn => btn.addEventListener('click', () => launchAgents([btn.dataset.launchAgent])));
+    list.querySelectorAll('[data-cancel-run]').forEach(btn => btn.addEventListener('click', () => cancelAgentRunUI(btn.dataset.cancelRun)));
+
+    if (state.runs.some(r => ['queued', 'running'].includes(r.status))) startAgentsPolling();
+    else stopAgentsPolling();
+  }
+
+  async function launchAgents(agentTypes, tenantNames) {
+    if (!currentDoc) return;
+    await fetch(`/api/dossiers/${currentDoc.id}/agents/run`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agents: agentTypes, ...(tenantNames ? { tenantNames } : {}) }),
+    });
+    if (currentViewName === 'agents') await refreshAgentsScreen();
+  }
+  async function cancelAgentRunUI(runId) {
+    await fetch(`/api/agent-runs/${runId}/cancel`, { method: 'POST' });
+    if (currentViewName === 'agents') await refreshAgentsScreen();
+  }
+  async function fetchAgentsState(dossierId) {
+    const r = await fetch(`/api/dossiers/${dossierId}/agents/state`);
+    return r.json();
+  }
+  async function refreshAgentsScreen() {
+    if (!currentDoc) return;
+    renderAgentsList(await fetchAgentsState(currentDoc.id));
+  }
+  function startAgentsPolling() {
+    if (agentsPollTimer) return;
+    agentsPollTimer = setInterval(refreshAgentsScreen, 1500);
+  }
+  function stopAgentsPolling() {
+    clearInterval(agentsPollTimer);
+    agentsPollTimer = null;
+  }
+  async function renderAgentsScreen() {
+    if (!currentDoc) return;
+    await refreshAgentsScreen();
+  }
+  document.getElementById('agentsLaunchAllBtn').addEventListener('click', () => {
+    launchAgents(availableAgentTypes.length ? availableAgentTypes : ['locataires']);
+  });
+
   // ================= AI INSIGHT (locataires, État locatif) =================
-  // Recherche web ciblee sur le locataire de la ligne cliquee -- jamais une
-  // citation interne verifiee (locateQuote), la "preuve" est le lien source
-  // cliquable, meme logique de confiance que le mode Web de l'Assistant.
-  // Tourne en ARRIERE-PLAN (voir showToast) : contrairement a une premiere
-  // version qui affichait le texte directement dans le panneau lateral (et
-  // le faisait grandir au fil du flux SSE), le resultat complet vit
-  // desormais dans une modale dediee -- l'analyste peut changer d'onglet
-  // pendant la recherche, une notification bas-droite le previent une fois
-  // terminee. Resultat mis en cache par nom de locataire pour la duree de
-  // la session (re-cliquer/re-notifier ne redeclenche jamais un appel
-  // reseau/API payant).
+  // Point d'entree "individuel" (page ou la sortie atterrit, voir spec
+  // §7.1) de l'agent 'locataires' : clic sur une ligne d'etat locatif ->
+  // lance un agent_run SCOPE a ce seul locataire (tenantNames:[nom]),
+  // meme moteur (agents/locataires.js) que le lancement group depuis
+  // l'ecran Agents. Ne tourne plus sur une connexion SSE tenue ouverte --
+  // sonde /agents/state comme l'ecran Agents, ce qui survit a un
+  // changement d'onglet ou un rechargement (le statut vit en base, jamais
+  // dans la page, voir spec §5.3). Panneau/modale/notification inchanges,
+  // seul le transport sous-jacent change.
   const tenantInsightCache = new Map(); // tenantName -> { dossierId, html }
   const tenantInsightStatus = new Map(); // tenantName -> 'loading' | 'done' | 'error'
-  const tenantInsightControllers = new Map(); // tenantName -> AbortController (recherche en cours)
+  const tenantInsightRuns = new Map(); // tenantName -> agentRunId (recherche en cours)
+  const tenantInsightPollTimers = new Map(); // tenantName -> intervalId
   const tenantInsightModal = document.getElementById('tenantInsightModal');
 
-  // Etapes affichees pendant une recherche de l'agent (panneau AI Insight +
-  // notification) -- purement cosmetique/indicatif (un seul appel API a
-  // l'outil de recherche web cote serveur, pas de decoupage reel en phases
-  // distinctes), mais donne un sens concret a l'attente (10-50s observees)
-  // plutot qu'un texte statique "Recherche en cours" fige.
-  const AGENT_STAGE_LABELS = ['Recherche sur le web…', 'Analyse des données…', 'Compilation…', 'Vérification…'];
-  function startAgentStageCycle(onStage, intervalMs = 3500) {
-    let i = 0;
-    onStage(AGENT_STAGE_LABELS[0]);
-    const timer = setInterval(() => { i = (i + 1) % AGENT_STAGE_LABELS.length; onStage(AGENT_STAGE_LABELS[i]); }, intervalMs);
-    return () => clearInterval(timer);
-  }
-  function renderTenantInsightPanel(tenantName, stage) {
+  function renderTenantInsightPanel(tenantName, stepLabel) {
     const body = document.getElementById('tenantInsightBody');
     if (!body) return;
     const status = tenantInsightStatus.get(tenantName);
@@ -1200,7 +1328,7 @@
       body.innerHTML = `<button type="button" class="tenant-insight-ready-card" data-tenant-open="${escapeHtml(tenantName)}"><span class="tirc-text"><b>Informations trouvées</b>« ${escapeHtml(tenantName)} » — cliquez pour voir →</span></button>`;
       body.querySelector('[data-tenant-open]').addEventListener('click', () => openTenantInsightModal(tenantName));
     } else if (status === 'loading') {
-      body.innerHTML = `<div class="ai-comment-placeholder"><p>« ${escapeHtml(tenantName)} » — ${escapeHtml(stage || AGENT_STAGE_LABELS[0])}</p><button type="button" class="tenant-insight-stop-btn" data-tenant-stop="${escapeHtml(tenantName)}">Arrêter la recherche</button></div>`;
+      body.innerHTML = `<div class="ai-comment-placeholder"><p>« ${escapeHtml(tenantName)} » — ${escapeHtml(stepLabel || 'Recherche en cours…')}</p><button type="button" class="tenant-insight-stop-btn" data-tenant-stop="${escapeHtml(tenantName)}">Arrêter la recherche</button></div>`;
       body.querySelector('[data-tenant-stop]').addEventListener('click', () => stopTenantInsight(tenantName));
     } else if (status === 'error') {
       body.innerHTML = `<div class="ai-comment-placeholder"><p class="assistant-caveat">Échec de la recherche sur « ${escapeHtml(tenantName)} ».</p></div>`;
@@ -1215,7 +1343,6 @@
     document.getElementById('tenantInsightModalName').textContent = tenantName;
     const body = document.getElementById('tenantInsightModalBody');
     body.innerHTML = entry.html;
-    bindClaimCiteButtons(body); // deploie/replie la pastille "N sources"
     tenantInsightModal.classList.add('open'); tenantInsightModal.setAttribute('aria-hidden', 'false');
   }
   function closeTenantInsightModal() { tenantInsightModal.classList.remove('open'); tenantInsightModal.setAttribute('aria-hidden', 'true'); }
@@ -1233,12 +1360,15 @@
     openTenantInsightModal(tenantName);
   }
 
-  // Arrete reellement la requete en cours (AbortController, pas seulement
-  // masquer sa notification) -- remet le locataire a l'etat "pas encore
-  // lance" plutot que "erreur", puisque c'est un arret volontaire.
+  // Demande l'annulation cote serveur (POST /agent-runs/:id/cancel, voir
+  // routes/agents.js) -- le prochain tick du sondage en cours verra
+  // status:'cancelled' (ecrit immediatement par la route) et nettoiera
+  // lui-meme le panneau, pas besoin d'etat local supplementaire ici.
   function stopTenantInsight(tenantName) {
-    tenantInsightControllers.get(tenantName)?.abort();
+    const runId = tenantInsightRuns.get(tenantName);
+    if (runId) fetch(`/api/agent-runs/${runId}/cancel`, { method: 'POST' }).catch(() => {});
   }
+
   async function runTenantInsight(row) {
     const tenantName = (row?.locataire || '').trim();
     if (!tenantName) {
@@ -1248,62 +1378,82 @@
     const existingStatus = tenantInsightStatus.get(tenantName);
     if (existingStatus === 'done') { openTenantInsightModal(tenantName); renderTenantInsightPanel(tenantName); return; }
     if (existingStatus === 'loading') { renderTenantInsightPanel(tenantName); return; } // deja en cours, rien a refaire
-    const dossierId = currentDoc?.id || '';
+    if (!currentDoc) return;
+    const dossierId = currentDoc.id;
     tenantInsightStatus.set(tenantName, 'loading');
     renderTenantInsightPanel(tenantName);
     const toastId = `tenant-insight-${dossierId}-${tenantName}`;
-    const controller = new AbortController();
-    tenantInsightControllers.set(tenantName, controller);
-    const stopStageCycle = startAgentStageCycle(stage => {
-      if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName, stage);
-      showToast(toastId, { status: 'loading', text: `<b>Agent IA</b>« ${escapeHtml(tenantName)} » — ${escapeHtml(stage)}`, onStop: () => stopTenantInsight(tenantName) });
-    });
-    let acc = '';
-    let sources = [];
-    let err = null;
-    let aborted = false;
+    showToast(toastId, { status: 'loading', text: `<b>Agent IA</b>« ${escapeHtml(tenantName)} » — Recherche en cours…`, onStop: () => stopTenantInsight(tenantName) });
+
+    let runId;
     try {
-      await streamSSE('/api/tenant-insight', { tenantName, activite: row.activite || '', dossierId }, evt => {
-        if (evt.type === 'delta') acc += evt.text;
-        else if (evt.type === 'done') sources = evt.sources || [];
-        else if (evt.type === 'error') err = evt.error;
-      }, { signal: controller.signal });
+      const res = await fetch(`/api/dossiers/${dossierId}/agents/run`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agents: ['locataires'], tenantNames: [tenantName] }),
+      });
+      const data = await res.json();
+      const created = (data.created || []).find(c => c.agentType === 'locataires');
+      if (!created) throw new Error("Impossible de lancer l'agent locataires.");
+      runId = created.id;
     } catch (e) {
-      if (e.name === 'AbortError') aborted = true;
-      else err = e.message || String(e);
-    }
-    stopStageCycle();
-    tenantInsightControllers.delete(tenantName);
-    if (aborted) {
-      // Arret volontaire : retour a l'etat de depart (pas une erreur), la
-      // recherche pourra etre relancee normalement en re-cliquant la ligne.
-      tenantInsightStatus.delete(tenantName);
-      removeToast(toastId);
-      if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
-      return;
-    }
-    if (err) {
       tenantInsightStatus.set(tenantName, 'error');
-      showToast(toastId, { status: 'done', text: `<b>Agent IA</b>Échec de la recherche sur « ${escapeHtml(tenantName)} »` });
+      showToast(toastId, { status: 'done', text: `<b>Agent IA</b>Échec du lancement pour « ${escapeHtml(tenantName)} »` });
       setTimeout(() => removeToast(toastId), 6000);
       if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
       return;
     }
-    // Meme pastille "N sources" repliable que la Vérification (favicons
-    // reels, liens neutres, badge de fiabilite en texte) plutot qu'une
-    // liste d'icones colorees -- reutilise tel quel, deja au point.
-    const sourcesHTML = renderClaimSourcesHTML({ id: 'tenant-' + tenantName.replace(/[^a-zA-Z0-9]/g, '_'), sources });
-    tenantInsightCache.set(tenantName, { dossierId, html: `<div class="assistant-chat-msg">${formatAssistantText(acc)}</div><div>${sourcesHTML}</div>` });
-    tenantInsightStatus.set(tenantName, 'done');
-    showToast(toastId, {
-      status: 'done',
-      text: `<b>Agent IA a terminé</b>« ${escapeHtml(tenantName)} » — cliquez pour voir →`,
-      onClick: () => goToTenantInsightResult(dossierId, tenantName),
-    });
-    // Ne met a jour le panneau que si l'analyste est encore sur ce meme
-    // dossier -- sinon la notification suffit, inutile de re-render un
-    // panneau qui n'est plus forcement visible.
-    if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
+    tenantInsightRuns.set(tenantName, runId);
+
+    const poll = async () => {
+      let state;
+      try { state = await fetchAgentsState(dossierId); } catch { return; } // reessaie au prochain tick plutot que d'abandonner sur un blip reseau
+      const run = (state.runs || []).find(r => r.id === runId);
+      if (!run) return;
+      if (run.status === 'queued' || run.status === 'running') {
+        if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName, run.currentStepLabel);
+        showToast(toastId, { status: 'loading', text: `<b>Agent IA</b>« ${escapeHtml(tenantName)} » — ${escapeHtml(run.currentStepLabel || 'Recherche en cours…')}`, onStop: () => stopTenantInsight(tenantName) });
+        return; // pas terminal, on continue de sonder
+      }
+      clearInterval(tenantInsightPollTimers.get(tenantName));
+      tenantInsightPollTimers.delete(tenantName);
+      tenantInsightRuns.delete(tenantName);
+      if (run.status === 'cancelled') {
+        // Arret volontaire : retour a l'etat de depart (pas une erreur), la
+        // recherche pourra etre relancee normalement en re-cliquant la ligne.
+        tenantInsightStatus.delete(tenantName);
+        removeToast(toastId);
+        if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
+        return;
+      }
+      if (run.status === 'failed' || run.status === 'insufficient_data') {
+        tenantInsightStatus.set(tenantName, 'error');
+        const msg = run.status === 'failed'
+          ? `Échec de la recherche sur « ${escapeHtml(tenantName)} »`
+          : `Aucune donnée exploitable sur « ${escapeHtml(tenantName)} »`;
+        showToast(toastId, { status: 'done', text: `<b>Agent IA</b>${msg}` });
+        setTimeout(() => removeToast(toastId), 6000);
+        if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
+        return;
+      }
+      // succeeded -- ce run est scope a CE seul locataire (tenantNames:[tenantName]
+      // au lancement), donc tous ses findings lui appartiennent deja ; le
+      // filtre sur payload.tenantName reste une securite si jamais un futur
+      // lancement groupe (ecran Agents) reutilisait ce meme code de rendu.
+      const findings = (run.findings || []).filter(f => f.payload?.tenantName === tenantName);
+      const html = findings.length
+        ? findings.map(renderAgentFindingHTML).join('')
+        : `<p class="assistant-caveat">Aucune donnée exploitable trouvée.</p>`;
+      tenantInsightCache.set(tenantName, { dossierId, html });
+      tenantInsightStatus.set(tenantName, 'done');
+      showToast(toastId, {
+        status: 'done',
+        text: `<b>Agent IA a terminé</b>« ${escapeHtml(tenantName)} » — cliquez pour voir →`,
+        onClick: () => goToTenantInsightResult(dossierId, tenantName),
+      });
+      if (currentDoc?.id === dossierId) renderTenantInsightPanel(tenantName);
+    };
+    tenantInsightPollTimers.set(tenantName, setInterval(poll, 1500));
+    poll(); // premier retour immediat, pas d'attente de 1.5s avant le premier statut
   }
 
   // ================= ASSISTANT FLOTTANT DU DOSSIER (onglet Données) =================

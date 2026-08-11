@@ -17,19 +17,9 @@ const { extractVendorClaims } = require('./extraction');
 const { verifyVendorClaims } = require('./verification');
 const { verifyClaimAgainstWeb } = require('./webSearch');
 const { buildDealContextBlock } = require('./dealContext');
+const { mapWithConcurrency } = require('./concurrency');
 
 const CONCURRENCY = 3;
-
-async function mapWithConcurrency(items, limit, fn) {
-  let idx = 0;
-  async function worker() {
-    while (idx < items.length) {
-      const i = idx++;
-      await fn(items[i], i);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-}
 
 // onClaimsFound(claims) : liste initiale (citations deja verifiees) des que
 // l'extraction+verification termine, AVANT toute recherche web -- permet a

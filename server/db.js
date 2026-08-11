@@ -200,6 +200,73 @@ async function clearDemoDocuments(workspaceId) {
   await pool.query('DELETE FROM documents WHERE is_demo = true AND workspace_id = $1', [workspaceId]);
 }
 
+// ---------- orchestration multi-agents ----------
+// Pas de workspaceId ici : scoping via dossier_id -> documents(id), voir le
+// commentaire en tete de 012_create_agent_runs_and_findings.js. Tout
+// appelant (routes/agents.js) doit avoir prealablement verifie le dossier
+// parent via getDocument(id, workspaceId).
+async function createAgentRun({ id, dossierId, agentType, launchedBy, dependsOn = [], stepsTotal = 1 }) {
+  await pool.query(
+    `INSERT INTO agent_runs (id, dossier_id, agent_type, status, launched_by, depends_on, steps_total)
+     VALUES ($1, $2, $3, 'queued', $4, $5, $6)`,
+    [id, dossierId, agentType, launchedBy, dependsOn, stepsTotal]
+  );
+}
+async function getAgentRun(id) {
+  const { rows } = await pool.query('SELECT * FROM agent_runs WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+const AGENT_RUN_JSONB_FIELDS = new Set(['result']);
+async function updateAgentRun(id, fields) {
+  const keys = Object.keys(fields);
+  if (keys.length === 0) return;
+  const set = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const values = keys.map(k => {
+    const v = fields[k];
+    return AGENT_RUN_JSONB_FIELDS.has(k) && v !== null && v !== undefined ? JSON.stringify(v) : v;
+  });
+  await pool.query(`UPDATE agent_runs SET ${set} WHERE id = $${keys.length + 1}`, [...values, id]);
+}
+async function listAgentRunsForDossier(dossierId) {
+  const { rows } = await pool.query('SELECT * FROM agent_runs WHERE dossier_id = $1 ORDER BY created_at ASC', [dossierId]);
+  return rows;
+}
+// Runs laisses en 'queued'/'running' par un process precedent (crash,
+// redemarrage/redeploiement) -- jamais reellement repris (l'execution d'un
+// agent n'est pas decoupee en etapes rejouables comme le pipeline
+// d'extraction), juste bascules en echec explicite au demarrage pour ne
+// jamais laisser un noeud tourner indefiniment dans l'ecran Agents.
+async function failStaleAgentRuns() {
+  const { rows } = await pool.query(
+    `UPDATE agent_runs SET status = 'failed', error_message = 'Interrompu par un redémarrage du serveur -- relancez cet agent.', ended_at = now()
+     WHERE status IN ('queued', 'running') RETURNING id`
+  );
+  return rows.length;
+}
+
+async function createAgentFinding({ id, agentRunId, dossierId, kind, payload, sourceUrl, sourceLabel, sourceDate, sourceTier, targetField = null }) {
+  await pool.query(
+    `INSERT INTO agent_findings (id, agent_run_id, dossier_id, kind, payload, source_url, source_label, source_date, source_tier, target_field)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [id, agentRunId, dossierId, kind, JSON.stringify(payload), sourceUrl, sourceLabel || null, sourceDate || null, sourceTier, targetField]
+  );
+}
+async function listAgentFindingsForRun(agentRunId) {
+  const { rows } = await pool.query('SELECT * FROM agent_findings WHERE agent_run_id = $1 ORDER BY created_at ASC', [agentRunId]);
+  return rows;
+}
+async function listAgentFindingsForDossier(dossierId) {
+  const { rows } = await pool.query('SELECT * FROM agent_findings WHERE dossier_id = $1 ORDER BY created_at ASC', [dossierId]);
+  return rows;
+}
+async function getAgentFinding(id) {
+  const { rows } = await pool.query('SELECT * FROM agent_findings WHERE id = $1', [id]);
+  return rows[0] || null;
+}
+async function setFindingValidationStatus(id, status) {
+  await pool.query('UPDATE agent_findings SET validation_status = $1 WHERE id = $2', [status, id]);
+}
+
 // ---------- documents annexes (baux, DPE, titre de propriete, etc.) ----------
 async function createSupportingDocument({ id, documentId, category, type, filename, mimeType }) {
   await pool.query(
@@ -249,6 +316,8 @@ module.exports = {
   listAllWorkspaces, listAllUsers, assignUserWorkspace,
   listUsersByWorkspace, deleteUser, getWorkspace,
   createDocument, updateDocument, getDocument, deleteDocument, listDocuments, clearDemoDocuments,
+  createAgentRun, getAgentRun, updateAgentRun, listAgentRunsForDossier, failStaleAgentRuns,
+  createAgentFinding, listAgentFindingsForRun, listAgentFindingsForDossier, getAgentFinding, setFindingValidationStatus,
   getSetting, setSetting,
   createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument,
   insertKbChunk, listKbChunks, clearKbChunks, countKbChunks,

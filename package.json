@@ -9,6 +9,7 @@
     "start": "node server/index.js",
     "test:verification": "node server/services/verification.test.js",
     "test:vendor-claims": "node server/services/vendorClaims.test.js",
+    "test:agent-validation": "node server/services/agentOutputValidation.test.js",
     "seed:demo": "node server/scripts/seed-demo.js",
     "create:user": "node server/scripts/create-user.js",
     "kb:ingest": "node server/scripts/ingest-knowledge-base.js",
