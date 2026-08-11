@@ -1175,19 +1175,29 @@
   }
 
   // ================= AGENTS (orchestration multi-agents) =================
-  // Ecran "Agents" (rail du dossier) -- version minimale du Lot 1 (spec
-  // "Leez -- orchestration multi-agents" §8) : liste plutot que la
-  // constellation animee du Lot 5, mais deja adossee au vrai statut serveur
-  // (agent_runs/agent_findings), pas une simulation. Un seul agent
-  // reellement lancable pour l'instant (`locataires`) -- les 5 autres
-  // s'affichent en "Bientôt disponible" (`availableAgentTypes` vient du
-  // serveur, jamais code en dur cote client : un futur Lot 2 les active
-  // sans toucher a ce fichier).
+  // Ecran "Agents" (rail du dossier) : constellation plutot que des blocs
+  // empiles -- un hub central (role de commande, le lancement global part
+  // de la, meme lecture visuelle que "c'est lui qui dirige"), cinq agents
+  // disposes en ellipse et relies au hub par des courbes (une courbe dit
+  // "flux", une ligne droite dit "lien logique"), un sixieme noeud
+  // (synthese) en bas relie par un trait pointille tant que ses
+  // dependances ne sont pas toutes dans un etat terminal. L'anneau de
+  // progression est trace AUTOUR du noeud (information et objet au meme
+  // endroit) plutot que dans une barre separee en dessous. Contraste par
+  // l'etat, pas par une palette large : gris = en attente/bientot
+  // disponible, accent (var(--trace)) = en file/en cours, vert = termine,
+  // ambre/rose reutilises tels quels du reste de l'app pour
+  // donnees-insuffisantes/echec (jamais une nouvelle couleur inventee).
+  // Un seul agent reellement lancable pour l'instant (`locataires`) -- les
+  // 5 autres s'affichent en "Bientôt disponible" (`availableAgentTypes`
+  // vient du serveur, jamais code en dur : un futur Lot 2 les active sans
+  // toucher a ce fichier).
   const AGENT_LABELS = {
     marche: 'Marché', locataires: 'Locataires', comparables: 'Comparables',
     urbanisme: 'Urbanisme', contradiction: 'Contradiction', synthese: 'Synthèse',
   };
   const ALL_AGENT_TYPES = Object.keys(AGENT_LABELS);
+  const RING_AGENT_TYPES = ALL_AGENT_TYPES.filter(t => t !== 'synthese'); // les 5 sur l'ellipse ; synthese est a part, en bas
   const AGENT_STATUS_LABELS = {
     queued: 'En file', running: 'En cours', succeeded: 'Terminé',
     insufficient_data: 'Données insuffisantes', failed: 'Échec', cancelled: 'Annulé',
@@ -1197,9 +1207,165 @@
     solidite_financiere: 'Solidité financière', actualite: 'Actualité',
     reputation: 'Réputation', forme_juridique: 'Forme juridique',
   };
+  // Couleurs/opacites par etat -- un seul endroit a modifier pour retoucher
+  // la palette de la constellation entiere.
+  const AGENT_NODE_STYLE = {
+    soon: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .35 },
+    idle: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .55 },
+    queued: { fill: 'var(--trace-dim)', ring: 'var(--trace)', textOpacity: .85 },
+    running: { fill: 'var(--trace-dim)', ring: 'var(--trace)', textOpacity: 1 },
+    succeeded: { fill: 'var(--green-dim)', ring: 'var(--green)', textOpacity: 1 },
+    insufficient_data: { fill: 'var(--amber-dim)', ring: 'var(--amber)', textOpacity: 1 },
+    failed: { fill: 'var(--pink-dim)', ring: 'var(--pink)', textOpacity: 1 },
+    cancelled: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .55 },
+  };
   // agentsPollTimer/availableAgentTypes : declares plus haut dans le
   // fichier (voir le commentaire pres de currentViewName) -- pas ici, pour
   // eviter la zone morte temporelle au premier appel de showView().
+  let selectedAgentType = 'locataires'; // agent affiche dans le panneau de detail sous la constellation
+
+  // ---------- geometrie (calculee, jamais positionnee a la main) ----------
+  // Centre + rayon horizontal/rayon vertical + un angle par agent reparti
+  // sur 360° : ajouter un 7e agent un jour ne demande de changer QUE
+  // RING_AGENT_TYPES, la disposition entiere se recalcule seule.
+  const HUB = { x: 350, y: 190 };
+  const ELLIPSE_RX = 250, ELLIPSE_RY = 128;
+  const NODE_R = 46, HUB_R = 56, RING_R = NODE_R - 7;
+  const SYNTH_POS = { x: 350, y: 410 };
+
+  function nodePosition(index, total) {
+    const angle = (-90 + (360 / total) * index) * Math.PI / 180;
+    return { x: HUB.x + ELLIPSE_RX * Math.cos(angle), y: HUB.y + ELLIPSE_RY * Math.sin(angle) };
+  }
+  // Point de controle decale PERPENDICULAIREMENT au segment hub->noeud :
+  // c'est ce qui transforme une ligne droite ("lien logique") en courbe
+  // ("flux"), pas juste un embellissement visuel.
+  function curvedPath(x1, y1, x2, y2, curvature) {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const offset = curvature * len;
+    const cx = mx + nx * offset, cy = my + ny * offset;
+    return `M ${x1.toFixed(1)},${y1.toFixed(1)} Q ${cx.toFixed(1)},${cy.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+  }
+  function ringCircumference(r) { return 2 * Math.PI * r; }
+
+  function classifyNodeState(agentType, run) {
+    if (!availableAgentTypes.includes(agentType)) return 'soon';
+    if (!run) return 'idle';
+    return run.status;
+  }
+
+  function renderAgentNodeSVG(agentType, pos, run) {
+    const stateKey = classifyNodeState(agentType, run);
+    const style = AGENT_NODE_STYLE[stateKey] || AGENT_NODE_STYLE.idle;
+    const isTerminal = run && ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status);
+    // Progression REELLE (steps_done/steps_total du serveur), jamais
+    // interpolee/simulee -- un agent lent = un anneau qui avance lentement.
+    const frac = isTerminal ? 1 : (run && run.stepsTotal ? run.stepsDone / run.stepsTotal : 0);
+    const circumference = ringCircumference(RING_R);
+    const dashoffset = circumference * (1 - Math.max(0, Math.min(1, frac)));
+    return `<g class="agents-node" data-agent-type="${agentType}" tabindex="0" role="button" aria-label="${escapeHtml(AGENT_LABELS[agentType])}">
+      <circle cx="${pos.x}" cy="${pos.y}" r="${NODE_R}" class="agents-node-fill" style="fill:${style.fill};stroke:${style.ring};" />
+      <circle cx="${pos.x}" cy="${pos.y}" r="${RING_R}" class="agents-node-ring-track" />
+      <circle cx="${pos.x}" cy="${pos.y}" r="${RING_R}" class="agents-node-ring" style="stroke:${style.ring};stroke-dasharray:${circumference.toFixed(1)};stroke-dashoffset:${dashoffset.toFixed(1)};" transform="rotate(-90 ${pos.x} ${pos.y})" />
+      <text x="${pos.x}" y="${pos.y}" class="agents-node-label" style="opacity:${style.textOpacity};">${escapeHtml(AGENT_LABELS[agentType])}</text>
+    </g>`;
+  }
+  function renderHubSVG() {
+    return `<g class="agents-hub" id="agentsHubBtn" tabindex="0" role="button" aria-label="Lancer les agents disponibles">
+      <circle cx="${HUB.x}" cy="${HUB.y}" r="${HUB_R}" class="agents-hub-fill" />
+      <text x="${HUB.x}" y="${HUB.y - 6}" class="agents-hub-label">Lancer</text>
+      <text x="${HUB.x}" y="${HUB.y + 13}" class="agents-hub-sub">les agents</text>
+    </g>`;
+  }
+
+  function renderAgentsConstellation(state) {
+    availableAgentTypes = state.availableAgentTypes || [];
+    const runByType = {};
+    for (const t of ALL_AGENT_TYPES) {
+      const runs = state.runs.filter(r => r.agentType === t);
+      runByType[t] = runs[runs.length - 1] || null; // le plus recent lance
+    }
+
+    let totalSources = 0;
+    for (const t of ALL_AGENT_TYPES) {
+      const r = runByType[t];
+      if (r && (r.status === 'succeeded' || r.status === 'insufficient_data')) totalSources += r.sourcesCount || 0;
+    }
+    document.getElementById('agentsSourcesTotal').textContent = totalSources > 0
+      ? `${totalSources} SOURCE${totalSources > 1 ? 'S' : ''} COLLECTÉE${totalSources > 1 ? 'S' : ''}`
+      : 'TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ';
+
+    const positions = {};
+    RING_AGENT_TYPES.forEach((t, i) => { positions[t] = nodePosition(i, RING_AGENT_TYPES.length); });
+
+    let svg = `<svg viewBox="0 0 700 470" class="agents-svg" role="img" aria-label="Constellation des agents">`;
+    // Ellipse fantome : aucune fonction, juste une structure de composition
+    // pour eviter l'effet "noeuds poses au hasard" -- seul element purement
+    // decoratif conserve.
+    svg += `<ellipse class="agents-ghost-ellipse" cx="${HUB.x}" cy="${HUB.y}" rx="${ELLIPSE_RX}" ry="${ELLIPSE_RY}" />`;
+    for (const t of RING_AGENT_TYPES) {
+      const p = positions[t];
+      const run = runByType[t];
+      const active = run && ['queued', 'running'].includes(run.status);
+      svg += `<path class="agents-link${active ? ' active' : ''}" d="${curvedPath(HUB.x, HUB.y, p.x, p.y, 0.22)}" />`;
+    }
+    const allDepsTerminal = RING_AGENT_TYPES.every(t => runByType[t] && !['queued', 'running'].includes(runByType[t].status));
+    svg += `<path class="agents-link-dashed${allDepsTerminal ? ' ready' : ''}" d="${curvedPath(HUB.x, HUB.y, SYNTH_POS.x, SYNTH_POS.y, 0.1)}" />`;
+    svg += renderHubSVG();
+    for (const t of RING_AGENT_TYPES) svg += renderAgentNodeSVG(t, positions[t], runByType[t]);
+    svg += renderAgentNodeSVG('synthese', SYNTH_POS, runByType.synthese);
+    svg += `</svg>`;
+
+    const wrap = document.getElementById('agentsConstellationWrap');
+    wrap.innerHTML = svg;
+    wrap.querySelectorAll('[data-agent-type]').forEach(g => {
+      const activate = () => { selectedAgentType = g.dataset.agentType; renderAgentDetail(runByType[selectedAgentType]); };
+      g.addEventListener('click', activate);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+    });
+    const hub = document.getElementById('agentsHubBtn');
+    const launchHub = () => launchAgents(availableAgentTypes.length ? availableAgentTypes : ['locataires']);
+    hub.addEventListener('click', launchHub);
+    hub.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); launchHub(); } });
+
+    renderAgentDetail(runByType[selectedAgentType]);
+
+    if (state.runs.some(r => ['queued', 'running'].includes(r.status))) startAgentsPolling();
+    else stopAgentsPolling();
+  }
+
+  function renderAgentDetail(run) {
+    const el = document.getElementById('agentsDetail');
+    const agentType = selectedAgentType;
+    const available = availableAgentTypes.includes(agentType);
+    const statusKey = classifyNodeState(agentType, run);
+    const statusLabel = !available ? 'Bientôt disponible' : (run ? (AGENT_STATUS_LABELS[run.status] || run.status) : 'Pas encore lancé');
+    const canLaunch = available && (!run || ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status));
+    const canCancel = run && ['queued', 'running'].includes(run.status);
+    const stepHTML = run && run.currentStepLabel
+      ? `<div class="agent-node-step">${escapeHtml(run.currentStepLabel)} (${run.stepsDone}/${run.stepsTotal})</div>` : '';
+    const errorHTML = run && run.status === 'failed' && run.errorMessage
+      ? `<p class="agent-node-step" style="color:var(--pink);">${escapeHtml(run.errorMessage)}</p>` : '';
+    const emptyHTML = run && run.status === 'insufficient_data' ? `<p class="agent-node-step">Aucune donnée exploitable trouvée.</p>` : '';
+    const findingsHTML = run && run.findings?.length ? run.findings.map(renderAgentFindingHTML).join('') : '';
+    el.innerHTML = `<div class="agent-detail-panel">
+      <div class="agent-node-head">
+        <span class="agent-node-name">${AGENT_LABELS[agentType]}</span>
+        <span class="agent-node-status st-${statusKey}">${escapeHtml(statusLabel)}</span>
+      </div>
+      ${stepHTML}${errorHTML}${emptyHTML}
+      <div class="agent-node-actions">
+        ${canLaunch ? `<button class="btn btn-outline" id="agentDetailLaunchBtn">Lancer</button>` : ''}
+        ${canCancel ? `<button class="btn btn-outline" id="agentDetailCancelBtn">Annuler</button>` : ''}
+      </div>
+      ${findingsHTML}
+    </div>`;
+    document.getElementById('agentDetailLaunchBtn')?.addEventListener('click', () => launchAgents([agentType]));
+    document.getElementById('agentDetailCancelBtn')?.addEventListener('click', () => cancelAgentRunUI(run.id));
+  }
 
   function renderAgentFindingHTML(f) {
     const tierLabel = AGENT_TIER_LABELS[f.sourceTier] || f.sourceTier;
@@ -1215,57 +1381,6 @@
       <p>${escapeHtml(note)}</p>
       <a href="${escapeHtml(f.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.sourceLabel || f.sourceUrl)} — ${dateLabel} →</a>
     </div>`;
-  }
-
-  function renderAgentsList(state) {
-    availableAgentTypes = state.availableAgentTypes || [];
-    const list = document.getElementById('agentsList');
-    let totalSources = 0;
-    list.innerHTML = ALL_AGENT_TYPES.map(agentType => {
-      const runsForType = state.runs.filter(r => r.agentType === agentType);
-      const run = runsForType[runsForType.length - 1]; // le plus recent lance
-      const available = availableAgentTypes.includes(agentType);
-      let statusKey = 'idle', statusLabel = 'Pas encore lancé';
-      if (!available) { statusKey = 'soon'; statusLabel = 'Bientôt disponible'; }
-      else if (run) { statusKey = run.status; statusLabel = AGENT_STATUS_LABELS[run.status] || run.status; }
-      if (run && (run.status === 'succeeded' || run.status === 'insufficient_data')) totalSources += run.sourcesCount || 0;
-
-      const progressPct = run && run.stepsTotal ? Math.round((run.stepsDone / run.stepsTotal) * 100) : 0;
-      const showProgress = run && ['running', 'queued'].includes(run.status);
-      const canLaunch = available && (!run || ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status));
-      const canCancel = run && ['queued', 'running'].includes(run.status);
-
-      const findingsHTML = run && run.findings?.length ? run.findings.map(renderAgentFindingHTML).join('') : '';
-      const errorHTML = run && run.status === 'failed' && run.errorMessage
-        ? `<p class="agent-node-step" style="color:var(--pink);">${escapeHtml(run.errorMessage)}</p>` : '';
-      const emptyHTML = run && run.status === 'insufficient_data' ? `<p class="agent-node-step">Aucune donnée exploitable trouvée.</p>` : '';
-      const stepHTML = run && run.currentStepLabel
-        ? `<div class="agent-node-step">${escapeHtml(run.currentStepLabel)} (${run.stepsDone}/${run.stepsTotal})</div>` : '';
-
-      return `<div class="agent-node" data-agent-type="${agentType}">
-        <div class="agent-node-head">
-          <span class="agent-node-name">${AGENT_LABELS[agentType]}</span>
-          <span class="agent-node-status st-${statusKey}">${escapeHtml(statusLabel)}</span>
-        </div>
-        ${stepHTML}
-        ${showProgress ? `<div class="agent-node-progress"><div class="agent-node-progress-bar" style="width:${progressPct}%;"></div></div>` : ''}
-        ${errorHTML}${emptyHTML}
-        <div class="agent-node-actions">
-          ${canLaunch ? `<button class="btn btn-outline" data-launch-agent="${agentType}">Lancer</button>` : ''}
-          ${canCancel ? `<button class="btn btn-outline" data-cancel-run="${run.id}">Annuler</button>` : ''}
-        </div>
-        ${findingsHTML}
-      </div>`;
-    }).join('');
-
-    const n = totalSources;
-    document.getElementById('agentsSourcesTotal').textContent = n > 0 ? `${n} SOURCE${n > 1 ? 'S' : ''} COLLECTÉE${n > 1 ? 'S' : ''}` : 'TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ';
-
-    list.querySelectorAll('[data-launch-agent]').forEach(btn => btn.addEventListener('click', () => launchAgents([btn.dataset.launchAgent])));
-    list.querySelectorAll('[data-cancel-run]').forEach(btn => btn.addEventListener('click', () => cancelAgentRunUI(btn.dataset.cancelRun)));
-
-    if (state.runs.some(r => ['queued', 'running'].includes(r.status))) startAgentsPolling();
-    else stopAgentsPolling();
   }
 
   async function launchAgents(agentTypes, tenantNames) {
@@ -1286,7 +1401,7 @@
   }
   async function refreshAgentsScreen() {
     if (!currentDoc) return;
-    renderAgentsList(await fetchAgentsState(currentDoc.id));
+    renderAgentsConstellation(await fetchAgentsState(currentDoc.id));
   }
   function startAgentsPolling() {
     if (agentsPollTimer) return;
@@ -1300,9 +1415,6 @@
     if (!currentDoc) return;
     await refreshAgentsScreen();
   }
-  document.getElementById('agentsLaunchAllBtn').addEventListener('click', () => {
-    launchAgents(availableAgentTypes.length ? availableAgentTypes : ['locataires']);
-  });
 
   // ================= AI INSIGHT (locataires, État locatif) =================
   // Point d'entree "individuel" (page ou la sortie atterrit, voir spec
