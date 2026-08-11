@@ -312,7 +312,7 @@
   }).catch(() => {});
 
   // ================= ROUTEUR ================= //
-  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes', 'agents'];
+  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes'];
   const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
@@ -426,7 +426,10 @@
     if (name !== 'extract') closeDataChatPanel();
     if (name === 'settings') loadSettingsForm();
     if (name === 'account') loadAccountForm();
-    if (name === 'agents') renderAgentsScreen(); else stopAgentsPolling();
+    // Le sondage du bloc Enrichissement (voir renderDeal/loadEnrichmentBlock)
+    // n'a de sens que sur le Sommaire -- l'arreter en quittant la vue evite
+    // des requetes inutiles sur les autres pages du dossier.
+    if (name !== 'deal') stopAgentsPolling();
     if (!syncingRoute) updateLocationHash();
   }
   function goDossierPage(name) { dossierMode = true; showView(name); }
@@ -589,6 +592,10 @@
     // cohérence : ouvrir un dossier depuis la liste puis revenir sur
     // l'Assistant retrouve ce même dossier déjà en contexte.
     setAssistantDossierId(currentDoc.id, name);
+    // Points de lancement individuels des agents (Analyse/Points d'attention/
+    // Vérification) -- comme le bloc Enrichissement, n'a de sens qu'une fois
+    // l'extraction terminée (les agents s'appuient sur les données extraites).
+    if (currentDoc.status === 'complete') loadAgentLaunchPoints();
   }
   async function openDossier(id) {
     currentDoc = await fetchDocument(id);
@@ -829,11 +836,14 @@
 
       ${confidenceHTML}
 
+      ${stepComplete ? '<div class="enrichment-block" id="enrichmentBlock"></div>' : ''}
+
       <div class="split-panels" style="margin-top:20px;">
         <div class="panel"><div class="panel-head"><h3>Points de vigilance</h3></div><div class="flags-list">${flagsHTML}</div></div>
       </div>`;
 
     loadDealPhotos(doc);
+    if (stepComplete) loadEnrichmentBlock(doc.id);
 
     document.querySelectorAll('#dealBody [data-go-dossier]').forEach(btn => btn.addEventListener('click', () => goDossierPage(btn.dataset.goDossier)));
     document.getElementById('dealRetryBtn')?.addEventListener('click', async (e) => {
@@ -1175,29 +1185,23 @@
   }
 
   // ================= AGENTS (orchestration multi-agents) =================
-  // Ecran "Agents" (rail du dossier) : constellation plutot que des blocs
-  // empiles -- un hub central (role de commande, le lancement global part
-  // de la, meme lecture visuelle que "c'est lui qui dirige"), cinq agents
-  // disposes en ellipse et relies au hub par des courbes (une courbe dit
-  // "flux", une ligne droite dit "lien logique"), un sixieme noeud
-  // (synthese) en bas relie par un trait pointille tant que ses
-  // dependances ne sont pas toutes dans un etat terminal. L'anneau de
-  // progression est trace AUTOUR du noeud (information et objet au meme
-  // endroit) plutot que dans une barre separee en dessous. Contraste par
-  // l'etat, pas par une palette large : gris = en attente/bientot
-  // disponible, accent (var(--trace)) = en file/en cours, vert = termine,
-  // ambre/rose reutilises tels quels du reste de l'app pour
-  // donnees-insuffisantes/echec (jamais une nouvelle couleur inventee).
-  // Un seul agent reellement lancable pour l'instant (`locataires`) -- les
-  // 5 autres s'affichent en "Bientôt disponible" (`availableAgentTypes`
-  // vient du serveur, jamais code en dur : un futur Lot 2 les active sans
-  // toucher a ce fichier).
+  // Plus d'écran dédié : le point d'entrée principal est le bloc
+  // "Enrichissement" du Sommaire (ligne discrète, se déplie en
+  // constellation pendant l'exécution ou sur "Voir le détail" -- voir plus
+  // bas). Chaque agent reste aussi lançable individuellement depuis la
+  // page où sa sortie atterrit (Analyse/Données/Points d'attention/
+  // Vérification -- voir wireAgentLaunchInline plus bas). Un seul agent
+  // réellement lancable pour l'instant (`locataires`) -- les 5 autres
+  // s'affichent en "Bientôt disponible" (`availableAgentTypes` vient du
+  // serveur, jamais codé en dur : un futur Lot 2 les active sans toucher à
+  // ce fichier).
   const AGENT_LABELS = {
     marche: 'Marché', locataires: 'Locataires', comparables: 'Comparables',
     urbanisme: 'Urbanisme', contradiction: 'Contradiction', synthese: 'Synthèse',
   };
   const ALL_AGENT_TYPES = Object.keys(AGENT_LABELS);
   const RING_AGENT_TYPES = ALL_AGENT_TYPES.filter(t => t !== 'synthese'); // les 5 sur l'ellipse ; synthese est a part, en bas
+  const TERMINAL_STATUSES = ['succeeded', 'failed', 'insufficient_data', 'cancelled'];
   const AGENT_STATUS_LABELS = {
     queued: 'En file', running: 'En cours', succeeded: 'Terminé',
     insufficient_data: 'Données insuffisantes', failed: 'Échec', cancelled: 'Annulé',
@@ -1207,31 +1211,46 @@
     solidite_financiere: 'Solidité financière', actualite: 'Actualité',
     reputation: 'Réputation', forme_juridique: 'Forme juridique',
   };
-  // Couleurs/opacites par etat -- un seul endroit a modifier pour retoucher
-  // la palette de la constellation entiere.
-  const AGENT_NODE_STYLE = {
-    soon: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .35 },
-    idle: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .55 },
-    queued: { fill: 'var(--trace-dim)', ring: 'var(--trace)', textOpacity: .85 },
-    running: { fill: 'var(--trace-dim)', ring: 'var(--trace)', textOpacity: 1 },
-    succeeded: { fill: 'var(--green-dim)', ring: 'var(--green)', textOpacity: 1 },
-    insufficient_data: { fill: 'var(--amber-dim)', ring: 'var(--amber)', textOpacity: 1 },
-    failed: { fill: 'var(--pink-dim)', ring: 'var(--pink)', textOpacity: 1 },
-    cancelled: { fill: 'var(--bg-soft)', ring: 'var(--border-soft)', textOpacity: .55 },
+  // Trois etats visuels, deux couleurs semantiques (--text-accent = en
+  // cours, --text-success = termine) -- --text-muted sert de socle neutre
+  // pour tout le reste (en attente, bientot disponible, ET les etats
+  // "pas un succes net" comme echec/donnees-insuffisantes/annule, qui se
+  // distinguent par leur LIBELLE texte sous le noeud, pas par une couleur
+  // supplementaire sur l'anneau).
+  const AGENT_STATE_BUCKET = {
+    soon: 'muted', idle: 'muted', queued: 'muted',
+    running: 'accent', succeeded: 'success',
+    insufficient_data: 'muted', failed: 'muted', cancelled: 'muted',
+  };
+  const BUCKET_COLOR = { muted: 'var(--text-muted)', accent: 'var(--text-accent)', success: 'var(--text-success)' };
+  // Icones ligne minimalistes (viewBox 24x24, stroke=currentColor via
+  // .agents-node-icon) -- une forme reconnaissable par agent, pas de jeu
+  // d'icones externe.
+  const AGENT_ICONS = {
+    marche: '<path d="M4 17l5-5 3 3 7-8"/><path d="M15 6h5v5"/>',
+    locataires: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5c0-4 3-6.5 6.5-6.5s6.5 2.5 6.5 6.5"/>',
+    comparables: '<rect x="4" y="12" width="3.6" height="8"/><rect x="10.2" y="7" width="3.6" height="13"/><rect x="16.4" y="3" width="3.6" height="17"/>',
+    urbanisme: '<path d="M12 3c-3.3 0-6 2.7-6 6 0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z"/><circle cx="12" cy="9" r="2.1"/>',
+    contradiction: '<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12.2l2.1 2.1L15.3 9.8"/>',
+    synthese: '<path d="M12 3.5l7.5 3.8-7.5 3.8-7.5-3.8z"/><path d="M4.5 12l7.5 3.8 7.5-3.8"/><path d="M4.5 16.3l7.5 3.8 7.5-3.8"/>',
   };
   // agentsPollTimer/availableAgentTypes : declares plus haut dans le
   // fichier (voir le commentaire pres de currentViewName) -- pas ici, pour
   // eviter la zone morte temporelle au premier appel de showView().
   let selectedAgentType = 'locataires'; // agent affiche dans le panneau de detail sous la constellation
+  let enrichmentExpanded = false;
+  let enrichmentDossierId = null;
+  let enrichmentCollapseTimer = null;
 
   // ---------- geometrie (calculee, jamais positionnee a la main) ----------
   // Centre + rayon horizontal/rayon vertical + un angle par agent reparti
   // sur 360° : ajouter un 7e agent un jour ne demande de changer QUE
   // RING_AGENT_TYPES, la disposition entiere se recalcule seule.
-  const HUB = { x: 350, y: 190 };
-  const ELLIPSE_RX = 250, ELLIPSE_RY = 128;
-  const NODE_R = 46, HUB_R = 56, RING_R = NODE_R - 7;
-  const SYNTH_POS = { x: 350, y: 410 };
+  const HUB = { x: 280, y: 140 };
+  const ELLIPSE_RX = 195, ELLIPSE_RY = 85;
+  const NODE_R = 26, HUB_R = 32, RING_R = NODE_R + 6;
+  const SYNTH_POS = { x: 280, y: 345 };
+  const VIEWBOX = '0 0 560 430';
 
   function nodePosition(index, total) {
     const angle = (-90 + (360 / total) * index) * Math.PI / 180;
@@ -1257,27 +1276,33 @@
     return run.status;
   }
 
-  function renderAgentNodeSVG(agentType, pos, run) {
+  function renderAgentNodeSVG(agentType, pos, run, index) {
     const stateKey = classifyNodeState(agentType, run);
-    const style = AGENT_NODE_STYLE[stateKey] || AGENT_NODE_STYLE.idle;
-    const isTerminal = run && ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status);
+    const bucket = AGENT_STATE_BUCKET[stateKey] || 'muted';
+    const color = BUCKET_COLOR[bucket];
+    const isTerminal = run && TERMINAL_STATUSES.includes(run.status);
     // Progression REELLE (steps_done/steps_total du serveur), jamais
     // interpolee/simulee -- un agent lent = un anneau qui avance lentement.
     const frac = isTerminal ? 1 : (run && run.stepsTotal ? run.stepsDone / run.stepsTotal : 0);
     const circumference = ringCircumference(RING_R);
     const dashoffset = circumference * (1 - Math.max(0, Math.min(1, frac)));
-    return `<g class="agents-node" data-agent-type="${agentType}" tabindex="0" role="button" aria-label="${escapeHtml(AGENT_LABELS[agentType])}">
-      <circle cx="${pos.x}" cy="${pos.y}" r="${NODE_R}" class="agents-node-fill" style="fill:${style.fill};stroke:${style.ring};" />
+    const statusLabel = stateKey === 'soon' ? 'Bientôt disponible' : (run ? (AGENT_STATUS_LABELS[run.status] || run.status) : 'Pas encore lancé');
+    const subColor = run && run.status === 'failed' ? 'var(--pink)' : run && run.status === 'insufficient_data' ? 'var(--text-warning)' : 'var(--text-faint)';
+    const iconOffset = NODE_R - 14; // centre une icone 24x24 mise a l'echelle .85 dans le cercle
+    return `<g class="agents-node" data-agent-type="${agentType}" data-index="${index}" tabindex="0" role="button" aria-label="${escapeHtml(AGENT_LABELS[agentType])}">
+      <circle cx="${pos.x}" cy="${pos.y}" r="${NODE_R}" class="agents-node-fill" style="fill:var(--bg-soft);stroke:${color};" />
+      <g class="agents-node-icon" style="stroke:${color};opacity:${bucket === 'muted' ? '.55' : '1'};" transform="translate(${(pos.x - iconOffset).toFixed(1)},${(pos.y - iconOffset).toFixed(1)}) scale(.85)">${AGENT_ICONS[agentType]}</g>
       <circle cx="${pos.x}" cy="${pos.y}" r="${RING_R}" class="agents-node-ring-track" />
-      <circle cx="${pos.x}" cy="${pos.y}" r="${RING_R}" class="agents-node-ring" style="stroke:${style.ring};stroke-dasharray:${circumference.toFixed(1)};stroke-dashoffset:${dashoffset.toFixed(1)};" transform="rotate(-90 ${pos.x} ${pos.y})" />
-      <text x="${pos.x}" y="${pos.y}" class="agents-node-label" style="opacity:${style.textOpacity};">${escapeHtml(AGENT_LABELS[agentType])}</text>
+      <circle cx="${pos.x}" cy="${pos.y}" r="${RING_R}" class="agents-node-ring" style="stroke:${color};stroke-dasharray:${circumference.toFixed(1)};stroke-dashoffset:${dashoffset.toFixed(1)};" transform="rotate(-90 ${pos.x} ${pos.y})" />
+      <text x="${pos.x}" y="${(pos.y + NODE_R + 16).toFixed(1)}" class="agents-node-label">${escapeHtml(AGENT_LABELS[agentType])}</text>
+      <text x="${pos.x}" y="${(pos.y + NODE_R + 30).toFixed(1)}" class="agents-node-substatus" style="fill:${subColor};">${escapeHtml(statusLabel)}</text>
     </g>`;
   }
   function renderHubSVG() {
     return `<g class="agents-hub" id="agentsHubBtn" tabindex="0" role="button" aria-label="Lancer les agents disponibles">
       <circle cx="${HUB.x}" cy="${HUB.y}" r="${HUB_R}" class="agents-hub-fill" />
-      <text x="${HUB.x}" y="${HUB.y - 6}" class="agents-hub-label">Lancer</text>
-      <text x="${HUB.x}" y="${HUB.y + 13}" class="agents-hub-sub">les agents</text>
+      <text x="${HUB.x}" y="${HUB.y - 5}" class="agents-hub-label">Lancer</text>
+      <text x="${HUB.x}" y="${HUB.y + 12}" class="agents-hub-sub">les agents</text>
     </g>`;
   }
 
@@ -1289,37 +1314,29 @@
       runByType[t] = runs[runs.length - 1] || null; // le plus recent lance
     }
 
-    let totalSources = 0;
-    for (const t of ALL_AGENT_TYPES) {
-      const r = runByType[t];
-      if (r && (r.status === 'succeeded' || r.status === 'insufficient_data')) totalSources += r.sourcesCount || 0;
-    }
-    document.getElementById('agentsSourcesTotal').textContent = totalSources > 0
-      ? `${totalSources} SOURCE${totalSources > 1 ? 'S' : ''} COLLECTÉE${totalSources > 1 ? 'S' : ''}`
-      : 'TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ';
-
     const positions = {};
     RING_AGENT_TYPES.forEach((t, i) => { positions[t] = nodePosition(i, RING_AGENT_TYPES.length); });
 
-    let svg = `<svg viewBox="0 0 700 470" class="agents-svg" role="img" aria-label="Constellation des agents">`;
+    let svg = `<svg viewBox="${VIEWBOX}" class="agents-svg" role="img" aria-label="Constellation des agents">`;
     // Ellipse fantome : aucune fonction, juste une structure de composition
     // pour eviter l'effet "noeuds poses au hasard" -- seul element purement
     // decoratif conserve.
     svg += `<ellipse class="agents-ghost-ellipse" cx="${HUB.x}" cy="${HUB.y}" rx="${ELLIPSE_RX}" ry="${ELLIPSE_RY}" />`;
-    for (const t of RING_AGENT_TYPES) {
+    RING_AGENT_TYPES.forEach((t, i) => {
       const p = positions[t];
       const run = runByType[t];
       const active = run && ['queued', 'running'].includes(run.status);
-      svg += `<path class="agents-link${active ? ' active' : ''}" d="${curvedPath(HUB.x, HUB.y, p.x, p.y, 0.22)}" />`;
-    }
+      svg += `<path class="agents-link${active ? ' active' : ''}" data-agent-type="${t}" d="${curvedPath(HUB.x, HUB.y, p.x, p.y, 0.22)}" />`;
+    });
     const allDepsTerminal = RING_AGENT_TYPES.every(t => runByType[t] && !['queued', 'running'].includes(runByType[t].status));
     svg += `<path class="agents-link-dashed${allDepsTerminal ? ' ready' : ''}" d="${curvedPath(HUB.x, HUB.y, SYNTH_POS.x, SYNTH_POS.y, 0.1)}" />`;
     svg += renderHubSVG();
-    for (const t of RING_AGENT_TYPES) svg += renderAgentNodeSVG(t, positions[t], runByType[t]);
-    svg += renderAgentNodeSVG('synthese', SYNTH_POS, runByType.synthese);
+    RING_AGENT_TYPES.forEach((t, i) => { svg += renderAgentNodeSVG(t, positions[t], runByType[t], i); });
+    svg += renderAgentNodeSVG('synthese', SYNTH_POS, runByType.synthese, RING_AGENT_TYPES.length);
     svg += `</svg>`;
 
-    const wrap = document.getElementById('agentsConstellationWrap');
+    const wrap = document.getElementById('enrichmentConstellationWrap');
+    if (!wrap) return;
     wrap.innerHTML = svg;
     wrap.querySelectorAll('[data-agent-type]').forEach(g => {
       const activate = () => { selectedAgentType = g.dataset.agentType; renderAgentDetail(runByType[selectedAgentType]); };
@@ -1327,23 +1344,20 @@
       g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
     });
     const hub = document.getElementById('agentsHubBtn');
-    const launchHub = () => launchAgents(availableAgentTypes.length ? availableAgentTypes : ['locataires']);
+    const launchHub = () => launchFromEnrichmentBlock(availableAgentTypes.length ? availableAgentTypes : ['locataires']);
     hub.addEventListener('click', launchHub);
     hub.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); launchHub(); } });
 
     renderAgentDetail(runByType[selectedAgentType]);
-
-    if (state.runs.some(r => ['queued', 'running'].includes(r.status))) startAgentsPolling();
-    else stopAgentsPolling();
   }
 
   function renderAgentDetail(run) {
-    const el = document.getElementById('agentsDetail');
+    const el = document.getElementById('enrichmentDetail');
+    if (!el) return;
     const agentType = selectedAgentType;
-    const available = availableAgentTypes.includes(agentType);
     const statusKey = classifyNodeState(agentType, run);
-    const statusLabel = !available ? 'Bientôt disponible' : (run ? (AGENT_STATUS_LABELS[run.status] || run.status) : 'Pas encore lancé');
-    const canLaunch = available && (!run || ['succeeded', 'failed', 'insufficient_data', 'cancelled'].includes(run.status));
+    const statusLabel = statusKey === 'soon' ? 'Bientôt disponible' : (run ? (AGENT_STATUS_LABELS[run.status] || run.status) : 'Pas encore lancé');
+    const canLaunch = statusKey !== 'soon' && (!run || TERMINAL_STATUSES.includes(run.status));
     const canCancel = run && ['queued', 'running'].includes(run.status);
     const stepHTML = run && run.currentStepLabel
       ? `<div class="agent-node-step">${escapeHtml(run.currentStepLabel)} (${run.stepsDone}/${run.stepsTotal})</div>` : '';
@@ -1363,7 +1377,7 @@
       </div>
       ${findingsHTML}
     </div>`;
-    document.getElementById('agentDetailLaunchBtn')?.addEventListener('click', () => launchAgents([agentType]));
+    document.getElementById('agentDetailLaunchBtn')?.addEventListener('click', () => launchFromEnrichmentBlock([agentType]));
     document.getElementById('agentDetailCancelBtn')?.addEventListener('click', () => cancelAgentRunUI(run.id));
   }
 
@@ -1383,37 +1397,195 @@
     </div>`;
   }
 
-  async function launchAgents(agentTypes, tenantNames) {
-    if (!currentDoc) return;
-    await fetch(`/api/dossiers/${currentDoc.id}/agents/run`, {
+  // ---------- transport bas niveau, partage par le bloc Enrichissement,
+  // le detail de la constellation, et les points de lancement individuels ----------
+  async function requestAgentRun(dossierId, agentTypes, tenantNames) {
+    const res = await fetch(`/api/dossiers/${dossierId}/agents/run`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agents: agentTypes, ...(tenantNames ? { tenantNames } : {}) }),
     });
-    if (currentViewName === 'agents') await refreshAgentsScreen();
+    return res.json();
   }
   async function cancelAgentRunUI(runId) {
     await fetch(`/api/agent-runs/${runId}/cancel`, { method: 'POST' });
-    if (currentViewName === 'agents') await refreshAgentsScreen();
+    if (currentDoc) await loadEnrichmentBlock(currentDoc.id);
   }
   async function fetchAgentsState(dossierId) {
     const r = await fetch(`/api/dossiers/${dossierId}/agents/state`);
     return r.json();
   }
-  async function refreshAgentsScreen() {
+
+  // ---------- bloc "Enrichissement" (Sommaire) ----------
+  // Ligne repliee par defaut (etat le plus important du lot : c'est ce que
+  // l'analyste voit en ouvrant un dossier). Se deplie automatiquement au
+  // lancement et tant qu'un run est actif ; se replie automatiquement 3s
+  // apres que tous les agents sont dans un etat terminal. "Voir le detail"
+  // deplie manuellement sur un dossier deja termine, sans re-armer ce
+  // minuteur (l'analyste doit pouvoir lire tranquillement).
+  function timeAgoFr(dateStr) {
+    const diffMin = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+    if (diffMin < 1) return "à l'instant";
+    if (diffMin < 60) return `il y a ${diffMin} min`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `il y a ${diffH} h`;
+    return `il y a ${Math.floor(diffH / 24)} j`;
+  }
+
+  function renderEnrichmentBlock(state) {
+    const el = document.getElementById('enrichmentBlock');
+    if (!el) return;
+    const runs = state.runs || [];
+    availableAgentTypes = state.availableAgentTypes || [];
+    const anyActive = runs.some(r => ['queued', 'running'].includes(r.status));
+
+    if (enrichmentExpanded || anyActive) {
+      el.innerHTML = `
+        <div class="enrichment-row">
+          <span class="enrichment-label">Enrichissement</span>
+          <button type="button" class="enrichment-collapse-btn" id="enrichmentCollapseBtn">Replier ▴</button>
+        </div>
+        <div class="enrichment-expanded-body">
+          <div class="agents-constellation-wrap" id="enrichmentConstellationWrap"></div>
+          <div id="enrichmentDetail"></div>
+        </div>`;
+      document.getElementById('enrichmentCollapseBtn').addEventListener('click', () => {
+        clearTimeout(enrichmentCollapseTimer);
+        enrichmentExpanded = false;
+        renderEnrichmentBlock(state);
+      });
+      renderAgentsConstellation(state);
+      if (anyActive) startAgentsPolling(); else stopAgentsPolling();
+      return;
+    }
+
+    stopAgentsPolling();
+    const byType = {};
+    for (const t of ALL_AGENT_TYPES) {
+      const rs = runs.filter(r => r.agentType === t);
+      byType[t] = rs[rs.length - 1] || null;
+    }
+    const launchedRuns = ALL_AGENT_TYPES.map(t => byType[t]).filter(Boolean);
+    let rowHTML;
+    if (launchedRuns.length === 0) {
+      rowHTML = `<span class="enrichment-label">Enrichissement non lancé</span>
+        <div class="enrichment-actions"><button class="btn btn-outline" id="enrichmentLaunchBtn">Lancer</button></div>`;
+    } else {
+      const lastRun = launchedRuns.reduce((a, b) => (new Date(a.endedAt || a.createdAt) > new Date(b.endedAt || b.createdAt) ? a : b));
+      const failedCount = launchedRuns.filter(r => r.status === 'failed').length;
+      const totalSources = launchedRuns.reduce((sum, r) => sum + (r.status === 'succeeded' || r.status === 'insufficient_data' ? (r.sourcesCount || 0) : 0), 0);
+      const when = timeAgoFr(lastRun.endedAt || lastRun.createdAt);
+      const statusText = failedCount > 0
+        ? `Enrichi ${when} · <span style="color:var(--text-warning);">${failedCount} agent${failedCount > 1 ? 's' : ''} en échec</span>`
+        : `Enrichi ${when} · ${totalSources} source${totalSources > 1 ? 's' : ''}`;
+      rowHTML = `<span class="enrichment-label">${statusText}</span>
+        <div class="enrichment-actions">
+          <button class="btn btn-outline" id="enrichmentRelaunchBtn">Relancer</button>
+          <button type="button" class="enrichment-collapse-btn" id="enrichmentDetailBtn">Voir le détail ▾</button>
+        </div>`;
+    }
+    el.innerHTML = `<div class="enrichment-row">${rowHTML}</div>`;
+    document.getElementById('enrichmentLaunchBtn')?.addEventListener('click', () => launchFromEnrichmentBlock(availableAgentTypes.length ? availableAgentTypes : ['locataires']));
+    document.getElementById('enrichmentRelaunchBtn')?.addEventListener('click', () => launchFromEnrichmentBlock(availableAgentTypes.length ? availableAgentTypes : ['locataires']));
+    document.getElementById('enrichmentDetailBtn')?.addEventListener('click', () => { enrichmentExpanded = true; renderEnrichmentBlock(state); });
+  }
+
+  // Sequence de lancement (t0 : requete envoyee -- t0+100·i ms : chaque
+  // agent visé confirmé "queued" par la reponse serveur, revele avec un
+  // decalage de 100ms par index pour un effet d'impulsion en cascade le
+  // long de sa courbe). Le decalage est un choix d'animation assume, mais
+  // il n'affiche jamais un etat qui ne soit pas deja reellement confirme
+  // par le serveur -- aucune progression simulee au-dela de ce court
+  // effet de reveal.
+  async function launchFromEnrichmentBlock(agentTypes) {
     if (!currentDoc) return;
-    renderAgentsConstellation(await fetchAgentsState(currentDoc.id));
+    clearTimeout(enrichmentCollapseTimer);
+    enrichmentExpanded = true;
+    renderEnrichmentBlock({ runs: [], availableAgentTypes });
+    const hub = document.getElementById('agentsHubBtn');
+    hub?.classList.add('pulse-once');
+    const { created } = await requestAgentRun(currentDoc.id, agentTypes);
+    (created || []).forEach((c, i) => {
+      const idx = RING_AGENT_TYPES.indexOf(c.agentType);
+      if (idx < 0) return;
+      setTimeout(() => {
+        document.querySelector(`.agents-link[data-agent-type="${c.agentType}"]`)?.classList.add('active');
+      }, idx * 100);
+    });
+    await loadEnrichmentBlock(currentDoc.id);
+  }
+
+  async function loadEnrichmentBlock(dossierId) {
+    enrichmentDossierId = dossierId;
+    const state = await fetchAgentsState(dossierId).catch(() => null);
+    if (!state || currentDoc?.id !== dossierId || currentViewName !== 'deal') return;
+    const anyActive = (state.runs || []).some(r => ['queued', 'running'].includes(r.status));
+    if (anyActive) enrichmentExpanded = true;
+    renderEnrichmentBlock(state);
   }
   function startAgentsPolling() {
     if (agentsPollTimer) return;
-    agentsPollTimer = setInterval(refreshAgentsScreen, 1500);
+    agentsPollTimer = setInterval(async () => {
+      if (!enrichmentDossierId) return stopAgentsPolling();
+      const state = await fetchAgentsState(enrichmentDossierId).catch(() => null);
+      if (!state || currentDoc?.id !== enrichmentDossierId || currentViewName !== 'deal') return stopAgentsPolling();
+      const anyActive = state.runs.some(r => ['queued', 'running'].includes(r.status));
+      if (!anyActive) {
+        stopAgentsPolling();
+        // Vient de terminer (etait actif au tick precedent, sinon
+        // startAgentsPolling n'aurait jamais ete (re)declenche) -- replie
+        // automatiquement 3s apres, seulement dans ce cas precis (pas sur
+        // un "Voir le detail" manuel sur un dossier deja termine).
+        clearTimeout(enrichmentCollapseTimer);
+        enrichmentCollapseTimer = setTimeout(() => {
+          enrichmentExpanded = false;
+          renderEnrichmentBlock(state);
+        }, 3000);
+      }
+      renderEnrichmentBlock(state);
+    }, 1500);
   }
   function stopAgentsPolling() {
     clearInterval(agentsPollTimer);
     agentsPollTimer = null;
   }
-  async function renderAgentsScreen() {
-    if (!currentDoc) return;
-    await refreshAgentsScreen();
+
+  // ---------- points de lancement individuels (Analyse/Données/Points
+  // d'attention/Vérification) ----------
+  // Chaque agent est aussi lançable depuis la page où sa sortie atterrit,
+  // independamment du bloc Enrichissement -- meme requestAgentRun, meme
+  // agent_runs resultant, suivi depuis le Sommaire.
+  const AGENT_LAUNCH_POINTS = [
+    { containerId: 'agentLaunchMarche', agentType: 'marche' },
+    { containerId: 'agentLaunchComparables', agentType: 'comparables' },
+    { containerId: 'agentLaunchUrbanisme', agentType: 'urbanisme' },
+    { containerId: 'agentLaunchContradiction', agentType: 'contradiction' },
+  ];
+  async function renderAgentLaunchInline(containerId, agentType) {
+    const el = document.getElementById(containerId);
+    if (!el || !currentDoc) return;
+    const dossierId = currentDoc.id;
+    const state = await fetchAgentsState(dossierId).catch(() => null);
+    if (!state || currentDoc?.id !== dossierId) return;
+    const available = (state.availableAgentTypes || []).includes(agentType);
+    const runs = state.runs.filter(r => r.agentType === agentType);
+    const run = runs[runs.length - 1] || null;
+    const running = run && ['queued', 'running'].includes(run.status);
+    const label = AGENT_LABELS[agentType];
+    if (!available) {
+      el.innerHTML = `<span class="agent-launch-note">Agent ${label} — bientôt disponible</span>`;
+      return;
+    }
+    const btnLabel = running ? 'En cours…' : run ? `Relancer l'agent ${label}` : `Lancer l'agent ${label}`;
+    el.innerHTML = `<button type="button" class="btn btn-outline agent-launch-btn" ${running ? 'disabled' : ''}>${escapeHtml(btnLabel)}</button>`;
+    el.querySelector('button').addEventListener('click', async () => {
+      await requestAgentRun(dossierId, [agentType]);
+      showToast(`agent-launch-${agentType}`, { status: 'done', text: `<b>Agent ${escapeHtml(label)} lancé</b>Suivez la progression dans le Sommaire.` });
+      setTimeout(() => removeToast(`agent-launch-${agentType}`), 5000);
+      renderAgentLaunchInline(containerId, agentType);
+    });
+  }
+  function loadAgentLaunchPoints() {
+    AGENT_LAUNCH_POINTS.forEach(p => renderAgentLaunchInline(p.containerId, p.agentType));
   }
 
   // ================= AI INSIGHT (locataires, État locatif) =================
@@ -1499,11 +1671,7 @@
 
     let runId;
     try {
-      const res = await fetch(`/api/dossiers/${dossierId}/agents/run`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agents: ['locataires'], tenantNames: [tenantName] }),
-      });
-      const data = await res.json();
+      const data = await requestAgentRun(dossierId, ['locataires'], [tenantName]);
       const created = (data.created || []).find(c => c.agentType === 'locataires');
       if (!created) throw new Error("Impossible de lancer l'agent locataires.");
       runId = created.id;

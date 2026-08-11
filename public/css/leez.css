@@ -18,6 +18,12 @@
   --pink-dim:rgba(226,99,92,.14);
   --trace:#7fb8e0;
   --trace-dim:rgba(127,184,224,.14);
+  /* Alias semantiques pour le bloc Enrichissement/constellation -- memes
+     valeurs que la palette existante (trace/green/amber), noms qui
+     designent l'ETAT plutot que la teinte pour ce cas d'usage precis. */
+  --text-accent:var(--trace);
+  --text-success:var(--green);
+  --text-warning:var(--amber);
   --page-bg:#efe9dc;
   --page-text:#2a2621;
   --serif:ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
@@ -1268,51 +1274,75 @@ td.cell-linked{position:relative;}
 .account-content{max-width:640px;margin:0 auto;}
 .account-content .view-head{justify-content:center;text-align:center;}
 
-/* Ecran Agents -- constellation : hub central (role de commande), cinq
-   agents disposes en ellipse relies par des courbes (un flux, pas des
-   blocs empiles), anneau de progression trace autour de chaque noeud
-   plutot qu'une barre separee, ellipse fantome purement decorative pour
-   structurer la composition. Contraste par l'etat (accent = en cours, vert
-   = termine, gris = en attente) plutot que par la couleur -- pas de fond
-   sombre/halo/particule ajoute par-dessus le theme existant. */
-.agents-constellation-wrap{width:100%;max-width:760px;margin:8px auto 0;}
+/* Bloc "Enrichissement" du Sommaire -- ligne discrete par defaut, se
+   deplie en constellation pendant l'execution ou sur "Voir le detail".
+   Constellation : hub central (role de commande), cinq agents disposes en
+   ellipse relies par des courbes (un flux, pas des blocs empiles), anneau
+   de progression trace AUTOUR du cercle du noeud (information et objet au
+   meme endroit), ellipse fantome tres attenuee purement decorative pour
+   structurer la composition. Trois etats, deux couleurs semantiques : en
+   attente = --text-muted, en cours = --text-accent, termine = --text-success
+   -- pas d'autre couleur sur les noeuds eux-memes (le libelle texte en
+   dessous porte la nuance echec/donnees-insuffisantes). Pas de fond
+   sombre/halo/ombre/dégradé/particule/pulsation ajoute par-dessus le theme
+   existant. */
+.enrichment-block{background:var(--surface);border:1px solid var(--border-strong);margin-top:20px;overflow:hidden;}
+.enrichment-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;flex-wrap:wrap;}
+.enrichment-label{font-size:.85rem;color:var(--text-body);}
+.enrichment-actions{display:flex;gap:10px;flex-shrink:0;}
+.enrichment-expanded-body{padding:8px 24px 26px;}
+.enrichment-collapse-btn{background:none;border:none;color:var(--text-faint);font-family:var(--sans);font-size:.76rem;cursor:pointer;padding:4px 0;}
+.enrichment-collapse-btn:hover{color:var(--text-muted);}
+
+.agents-constellation-wrap{width:100%;max-width:680px;margin:6px auto 0;}
 .agents-svg{width:100%;height:auto;display:block;}
-.agents-ghost-ellipse{fill:none;stroke:var(--border-soft);stroke-width:1;}
-.agents-link{fill:none;stroke:var(--border-strong);stroke-width:1.3;transition:stroke .3s var(--ease),stroke-width .3s var(--ease);}
-.agents-link.active{stroke:var(--trace);stroke-width:1.8;}
-.agents-link-dashed{fill:none;stroke-dasharray:3 6;stroke:var(--border-soft);stroke-width:1.3;}
-.agents-link-dashed.ready{stroke:var(--trace);}
+.agents-ghost-ellipse{fill:none;stroke:var(--border-soft);stroke-width:.5;}
+.agents-link{fill:none;stroke:var(--border-strong);stroke-width:1.2;transition:stroke .3s var(--ease),stroke-width .3s var(--ease);}
+.agents-link.active{stroke:var(--text-accent);stroke-width:1.7;}
+.agents-link-dashed{fill:none;stroke-dasharray:3 6;stroke:var(--border-soft);stroke-width:1.2;}
+.agents-link-dashed.ready{stroke:var(--text-accent);}
 .agents-node{cursor:pointer;}
-.agents-node:focus-visible{outline:1.5px solid var(--trace);outline-offset:3px;}
-.agents-node-fill{stroke-width:1;transition:fill .3s var(--ease);}
-.agents-node-ring-track{fill:none;stroke:var(--border-soft);stroke-width:3;}
-.agents-node-ring{fill:none;stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .4s var(--ease),stroke .3s var(--ease);}
-.agents-node-label{text-anchor:middle;dominant-baseline:middle;fill:var(--text);font-family:var(--sans);font-size:12px;pointer-events:none;}
+.agents-node:focus-visible{outline:1.5px solid var(--text-accent);outline-offset:3px;}
+.agents-node-fill{stroke-width:1;transition:fill .3s var(--ease),stroke .3s var(--ease);}
+.agents-node-icon{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .3s var(--ease),opacity .3s var(--ease);}
+.agents-node-ring-track{fill:none;stroke:var(--border-soft);stroke-width:2.5;}
+.agents-node-ring{fill:none;stroke-width:2.5;stroke-linecap:round;transition:stroke-dashoffset .4s var(--ease),stroke .3s var(--ease);}
+.agents-node-label{text-anchor:middle;fill:var(--text);font-family:var(--sans);font-size:11.5px;pointer-events:none;}
+.agents-node-substatus{text-anchor:middle;font-family:var(--sans);font-size:10px;pointer-events:none;}
 .agents-hub{cursor:pointer;}
-.agents-hub:focus-visible{outline:1.5px solid var(--trace);outline-offset:3px;}
-.agents-hub-fill{fill:var(--text);}
-.agents-hub-label{text-anchor:middle;dominant-baseline:middle;fill:var(--bg);font-family:var(--serif);font-size:15px;pointer-events:none;}
-.agents-hub-sub{text-anchor:middle;dominant-baseline:middle;fill:var(--bg);opacity:.65;font-family:var(--sans);font-size:9px;text-transform:uppercase;letter-spacing:.05em;pointer-events:none;}
+.agents-hub:focus-visible{outline:1.5px solid var(--text-accent);outline-offset:3px;}
+.agents-hub-fill{fill:var(--text);transform-origin:center;transform-box:fill-box;}
+/* Onde au lancement (t0) -- un seul passage, jamais une pulsation permanente
+   (voir le retour explicite contre les animations qui "s'usent en 3 jours"
+   sur une page ouverte plusieurs fois par jour). */
+.agents-hub.pulse-once .agents-hub-fill{animation:agentsHubPulse .5s var(--ease-premium);}
+@keyframes agentsHubPulse{
+  0%{transform:scale(1);}
+  40%{transform:scale(1.08);}
+  100%{transform:scale(1);}
+}
+.agents-hub-label{text-anchor:middle;dominant-baseline:middle;fill:var(--bg);font-family:var(--serif);font-size:14px;pointer-events:none;}
+.agents-hub-sub{text-anchor:middle;dominant-baseline:middle;fill:var(--bg);opacity:.65;font-family:var(--sans);font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;pointer-events:none;}
 
 .agent-detail-panel{
-  background:var(--surface);border:1px solid var(--border-strong);padding:20px 24px;
-  margin:28px auto 0;max-width:640px;
+  background:var(--bg-soft);border:1px solid var(--border-soft);padding:18px 22px;
+  margin:22px auto 0;max-width:600px;
 }
 .agent-node-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.agent-node-name{font-family:var(--serif);font-size:1.1rem;color:var(--text);flex:1;min-width:160px;}
+.agent-node-name{font-family:var(--serif);font-size:1.05rem;color:var(--text);flex:1;min-width:160px;}
 .agent-node-status{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;}
-.agent-node-status.st-idle{color:var(--text-faint);background:var(--bg-soft);}
-.agent-node-status.st-soon{color:var(--text-faint);background:var(--bg-soft);}
-.agent-node-status.st-queued{color:var(--trace);background:var(--trace-dim);}
-.agent-node-status.st-running{color:var(--trace);background:var(--trace-dim);}
-.agent-node-status.st-succeeded{color:var(--green);background:var(--green-dim);}
-.agent-node-status.st-insufficient_data{color:var(--amber);background:var(--amber-dim);}
+.agent-node-status.st-idle{color:var(--text-faint);background:var(--surface-raised);}
+.agent-node-status.st-soon{color:var(--text-faint);background:var(--surface-raised);}
+.agent-node-status.st-queued{color:var(--text-muted);background:var(--surface-raised);}
+.agent-node-status.st-running{color:var(--text-accent);background:var(--trace-dim);}
+.agent-node-status.st-succeeded{color:var(--text-success);background:var(--green-dim);}
+.agent-node-status.st-insufficient_data{color:var(--text-warning);background:var(--amber-dim);}
 .agent-node-status.st-failed{color:var(--pink);background:var(--pink-dim);}
-.agent-node-status.st-cancelled{color:var(--text-faint);background:var(--bg-soft);}
+.agent-node-status.st-cancelled{color:var(--text-faint);background:var(--surface-raised);}
 .agent-node-step{font-size:.8rem;color:var(--text-muted);margin-top:8px;}
 .agent-node-actions{display:flex;gap:10px;margin-top:12px;}
 .agent-finding{
-  margin-top:12px;padding:11px 13px;background:var(--bg-soft);border:1px solid var(--border-soft);
+  margin-top:12px;padding:11px 13px;background:var(--surface);border:1px solid var(--border-soft);
   font-size:.82rem;color:var(--text-muted);
 }
 .agent-finding-head{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;color:var(--text-faint);margin-bottom:4px;}
@@ -1320,6 +1350,13 @@ td.cell-linked{position:relative;}
 .agent-tier{padding:1px 7px;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;}
 .agent-tier.officielle{color:var(--green);background:var(--green-dim);}
 .agent-tier.a_confirmer{color:var(--amber);background:var(--amber-dim);}
+
+/* Points de lancement individuels (Analyse/Points d'attention/Vérification)
+   -- une ligne discrete, meme esprit que enrichment-row mais sans le
+   panneau qui l'entoure (deja dans un panel/section parent). */
+.agent-launch-inline{display:flex;align-items:center;gap:10px;padding:8px 20px;}
+.agent-launch-inline .agent-launch-btn{font-size:.76rem;padding:7px 14px;}
+.agent-launch-inline .agent-launch-note{font-size:.76rem;color:var(--text-faint);}
 
 /* Bouton oeil / oeil barre pour afficher-masquer un mot de passe -- meme
    patron sur /login.html et la page Mon compte (les deux chargent

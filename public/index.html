@@ -48,7 +48,6 @@
         <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
         <button class="drail-item" data-rail="notes" data-go-dossier="notes">Notes</button>
         <button class="drail-item" data-rail="documents" data-go-dossier="documents">Documents</button>
-        <button class="drail-item" data-rail="agents" data-go-dossier="agents">Agents</button>
       </div>
 
       <div class="main-content">
@@ -117,6 +116,8 @@
         <!-- ================= VÉRIFICATION ================= -->
         <section class="view" id="view-verification">
           <div class="view-head"><div><h1>Vérification</h1><div class="label">AFFIRMATIONS DU VENDEUR CONFRONTÉES À DES SOURCES EXTERNES RÉELLES</div></div></div>
+
+          <div class="agent-launch-inline" id="agentLaunchContradiction" style="margin-bottom:14px;"></div>
 
           <div class="panel">
             <div class="memo-generate-prompt" id="verificationGeneratePrompt">
@@ -305,6 +306,8 @@
                 <p class="audit-phrase" id="auditPhrase"></p>
               </div>
 
+              <div class="agent-launch-inline" id="agentLaunchUrbanisme" style="margin-top:14px;"></div>
+
               <div class="panel" style="margin-top:20px;">
                 <div class="panel-head"><h3>Alertes</h3><span class="label">TRIÉES PAR GRAVITÉ · SOURCÉES</span></div>
                 <div class="audit-cards" id="auditCards"></div>
@@ -361,10 +364,12 @@
 
               <div class="sim-section" data-section="bien">
                 <button class="sim-section-head" type="button"><span class="title">Bien</span><span class="chev">▾</span></button>
+                <div class="agent-launch-inline" id="agentLaunchMarche"></div>
                 <div class="sim-section-body" id="secBien"></div>
               </div>
               <div class="sim-section collapsed" data-section="acquisition">
                 <button class="sim-section-head" type="button"><span class="title">Acquisition</span><span class="chev">▾</span></button>
+                <div class="agent-launch-inline" id="agentLaunchComparables"></div>
                 <div class="sim-section-body" id="secAcquisition"></div>
               </div>
               <div class="sim-section collapsed" data-section="exploitation">
@@ -500,15 +505,6 @@
             <button class="btn btn-outline" data-go="ingest">+ Ajouter des documents</button>
           </div>
           <div id="supportingDocsList"></div>
-        </section>
-
-        <!-- ================= AGENTS ================= -->
-        <section class="view" id="view-agents">
-          <div class="view-head">
-            <div><h1>Agents</h1><div class="label" id="agentsSourcesTotal">TOUR DE CONTRÔLE — LANCEZ, SUIVEZ, RELANCEZ</div></div>
-          </div>
-          <div class="agents-constellation-wrap" id="agentsConstellationWrap"></div>
-          <div id="agentsDetail"></div>
         </section>
 
 
