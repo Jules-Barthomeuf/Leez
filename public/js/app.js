@@ -768,25 +768,63 @@
       </div>`;
     }
 
-    let flagsHTML = '';
+    // ================= TRIAGE (Match Mandat + Points de vigilance) =================
+    // Reutilise tel quel doc.audit (mandateFit + cards), deja calcule et
+    // verifie cote serveur pour l'onglet Points d'attention (interpretation.js)
+    // -- rien de nouveau n'est calcule ici, seulement affiche plus tot dans le
+    // parcours (Sommaire) et sous une forme plus compacte (pourcentage +
+    // checklist / top alertes) pour passer de la lecture du dossier a la
+    // decision GO/NO GO en quelques secondes.
+    let mandateHTML = '';
+    let vigilanceHTML = '';
+    let vigilanceCount = 0;
     if (stepComplete) {
-      const checks = doc.consistencyChecks || [];
-      const warnings = checks.filter(c => c.status === 'warning');
-      if (warnings.length > 0) {
-        flagsHTML = warnings.map(c => `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">${c.label || c.check}</div><div class="flag-body">Écart de ${c.deltaPct != null ? c.deltaPct + ' %' : c.deltaPt + ' pt'} par rapport à la tolérance attendue.</div></div></div>`).join('');
+      const fit = doc.audit?.mandateFit;
+      // fit.configured verifie seulement que l'enregistrement de reglages
+      // existe (voir settings.js#PUT, qui ecrit toujours les 5 cles meme
+      // vides) -- pas qu'un critere ait reellement ete rempli. Sans ce
+      // second garde-fou (criteria.length), un fonds qui n'a jamais rempli
+      // ses criteres verrait un trompeur "0 % conforme" au lieu du message
+      // explicite attendu.
+      if (!fit || !fit.configured || fit.criteria.length === 0) {
+        mandateHTML = `<div class="flag"><span class="dot faint"></span><div><div class="flag-title">Aucun critère configuré</div><div class="flag-body">Définissez les critères d'investissement du fonds dans Réglages pour activer le match mandat.</div></div></div>`;
       } else {
-        flagsHTML = `<div class="flag"><span class="dot green"></span><div><div class="flag-title">Aucune incohérence détectée</div><div class="flag-body">Les contrôles croisés (loyers vs compte d'exploitation, surfaces, rendement recalculé) sont dans les tolérances attendues.</div></div></div>`;
+        const total = fit.criteria.length;
+        const okCount = fit.criteria.filter(c => c.status === 'ok').length;
+        const pct = total > 0 ? Math.round((okCount / total) * 100) : 0;
+        const verdictLabel = { conforme: 'Conforme', a_examiner: 'À examiner', hors_mandat: 'Hors mandat' }[fit.verdict];
+        mandateHTML = `<div class="triage-mandate-score"><span class="triage-mandate-pct">${pct} %</span><span class="mandate-verdict-badge ${fit.verdict}">${verdictLabel}</span></div>
+          <div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
+            <span class="triage-criterion-icon">${c.status === 'ok' ? '✓' : c.status === 'echec' ? '✕' : '?'}</span>
+            <span><b>${escapeHtml(c.label)}</b><br>${escapeHtml(c.detail)}</span>
+          </div>`).join('')}</div>`;
       }
-    } else if (stepError) {
-      // Relancer reprend precisement a l'etape en echec (doc.failedStage),
-      // jamais depuis le debut -- voir POST /documents/:id/retry.
-      flagsHTML = `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">Extraction interrompue</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Une erreur est survenue pendant le traitement.')}</div>
-        <button class="btn btn-outline" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button>
-      </div></div>`;
-    } else if (stepScanned) {
-      flagsHTML = `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || "Ce PDF semble scanné, sans couche de texte extractible.")} Demandez au vendeur une version texte du document (export natif, pas un scan), ou son rent roll au format Excel.</div></div></div>`;
-    } else {
-      flagsHTML = `<div class="flag"><span class="dot trace"></span><div><div class="flag-title">Extraction en cours</div><div class="flag-body">${STATUS_LABELS[doc.status] || doc.status}</div></div></div>`;
+      const cards = (doc.audit?.cards || []).filter(c => c.niveau === 'rouge' || c.niveau === 'orange');
+      vigilanceCount = cards.length;
+      vigilanceHTML = cards.length === 0
+        ? `<div class="flag"><span class="dot green"></span><div><div class="flag-title">Aucune alerte détectée</div><div class="flag-body">Aucun point de vigilance identifié sur les critères vérifiés par Leez.</div></div></div>`
+        // Pas de plafond arbitraire : la liste est deja triee par gravite
+        // (computeAuditCards) -- en tronquer une partie masquerait un vrai
+        // signal (un dossier avec beaucoup d'alertes DOIT le montrer).
+        : cards.map(c => `<div class="flag"><span class="dot ${c.niveau === 'rouge' ? 'pink' : 'amber'}"></span><div><div class="flag-title">${escapeHtml(c.titre)}</div><div class="flag-body">${escapeHtml(c.constat)}</div></div></div>`).join('');
+    }
+
+    // Repli utilise uniquement HORS "dossier complet" (erreur/scan/en cours) --
+    // une fois complet, le Sommaire affiche mandateHTML/vigilanceHTML ci-dessus
+    // a la place (signal plus riche, deja calcule).
+    let flagsHTML = '';
+    if (!stepComplete) {
+      if (stepError) {
+        // Relancer reprend precisement a l'etape en echec (doc.failedStage),
+        // jamais depuis le debut -- voir POST /documents/:id/retry.
+        flagsHTML = `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">Extraction interrompue</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Une erreur est survenue pendant le traitement.')}</div>
+          <button class="btn btn-outline" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button>
+        </div></div>`;
+      } else if (stepScanned) {
+        flagsHTML = `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || "Ce PDF semble scanné, sans couche de texte extractible.")} Demandez au vendeur une version texte du document (export natif, pas un scan), ou son rent roll au format Excel.</div></div></div>`;
+      } else {
+        flagsHTML = `<div class="flag"><span class="dot trace"></span><div><div class="flag-title">Extraction en cours</div><div class="flag-body">${STATUS_LABELS[doc.status] || doc.status}</div></div></div>`;
+      }
     }
 
     // Récapitulatif exécutif rédigé par l'IA (voir server/services/dealRecap.js)
@@ -838,9 +876,14 @@
 
       ${stepComplete ? '<div class="enrichment-block" id="enrichmentBlock"></div>' : ''}
 
+      ${stepComplete ? `
+      <div class="split-panels" style="margin-top:20px;">
+        <div class="panel"><div class="panel-head"><h3>Match mandat</h3></div><div class="flags-list triage-mandate-panel">${mandateHTML}</div></div>
+        <div class="panel"><div class="panel-head"><h3>Points de vigilance${vigilanceCount > 0 ? ` (${vigilanceCount})` : ''}</h3></div><div class="flags-list">${vigilanceHTML}</div></div>
+      </div>` : `
       <div class="split-panels" style="margin-top:20px;">
         <div class="panel"><div class="panel-head"><h3>Points de vigilance</h3></div><div class="flags-list">${flagsHTML}</div></div>
-      </div>`;
+      </div>`}`;
 
     loadDealPhotos(doc);
     if (stepComplete) loadEnrichmentBlock(doc.id);

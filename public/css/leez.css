@@ -547,6 +547,21 @@ th.num{text-align:right;}
 .flag-title{color:var(--text);font-weight:600;font-size:.92rem;}
 .flag-body{color:var(--text-muted);font-size:.84rem;margin-top:3px;line-height:1.4;}
 
+/* Panneau "Match mandat" du Sommaire (Triage) -- reutilise doc.audit.mandateFit
+   deja calcule pour l'onglet Points d'attention, jamais un nouveau calcul. */
+.triage-mandate-panel{padding-top:14px;}
+.triage-mandate-score{display:flex;align-items:baseline;gap:12px;padding:0 24px 16px;}
+.triage-mandate-pct{font-family:var(--sans);font-weight:800;font-size:2rem;color:var(--text);letter-spacing:-.02em;}
+.triage-criteria-list{display:flex;flex-direction:column;padding:0 24px;}
+.triage-criterion{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--border-soft);font-size:.84rem;line-height:1.5;}
+.triage-criterion:first-child{border-top:none;}
+.triage-criterion-icon{flex-shrink:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;margin-top:1px;}
+.triage-criterion.st-ok .triage-criterion-icon{color:var(--green);}
+.triage-criterion.st-echec .triage-criterion-icon{color:var(--pink);}
+.triage-criterion.st-indetermine .triage-criterion-icon{color:var(--text-faint);}
+.triage-criterion span:last-child{color:var(--text-muted);}
+.triage-criterion span:last-child b{color:var(--text);font-weight:600;}
+
 /* ================= IMPORTER ================= */
 .ingest-shell{max-width:1320px;margin:56px auto 0;}
 .ingest-hero{text-align:center;max-width:560px;margin:0 auto 46px;}
