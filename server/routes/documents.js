@@ -52,6 +52,7 @@ function shapeDocument(doc) {
     presentationHiddenCards: doc.presentation_hidden_cards_json ?? [],
     dealRecap: doc.deal_recap_json ?? null,
     stage: doc.stage || 'triage',
+    displayName: doc.display_name ?? null,
     decisionMotif: doc.decision_motif ?? null,
     decidedAt: doc.decided_at ?? null,
     decidedBy: doc.decided_by ?? null,
@@ -157,9 +158,15 @@ router.get('/health', (req, res) => {
 router.post('/documents', uploadCombined, asyncHandler(async (req, res) => {
   const file = req.files?.file?.[0];
   if (!file) return res.status(400).json({ error: 'Aucun fichier reçu (champ attendu : "file").' });
+  // Le nom du dossier est choisi par l'analyste a l'import -- obligatoire :
+  // c'est lui qui identifie la carte dans le Vault et dans Memoire (le nom
+  // de fichier d'un OM est souvent cryptique, et l'adresse extraite n'existe
+  // pas encore a ce stade).
+  const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim() : '';
+  if (!displayName) return res.status(400).json({ error: 'Choisissez un nom pour ce dossier.' });
 
   const id = uuidv4();
-  await createDocument({ id, filename: file.originalname, workspaceId: req.workspaceId });
+  await createDocument({ id, filename: file.originalname, workspaceId: req.workspaceId, displayName });
 
   const finalPath = path.join(UPLOAD_DIR, `${id}.pdf`);
   fs.renameSync(file.path, finalPath);
@@ -212,6 +219,7 @@ router.get('/documents', asyncHandler(async (req, res) => {
       isDemo: !!doc.is_demo,
       supportingCount: doc.supporting_count ?? 0,
       stage: doc.stage || 'triage',
+      displayName: doc.display_name ?? null,
       verification,
       decisionMotif: doc.decision_motif ?? null,
       decidedAt: doc.decided_at ?? null,

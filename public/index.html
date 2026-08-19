@@ -40,19 +40,9 @@
   <div class="app-main">
   <main>
     <div class="main-shell">
-      <div class="dossier-rail" id="sharedRail" style="display:none;">
-        <button class="drail-item" data-rail="deal" data-go-dossier="deal">Triage</button>
-        <button class="drail-item" data-rail="extract" data-go-dossier="extract">Matrix</button>
-        <button class="drail-item" data-rail="audit" data-go-dossier="audit">Points d'attention</button>
-        <button class="drail-item" data-rail="reconciliation" data-go-dossier="reconciliation">Réconciliation</button>
-        <button class="drail-item" data-rail="verification" data-go-dossier="verification">Vérification</button>
-        <button class="drail-item" id="presentationRailBtn">Présentation</button>
-        <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
-        <button class="drail-item" data-rail="notes" data-go-dossier="notes">Notes</button>
-        <button class="drail-item" data-rail="documents" data-go-dossier="documents">Data Room</button>
-        <button class="drail-item" data-rail="export" data-go-dossier="export">Export</button>
-      </div>
-
+      <!-- Le rail de navigation du dossier a été retiré : le dossier ouvert
+           est UNE page (chat + documents), les analyses profondes restent
+           accessibles par des liens contextuels dans les réponses du chat. -->
       <div class="main-content">
         <div class="breadcrumb" id="sharedBreadcrumb" style="display:none;">
           <button data-go="dossiers">Vault</button>
@@ -139,21 +129,10 @@
               <h1>Vault</h1>
               <div class="label" id="dossiersCount">—</div>
             </div>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <input type="search" id="dossiersFilter" class="pipeline-filter" placeholder="Filtrer — adresse, type d'actif…" autocomplete="off">
-              <button class="btn btn-solid" data-go="ingest">⇪ Déposer un dossier</button>
-            </div>
+            <button class="btn btn-solid" data-go="ingest">⇪ Déposer un dossier</button>
           </div>
-          <!-- Pas de puce "Rejeté" ici : un dossier rejeté sort du Vault et
-               vit dans Mémoire (avec son motif et un bouton de rappel). -->
-          <div class="pipeline-stage-chips" id="pipelineStageChips">
-            <button class="stage-chip active" data-stage-filter="">Tous</button>
-            <button class="stage-chip" data-stage-filter="triage">Triage</button>
-            <button class="stage-chip" data-stage-filter="underwriting">Underwriting</button>
-            <button class="stage-chip" data-stage-filter="comite">Comité</button>
-            <button class="stage-chip" data-stage-filter="attente">En attente</button>
-          </div>
-          <div class="dossiers-list" id="dossiersList"></div>
+          <input type="search" id="dossiersFilter" class="vault-search" placeholder="Rechercher un dossier — nom, adresse, type d'actif…" autocomplete="off">
+          <div class="vault-grid" id="dossiersList"></div>
         </section>
 
         <!-- ================= MÉMOIRE INSTITUTIONNELLE ================= -->
@@ -204,6 +183,9 @@
               <h1>Importer un deal</h1>
               <p>Le mémorandum de vente (OM) est le seul document analysé automatiquement : Leez en extrait chaque donnée avec sa page source et vérifie chaque citation contre le texte réel. Les autres documents sont simplement stockés dans le dossier, consultables tels quels dans l'onglet « Documents ».</p>
             </div>
+
+            <div class="ingest-section-label">Nom du dossier</div>
+            <input type="text" id="ingestNameInput" class="vault-search" style="margin:0 0 22px;" placeholder="Ex. Projet Altair — Bureaux Paris 13" autocomplete="off" maxlength="120">
 
             <div class="ingest-section-label">Commercialisation</div>
             <div class="ingest-om-row">

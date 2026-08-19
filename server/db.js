@@ -149,10 +149,10 @@ async function setSetting(key, value, workspaceId) {
   );
 }
 
-async function createDocument({ id, filename, workspaceId }) {
+async function createDocument({ id, filename, workspaceId, displayName = null }) {
   await pool.query(
-    'INSERT INTO documents (id, filename, uploaded_at, status, workspace_id) VALUES ($1, $2, $3, $4, $5)',
-    [id, filename, new Date().toISOString(), 'uploaded', workspaceId]
+    'INSERT INTO documents (id, filename, uploaded_at, status, workspace_id, display_name) VALUES ($1, $2, $3, $4, $5, $6)',
+    [id, filename, new Date().toISOString(), 'uploaded', workspaceId, displayName]
   );
 }
 
@@ -186,7 +186,7 @@ async function deleteDocument(id, workspaceId) {
 async function listDocuments(workspaceId) {
   const { rows } = await pool.query(`
     SELECT d.id, d.filename, d.uploaded_at, d.status, d.error_message, d.page_count,
-           d.fiche_identite_json, d.indicateurs_json, d.is_demo, d.stage,
+           d.fiche_identite_json, d.indicateurs_json, d.is_demo, d.stage, d.display_name,
            d.etat_locatif_json, d.t12_json,
            d.decision_motif, d.decided_at, d.decided_by,
            (SELECT COUNT(*)::int FROM supporting_documents s WHERE s.document_id = d.id) AS supporting_count

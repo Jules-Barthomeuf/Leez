@@ -1854,3 +1854,67 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .decision-banner.recalled{background:var(--amber-dim);border-color:var(--amber);}
 .decision-banner .decision-title{font-weight:700;color:var(--text);margin-bottom:2px;}
 .memoire-motif{max-width:340px;white-space:normal;line-height:1.5;}
+
+/* ---------- Vault simplifié : recherche + grille de cartes ---------- */
+.vault-search{
+  display:block;width:100%;box-sizing:border-box;
+  font-family:var(--sans);font-size:.92rem;color:var(--text);
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:999px;padding:13px 22px;margin:4px 0 24px;
+}
+.vault-search:focus{outline:none;border-color:var(--text-muted);}
+.vault-search::placeholder{color:var(--text-faint);}
+.vault-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+.deal-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;cursor:pointer;position:relative;
+  display:flex;flex-direction:column;gap:10px;
+  transition:border-color .15s var(--ease),box-shadow .15s var(--ease);
+}
+.deal-card:hover{border-color:var(--text-muted);box-shadow:0 2px 12px rgba(35,29,20,.06);}
+.deal-card h3{font-family:var(--serif);font-weight:400;font-size:1.15rem;color:var(--text);margin:0;line-height:1.3;}
+.deal-card-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.deal-card-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:auto;}
+.deal-card-stats .dossier-val{font-size:.9rem;}
+.deal-card-delete{
+  all:unset;position:absolute;top:12px;right:12px;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;color:var(--text-faint);
+  cursor:pointer;font-size:.8rem;border-radius:999px;
+}
+.deal-card-delete:hover{color:var(--pink);background:var(--pink-dim);}
+
+/* ---------- Dossier ouvert : chat + documents ---------- */
+.deal-chat-panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin-top:20px;display:flex;flex-direction:column;overflow:hidden;
+}
+.deal-chat-log{padding:20px 24px;display:flex;flex-direction:column;gap:14px;max-height:52vh;overflow-y:auto;}
+.deal-chat-empty{font-family:var(--sans);font-size:.82rem;color:var(--text-faint);line-height:1.6;}
+.deal-chat-msg{font-family:var(--sans);font-size:.84rem;line-height:1.65;color:var(--text-body);}
+.deal-chat-msg.user{align-self:flex-end;background:var(--bg-soft);border:1px solid var(--border-soft);border-radius:var(--radius);padding:10px 16px;max-width:70%;}
+.deal-chat-msg.leez{width:100%;}
+.deal-chat-msg .flags-list{margin-top:8px;}
+.deal-chat-dock{border-top:1px solid var(--border-soft);padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.deal-chat-modes{display:flex;gap:8px;flex-wrap:wrap;}
+.deal-chat-input-row{display:flex;gap:10px;align-items:flex-end;}
+.deal-chat-input-row textarea{
+  flex:1;resize:none;font-family:var(--sans);font-size:.88rem;color:var(--text);
+  background:var(--surface-raised);border:1px solid var(--border-strong);
+  border-radius:var(--radius);padding:11px 16px;min-height:20px;max-height:120px;line-height:1.5;
+}
+.deal-chat-input-row textarea:focus{outline:none;border-color:var(--text-muted);}
+.deal-doc-line{
+  display:flex;align-items:center;gap:14px;padding:13px 18px;
+  border-top:1px solid var(--border-soft);cursor:pointer;
+  font-family:var(--sans);font-size:.84rem;color:var(--text-body);
+  transition:background .15s var(--ease);
+}
+.deal-doc-line:first-child{border-top:none;}
+.deal-doc-line:hover{background:var(--surface-raised);}
+.deal-doc-line .doc-cat{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);flex-shrink:0;width:140px;}
+.deal-doc-line .doc-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text);}
+.deal-decision-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;}
+.chat-field-table{width:100%;margin-top:8px;}
+.chat-field-table td{padding:6px 10px;font-size:.8rem;}
+.chat-field-table td:first-child{color:var(--text-muted);}
+.chat-field-table td:nth-child(2){font-weight:600;color:var(--text);}

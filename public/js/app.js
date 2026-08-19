@@ -408,8 +408,6 @@
     else if (name !== 'analyze') dossierMode = false;
     const showChrome = DOSSIER_SUBVIEWS.includes(name) || (name === 'analyze' && dossierMode);
     document.getElementById('sharedBreadcrumb').style.display = showChrome ? 'flex' : 'none';
-    document.getElementById('sharedRail').style.display = showChrome ? 'flex' : 'none';
-    if (showChrome) document.querySelectorAll('#sharedRail .drail-item').forEach(b => b.classList.toggle('active', b.dataset.rail === name));
     document.getElementById('simScenarioBar').style.display = (name === 'analyze' && !dossierMode) ? 'flex' : 'none';
     // Copilote du Simulateur : deplace hors de #view-analyze (voir le
     // commentaire HTML a cote de #simFloatChat) -- sa visibilite doit donc
@@ -571,37 +569,32 @@
     }
     list.innerHTML = docs.map(d => {
       const fi = d.ficheIdentite, ind = d.indicateurs;
-      const name = (fi && fi.adresse && fi.adresse.value) ? fi.adresse.value : d.filename;
-      const sub = (fi && fi.typeActif && fi.typeActif.value) ? fi.typeActif.value.toUpperCase() : d.filename.toUpperCase();
+      const name = d.displayName || (fi && fi.adresse && fi.adresse.value) || d.filename;
+      const type = (fi && fi.typeActif && fi.typeActif.value) ? fi.typeActif.value : null;
       const prixDemande = (fi && fi.prixDemande && fi.prixDemande.value) ? fi.prixDemande.value : '—';
       const cap = ind && ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—';
-      const occ = ind && ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : '—';
-      // OM analysé + pièces annexes stockées telles quelles = contenu réel de
-      // la data room de ce deal (jamais un nombre inventé).
       const nbDocs = 1 + (d.supportingCount || 0);
-      const uploaded = new Date(d.uploadedAt);
-      const when = Number.isNaN(uploaded.getTime()) ? '' : uploaded.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      return `<div class="dossier-row" data-doc-id="${d.id}" data-stage="${STAGE_LABELS[d.stage] ? d.stage : 'triage'}">
-        <span class="dot ${d.status === 'complete' ? 'green' : d.status === 'error' ? 'pink' : d.status === 'unsupported_scanned' ? 'amber' : 'trace'}"></span>
-        <div class="dossier-row-main">
-          <h3 class="dossier-name">${name}</h3>
-          <div class="label">${sub} · ${nbDocs} DOC${nbDocs > 1 ? 'S' : ''} ${stageBadge(d.stage)} ${statusChip(d)}${d.isDemo ? ' <span class="chip conf-mid">DÉMONSTRATION</span>' : ''}</div>
+      const verif = d.verification && d.verification.total > 0 ? Math.round((d.verification.verified / d.verification.total) * 100) + ' %' : '—';
+      return `<div class="deal-card" data-doc-id="${d.id}">
+        <button class="deal-card-delete" data-delete-id="${d.id}" title="Supprimer ce dossier" aria-label="Supprimer ce dossier">✕</button>
+        <h3 class="dossier-name">${escapeHtml(name)}</h3>
+        <div class="deal-card-badges">
+          ${type ? `<span class="chip conf-mid">${escapeHtml(type.toUpperCase())}</span>` : ''}
+          ${statusChip(d)}${stageBadge(d.stage)}${d.isDemo ? '<span class="chip conf-mid">DÉMO</span>' : ''}
         </div>
-        <div class="dossier-row-stats">
-          <div><div class="label">Prix demandé</div><div class="dossier-val">${prixDemande}</div></div>
-          <div><div class="label">Taux de capitalisation</div><div class="dossier-val">${cap}</div></div>
-          <div><div class="label">Occupation (TOP)</div><div class="dossier-val">${occ}</div></div>
-          <div><div class="label">Champs cités vérifiés</div><div class="dossier-val">${d.verification && d.verification.total > 0 ? Math.round((d.verification.verified / d.verification.total) * 100) + ' %' : '—'}</div></div>
+        <div class="deal-card-stats">
+          <div><div class="label">Prix demandé</div><div class="dossier-val">${escapeHtml(String(prixDemande))}</div></div>
+          <div><div class="label">Capi recalculée</div><div class="dossier-val">${cap}</div></div>
+          <div><div class="label">Documents</div><div class="dossier-val">${nbDocs}</div></div>
+          <div><div class="label">Champs vérifiés</div><div class="dossier-val">${verif}</div></div>
         </div>
-        <div class="label dossier-row-time">${when}</div>
-        <button class="dossier-row-delete" data-delete-id="${d.id}" title="Supprimer ce deal" aria-label="Supprimer ce deal">✕</button>
       </div>`;
     }).join('');
     applyPipelineFilter();
-    list.querySelectorAll('.dossier-row').forEach(row => row.addEventListener('click', () => openDossier(row.dataset.docId)));
-    list.querySelectorAll('.dossier-row-delete').forEach(btn => btn.addEventListener('click', async e => {
+    list.querySelectorAll('.deal-card').forEach(card => card.addEventListener('click', () => openDossier(card.dataset.docId)));
+    list.querySelectorAll('.deal-card-delete').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const name = btn.closest('.dossier-row').querySelector('.dossier-name').textContent;
+      const name = btn.closest('.deal-card').querySelector('.dossier-name').textContent;
       if (!confirm(`Supprimer définitivement le dossier « ${name} » et le fichier importé associé ?`)) return;
       await fetch(`/api/documents/${btn.dataset.deleteId}`, { method: 'DELETE' });
       renderDossiersList();
@@ -611,21 +604,13 @@
   // Filtres locaux du pipeline : correspondance de texte + stade d'analyse
   // -- purement côté client, aucune requête, jamais une "recherche
   // intelligente".
-  let pipelineStageFilter = '';
   function applyPipelineFilter() {
     const q = (document.getElementById('dossiersFilter')?.value || '').trim().toLowerCase();
-    document.querySelectorAll('#dossiersList .dossier-row').forEach(row => {
-      const matchText = !q || row.textContent.toLowerCase().includes(q);
-      const matchStage = !pipelineStageFilter || row.dataset.stage === pipelineStageFilter;
-      row.style.display = matchText && matchStage ? '' : 'none';
+    document.querySelectorAll('#dossiersList .deal-card').forEach(card => {
+      card.style.display = !q || card.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   }
   document.getElementById('dossiersFilter')?.addEventListener('input', applyPipelineFilter);
-  document.querySelectorAll('#pipelineStageChips .stage-chip').forEach(chip => chip.addEventListener('click', () => {
-    pipelineStageFilter = chip.dataset.stageFilter;
-    document.querySelectorAll('#pipelineStageChips .stage-chip').forEach(c => c.classList.toggle('active', c === chip));
-    applyPipelineFilter();
-  }));
 
   // ================= OUVERTURE D'UN DOSSIER ================= //
   function applyCurrentDocRenders() {
@@ -776,159 +761,31 @@
     const ind = doc.indicateurs || {};
     const val = f => (f && f.value != null) ? f.value : null;
     const valFmt = (key, f) => { const v = val(f); return v != null ? formatFicheValue(key, v) : null; };
-    const address = val(fi.adresse) || 'Adresse non communiquée';
-    const cpVille = val(fi.codePostalVille) || '';
+    const name = doc.displayName || val(fi.adresse) || doc.filename;
+    const addrLine = [val(fi.adresse), val(fi.codePostalVille)].filter(Boolean).join(', ');
     const typeActif = val(fi.typeActif);
-    const mapsQuery = [val(fi.adresse), val(fi.codePostalVille)].filter(Boolean).join(', ');
-    const mapsLink = mapsQuery ? `<a class="maps-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}" target="_blank" rel="noopener">Voir sur Google Maps ↗</a>` : '';
-
-    const stats = [
-      ['Prix demandé', valFmt('prixDemande', fi.prixDemande) || '—'],
-      ['Taux de capitalisation recalculé', ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—'],
-      ['Surface locative', valFmt('surfaceLocativeGLA', fi.surfaceLocativeGLA) || '—'],
-      ['Taux d\'occupation physique (TOP)', ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : '—'],
-      ['Nombre de lots', valFmt('nombreLots', fi.nombreLots) || '—'],
-      ["Résultat net d'exploitation", ind.resultatNetExploitation != null ? fmt(ind.resultatNetExploitation) + ' €' : '—'],
-    ];
-
-    const stepDone = ['extracting_pages', 'extracting_identite', 'extracting_t12', 'computing_indicators', 'complete'].includes(doc.status);
     const stepComplete = doc.status === 'complete';
     const stepError = doc.status === 'error';
     const stepScanned = doc.status === 'unsupported_scanned';
-    const stepStuck = stepError || stepScanned;
-    const stepper = `
-      <div class="step done"><div class="step-num">✓</div><div class="step-body"><div class="step-label">Sommaire</div><div class="step-status">Vue d'ensemble</div></div></div>
-      <div class="step-line ${stepDone ? 'done' : ''}"></div>
-      <div class="step ${stepComplete ? 'done' : stepError ? 'error' : stepScanned ? 'scanned' : 'ready'}" data-clickable data-go-dossier="extract"><div class="step-num">${stepComplete ? '✓' : stepStuck ? '✕' : '…'}</div><div class="step-body"><div class="step-label">Extraction</div><div class="step-status">${STATUS_LABELS[doc.status] || doc.status}</div></div></div>
-      <div class="step-line ${stepComplete ? 'done' : ''}"></div>
-      <div class="step ${stepComplete ? 'ready' : 'locked'}" ${stepComplete ? 'data-clickable data-go-dossier="memo"' : ''}><div class="step-num">${stepComplete ? '✓' : '🔒'}</div><div class="step-body"><div class="step-label">Présentation</div><div class="step-status">${stepComplete ? 'Générée depuis les données vérifiées' : "En attente de l'extraction"}</div></div></div>
-      <div class="step-line ${stepComplete ? 'done' : ''}"></div>
-      <div class="step ${stepComplete ? 'ready' : 'locked'}" ${stepComplete ? 'data-clickable data-go-dossier="analyze"' : ''}><div class="step-num">${stepComplete ? '✓' : '🔒'}</div><div class="step-body"><div class="step-label">Analyse</div><div class="step-status">${stepComplete ? 'Simulateur disponible' : "Disponible une fois l'extraction terminée"}</div></div></div>`;
 
-    let confidenceHTML = '';
-    if (stepComplete) {
-      const c = confidenceStats(doc);
-      const pct = c.total > 0 ? Math.round((c.verified / c.total) * 100) : 0;
-      const confClass = pct >= 85 ? '' : pct >= 60 ? 'mid' : 'low';
-      confidenceHTML = `<div class="panel confidence-panel">
-        <div class="panel-head"><h3>Indice de vérification</h3><span class="label">${c.verified} / ${c.total} CHAMPS CITÉS VÉRIFIÉS</span></div>
-        <div class="confidence-body">
-          <div class="confidence-score"><div class="confidence-num ${confClass}">${pct} %</div><div class="confidence-label">de champs vérifiés contre le texte réel</div></div>
-          <div class="confidence-lists"><div class="confidence-col">
-            <div class="confidence-col-title">MÉTHODE</div>
-            <div class="confidence-item">Chaque champ ci-contre porte une citation vérifiée automatiquement contre le texte réel du document. Un champ non vérifié s'affiche comme absent, jamais comme une valeur inventée.</div>
-          </div></div>
-        </div>
-      </div>`;
-    }
-
-    // ================= TRIAGE (Match Mandat + Points de vigilance) =================
-    // Reutilise tel quel doc.audit (mandateFit + cards), deja calcule et
-    // verifie cote serveur pour l'onglet Points d'attention (interpretation.js)
-    // -- rien de nouveau n'est calcule ici, seulement affiche plus tot dans le
-    // parcours (Sommaire) et sous une forme plus compacte (pourcentage +
-    // checklist / top alertes) pour passer de la lecture du dossier a la
-    // decision GO/NO GO en quelques secondes.
-    let mandateHTML = '';
-    let vigilanceHTML = '';
-    let vigilanceCount = 0;
-    if (stepComplete) {
-      const fit = doc.audit?.mandateFit;
-      // fit.configured verifie seulement que l'enregistrement de reglages
-      // existe (voir settings.js#PUT, qui ecrit toujours les 5 cles meme
-      // vides) -- pas qu'un critere ait reellement ete rempli. Sans ce
-      // second garde-fou (criteria.length), un fonds qui n'a jamais rempli
-      // ses criteres verrait un trompeur "0 % conforme" au lieu du message
-      // explicite attendu.
-      if (!fit || !fit.configured || fit.criteria.length === 0) {
-        mandateHTML = `<div class="flag"><span class="dot faint"></span><div><div class="flag-title">Aucun critère configuré</div><div class="flag-body">Définissez les critères d'investissement du fonds dans Réglages pour activer le match mandat.</div></div></div>`;
-      } else {
-        // Pas de score global agrege : l'analyste doit voir critere par
-        // critere SUR QUOI ca casse (valeur constatee + seuil), pas un
-        // pourcentage qui melange un critere bloquant et un critere mineur.
-        mandateHTML = `<div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
-            <span class="triage-criterion-icon">${c.status === 'ok' ? '✓' : c.status === 'echec' ? '✕' : '?'}</span>
-            <span><b>${escapeHtml(c.label)}</b><br>${escapeHtml(c.detail)}</span>
-          </div>`).join('')}</div>`;
-      }
-      const cards = (doc.audit?.cards || []).filter(c => c.niveau === 'rouge' || c.niveau === 'orange');
-      vigilanceCount = cards.length;
-      vigilanceHTML = cards.length === 0
-        ? `<div class="flag"><span class="dot green"></span><div><div class="flag-title">Aucune alerte détectée</div><div class="flag-body">Aucun point de vigilance identifié sur les critères vérifiés par Leez.</div></div></div>`
-        // Pas de plafond arbitraire : la liste est deja triee par gravite
-        // (computeAuditCards) -- en tronquer une partie masquerait un vrai
-        // signal (un dossier avec beaucoup d'alertes DOIT le montrer).
-        : cards.map(c => `<div class="flag"><span class="dot ${c.niveau === 'rouge' ? 'pink' : 'amber'}"></span><div><div class="flag-title">${escapeHtml(c.titre)}</div><div class="flag-body">${escapeHtml(c.constat)}</div></div></div>`).join('');
-    }
-
-    // Bloc 3 de la pre-analyse : "ce que le dossier ne dit pas". Distingue
-    // ce qui est BLOQUANT pour decider (un test du mandat configure mais
-    // sans donnee pour repondre) de ce qui est simplement absent -- c'est
-    // cette distinction qui separe un NO-GO d'un "il me manque une info".
-    let unknownHTML = '';
-    if (stepComplete) {
-      const fitCriteria = doc.audit?.mandateFit?.criteria || [];
-      const bloquants = fitCriteria.filter(c => c.status === 'indetermine');
-      const points = doc.audit?.pointsACreuser || [];
-      const missingFields = Object.entries(FICHE_LABELS)
-        .filter(([k]) => !(fi[k] && fi[k].value != null))
-        .map(([, label]) => label);
-      const bloquantsHTML = bloquants.length === 0 ? '' : `
-        <div class="label" style="margin-bottom:8px;">BLOQUANT POUR DÉCIDER — UN CRITÈRE DU MANDAT NE PEUT PAS ÊTRE TESTÉ</div>
-        ${bloquants.map(c => `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">${escapeHtml(c.label)}</div><div class="flag-body">${escapeHtml(c.detail)}</div></div></div>`).join('')}`;
-      const pointsHTML = points.length === 0 ? '' : `
-        <div class="label" style="margin:${bloquants.length ? '16px' : '0'} 0 8px;">À DEMANDER AVANT DE CONCLURE</div>
-        ${points.map(p => `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">${escapeHtml(p.titre)}</div><div class="flag-body">${escapeHtml(p.detail || '')}</div></div></div>`).join('')}`;
-      const absentsHTML = missingFields.length === 0 ? '' : `
-        <div class="label" style="margin:${bloquants.length || points.length ? '16px' : '0'} 0 8px;">ABSENT DU DOCUMENT, NON BLOQUANT (${missingFields.length})</div>
-        <div class="workflow-fields">${missingFields.map(l => `<span class="workflow-field">${escapeHtml(l)}</span>`).join('')}</div>`;
-      unknownHTML = (bloquantsHTML + pointsHTML + absentsHTML) ||
-        '<div class="flag"><span class="dot green"></span><div><div class="flag-title">Rien à signaler</div><div class="flag-body">Tous les champs attendus ont été extraits et cités.</div></div></div>';
-    }
-
-    // Repli utilise uniquement HORS "dossier complet" (erreur/scan/en cours) --
-    // une fois complet, le Sommaire affiche mandateHTML/vigilanceHTML ci-dessus
-    // a la place (signal plus riche, deja calcule).
-    let flagsHTML = '';
+    // Etat hors "complet" : message de statut honnete + relance si erreur.
+    let statusBlockHTML = '';
     if (!stepComplete) {
       if (stepError) {
-        // Relancer reprend precisement a l'etape en echec (doc.failedStage),
-        // jamais depuis le debut -- voir POST /documents/:id/retry.
-        flagsHTML = `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">Extraction interrompue</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Une erreur est survenue pendant le traitement.')}</div>
-          <button class="btn btn-outline" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button>
-        </div></div>`;
+        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot pink"></span><div><div class="flag-title">L'extraction a échoué</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Erreur inconnue.')}</div><button class="btn btn-solid" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button></div></div></div>`;
       } else if (stepScanned) {
-        flagsHTML = `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || "Ce PDF semble scanné, sans couche de texte extractible.")} Demandez au vendeur une version texte du document (export natif, pas un scan), ou son rent roll au format Excel.</div></div></div>`;
+        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Ce PDF semble scanné, sans couche de texte extractible.')} Demandez au vendeur une version texte du document, ou son rent roll au format Excel.</div></div></div></div>`;
       } else {
-        flagsHTML = `<div class="flag"><span class="dot trace"></span><div><div class="flag-title">Extraction en cours</div><div class="flag-body">${STATUS_LABELS[doc.status] || doc.status}</div></div></div>`;
+        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot trace"></span><div><div class="flag-title">Extraction en cours</div><div class="flag-body">${STATUS_LABELS[doc.status] || doc.status}</div></div></div></div>`;
       }
     }
-
-    // Récapitulatif exécutif rédigé par l'IA (voir server/services/dealRecap.js)
-    // -- ne s'affiche/se propose que dossier complet (a besoin de donnees
-    // verifiees/calculees). Declenche manuellement (comme le Contexte),
-    // resultat persiste (doc.dealRecap) : rejoue au fur et a mesure
-    // (playDealRecapReveal) a chaque arrivee sur l'onglet, jamais recalcule
-    // silencieusement a chaque visite.
-    const recapHTML = !stepComplete ? '' : (doc.dealRecap && doc.dealRecap.length
-      ? `<div class="panel deal-recap-panel">
-          <div class="panel-head"><h3>Récapitulatif</h3></div>
-          <div class="deal-recap-body" id="dealRecapBody">${doc.dealRecap.map(p => `<p>${escapeHtml(p)}</p>`).join('')}</div>
-        </div>`
-      : `<div class="panel deal-recap-panel">
-          <div class="panel-head"><h3>Récapitulatif</h3></div>
-          <div class="deal-recap-prompt" id="dealRecapPrompt">
-            <p>Générez un récapitulatif exécutif rédigé par l'IA à partir des données déjà extraites et vérifiées de ce dossier.</p>
-            <button class="btn btn-solid" id="dealRecapGenerateBtn">Générer le récapitulatif</button>
-          </div>
-        </div>`);
 
     document.getElementById('dealBody').innerHTML = `
       <div class="deal-header-card">
         <div class="deal-header-info">
-          <div class="deal-header-eyebrow">${doc.filename}${typeActif ? ' &nbsp;·&nbsp; <span class="chip conf-mid">' + typeActif.toUpperCase() + '</span>' : ''}${doc.isDemo ? ' &nbsp;·&nbsp; <span class="chip conf-mid">DÉMONSTRATION — DONNÉES FICTIVES</span>' : ''}</div>
-          <h1 class="deal-title" style="font-size:2.5rem;">${address}</h1>
-          <div class="deal-header-addr">${cpVille}${mapsLink}</div>
+          <div class="deal-header-eyebrow">${escapeHtml(doc.filename)}${typeActif ? ' &nbsp;·&nbsp; <span class="chip conf-mid">' + escapeHtml(typeActif.toUpperCase()) + '</span>' : ''}${doc.isDemo ? ' &nbsp;·&nbsp; <span class="chip conf-mid">DÉMONSTRATION — DONNÉES FICTIVES</span>' : ''}</div>
+          <h1 class="deal-title" style="font-size:2.2rem;">${escapeHtml(name)}</h1>
+          ${addrLine ? `<div class="deal-header-addr">${escapeHtml(addrLine)}</div>` : ''}
         </div>
         <div class="deal-header-price">
           <div class="dhp-item"><span class="label">Prix demandé</span><div class="val">${valFmt('prixDemande', fi.prixDemande) || '—'}</div></div>
@@ -936,69 +793,71 @@
         </div>
       </div>
 
-      <div class="deal-stage-bar">
-        <span class="label">STADE DU DEAL — DÉCISION DE L'ANALYSTE</span>
-        ${Object.entries(STAGE_LABELS).map(([key, label]) =>
-          `<button class="stage-chip${(doc.stage || 'triage') === key ? ' active' : ''}" data-set-stage="${key}">${label}</button>`).join('')}
-        ${stepComplete ? `<a class="btn btn-outline" style="margin-left:auto;" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx)</a>` : ''}
-      </div>
-
       ${doc.stage === 'rejete' && doc.decisionMotif ? `
       <div class="decision-banner">
         <div><div class="decision-title">Dossier refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
-        Motif : ${escapeHtml(doc.decisionMotif)}<br>Ce dossier vit dans Mémoire — rappelez-le dans le Vault en changeant son stade ci-dessus si le contexte a changé.</div>
+        Motif : ${escapeHtml(doc.decisionMotif)}<br>Ce dossier vit dans Mémoire — le bouton « Poursuivre » ci-dessous le rappelle dans le Vault.</div>
       </div>` : doc.decisionMotif ? `
       <div class="decision-banner recalled">
         <div><div class="decision-title">Rappelé dans le Vault — précédemment refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
         Ancien motif de refus : ${escapeHtml(doc.decisionMotif)}</div>
       </div>` : ''}
 
-      <div class="deal-photos-panel" id="dealPhotosGallery" style="display:none;"></div>
-
-      ${recapHTML}
-
-      <div class="grid-stats" style="grid-template-columns:repeat(3,1fr);">
-        ${stats.map(([l, v]) => `<div class="stat-card"><div class="label">${l}</div><div class="stat-num">${v}</div></div>`).join('')}
+      <div class="deal-decision-row">
+        <span class="label">DÉCISION</span>
+        <button class="btn ${doc.stage === 'underwriting' || doc.stage === 'comite' ? 'btn-solid' : 'btn-outline'}" id="dealPursueBtn">${doc.stage === 'rejete' ? '↩ Rappeler et poursuivre' : doc.stage === 'underwriting' || doc.stage === 'comite' ? '✓ Poursuivi' : '▶ Poursuivre'}</button>
+        <button class="btn btn-outline" id="dealAbandonBtn" ${doc.stage === 'rejete' ? 'disabled' : ''}>✕ Abandonner</button>
+        ${stepComplete ? `<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+          <a class="btn btn-ghost" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Excel</a>
+          <a class="btn btn-ghost" href="/api/documents/${doc.id}/export/docx" download>⬇ Note de comité</a>
+          <button class="btn btn-ghost" id="dealPresentationBtn">Présentation →</button>
+        </span>` : ''}
       </div>
 
-      <div class="panel" style="padding:26px 28px;margin-top:20px;">
-        <div class="panel-head" style="padding:0 0 20px;"><h3 style="font-size:1.05rem;">Avancement du dossier</h3></div>
-        <div class="deal-stepper">${stepper}</div>
-      </div>
-
-      ${confidenceHTML}
-
-      ${stepComplete ? '<div class="enrichment-block" id="enrichmentBlock"></div>' : ''}
+      ${statusBlockHTML}
 
       ${stepComplete ? `
-      <div class="split-panels" style="margin-top:20px;">
-        <div class="panel"><div class="panel-head"><h3>1 · Verdict par critère</h3><span class="label">VALEUR CONSTATÉE vs SEUIL DU MANDAT</span></div><div class="flags-list triage-mandate-panel">${mandateHTML}</div></div>
-        <div class="panel"><div class="panel-head"><h3>2 · Points d'attention${vigilanceCount > 0 ? ` (${vigilanceCount})` : ''}</h3><span class="label">TRIÉS PAR GRAVITÉ · SOURCÉS</span></div><div class="flags-list">${vigilanceHTML}</div></div>
-      </div>
-      <div class="split-panels" style="margin-top:20px;">
-        <div class="panel"><div class="panel-head"><h3>3 · Ce que le dossier ne dit pas</h3><span class="label">BLOQUANT vs SIMPLEMENT ABSENT</span></div><div class="flags-list">${unknownHTML}</div></div>
-        <div class="panel"><div class="panel-head"><h3>4 · Précédents</h3><span class="label">CE QUE MÉMOIRE REMONTE</span></div><div class="flags-list" id="dealPrecedents"><div class="flag"><span class="dot trace"></span><div><div class="flag-body">Recherche dans la mémoire du fonds…</div></div></div></div></div>
-      </div>` : `
-      <div class="split-panels" style="margin-top:20px;">
-        <div class="panel"><div class="panel-head"><h3>Points de vigilance</h3></div><div class="flags-list">${flagsHTML}</div></div>
-      </div>`}`;
+      <div class="deal-chat-panel">
+        <div class="deal-chat-log" id="dealChatLog">
+          <div class="deal-chat-empty">Posez une question sur ce dossier, ou lancez un mode : <b>Analyse</b> confronte les données extraites (avec leurs sources) aux critères du fonds ; <b>Points à vérifier</b> liste ce qui mérite attention avant de décider.</div>
+        </div>
+        <div class="deal-chat-dock">
+          <div class="deal-chat-modes">
+            <button class="stage-chip" id="dealModeAnalyse">📋 Analyse (critères du fonds)</button>
+            <button class="stage-chip" id="dealModePoints">⚠ Points à vérifier</button>
+          </div>
+          <div class="deal-chat-input-row">
+            <textarea id="dealChatInput" rows="1" placeholder="Posez une question sur ce dossier…"></textarea>
+            <button class="agent-send-btn" id="dealChatSendBtn" aria-label="Envoyer">↑</button>
+          </div>
+        </div>
+      </div>` : ''}
 
-    loadDealPhotos(doc);
-    if (stepComplete) loadEnrichmentBlock(doc.id);
-    if (stepComplete) loadDealPrecedents(doc);
+      <div class="panel" style="margin-top:20px;overflow:hidden;">
+        <div class="panel-head"><h3>Documents du dossier</h3><button class="btn btn-ghost" data-go="ingest">+ Ajouter</button></div>
+        <div id="dealDocsList">
+          <div class="deal-doc-line" data-open-file="/api/documents/${doc.id}/file">
+            <span class="doc-cat">Offering Memorandum</span>
+            <span class="doc-name">${escapeHtml(doc.filename)}</span>
+            ${statusChip(doc)}
+          </div>
+        </div>
+      </div>`;
 
-    document.querySelectorAll('#dealBody [data-go-dossier]').forEach(btn => btn.addEventListener('click', () => goDossierPage(btn.dataset.goDossier)));
-    // Barre d'action décisive (stade du deal) : PATCH puis re-rendu -- la
-    // valeur affichée repart TOUJOURS de la réponse serveur, jamais d'un
-    // état local optimiste qui pourrait mentir en cas d'échec.
-    document.querySelectorAll('#dealBody [data-set-stage]').forEach(btn => btn.addEventListener('click', async () => {
-      const stage = btn.dataset.setStage;
-      if (stage === (currentDoc.stage || 'triage')) return;
-      // Le rejet passe par la modale de motif (obligatoire) -- les autres
-      // stades s'appliquent directement.
-      if (stage === 'rejete') { openRejectModal(); return; }
-      await applyStageChange(stage);
-    }));
+    // ---------- listeners ----------
+    document.querySelectorAll('#dealBody [data-go]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.go)));
+    document.getElementById('dealPursueBtn')?.addEventListener('click', async () => {
+      if (doc.stage === 'underwriting' || doc.stage === 'comite') return;
+      await applyStageChange('underwriting');
+    });
+    document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
+    document.getElementById('dealPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
+    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => appendDealChatAnalyse());
+    document.getElementById('dealModePoints')?.addEventListener('click', () => appendDealChatPoints());
+    document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
+    document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDealChatQuestion(); }
+    });
     document.getElementById('dealRetryBtn')?.addEventListener('click', async (e) => {
       const btn = e.target;
       btn.disabled = true;
@@ -1007,17 +866,10 @@
         const res = await fetch(`/api/documents/${currentDoc.id}/retry`, { method: 'POST' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Échec de la relance.');
-        // Reprend a l'etape en echec (documents.js#resumePipeline), pas
-        // depuis le debut -- meme mecanique de suivi que l'import initial :
-        // on reinterroge le dossier jusqu'a ce qu'il quitte les statuts
-        // "en cours", puis on rafraichit completement la vue.
         const IN_PROGRESS = ['extracting_pages', 'extracting_identite', 'extracting_t12', 'extracting_signaux', 'computing_indicators'];
         const poll = setInterval(async () => {
-          const doc = await fetchDocument(currentDoc.id);
-          if (!IN_PROGRESS.includes(doc.status)) {
-            clearInterval(poll);
-            await refreshCurrentDoc();
-          }
+          const d2 = await fetchDocument(currentDoc.id);
+          if (!IN_PROGRESS.includes(d2.status)) { clearInterval(poll); await refreshCurrentDoc(); }
         }, 2000);
       } catch (err) {
         alert(err.message);
@@ -1025,24 +877,130 @@
         btn.textContent = "Relancer l'extraction";
       }
     });
-    document.getElementById('dealRecapGenerateBtn')?.addEventListener('click', async () => {
-      const btn = document.getElementById('dealRecapGenerateBtn');
-      const prompt = document.getElementById('dealRecapPrompt');
-      btn.disabled = true;
-      btn.textContent = 'Génération en cours…';
-      try {
-        const res = await fetch(`/api/documents/${currentDoc.id}/deal-recap`, { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-        currentDoc.dealRecap = data.paragraphs;
-        renderDeal(currentDoc);
-        await playDealRecapReveal();
-      } catch (err) {
-        prompt.insertAdjacentHTML('beforeend', `<p class="assistant-caveat">Erreur : ${escapeHtml(err.message)}</p>`);
-        btn.disabled = false;
-        btn.textContent = 'Générer le récapitulatif';
-      }
-    });
+    loadDealDocuments(doc);
+  }
+
+  // Lignes de documents du dossier : l'OM (rendu directement ci-dessus) +
+  // les annexes stockees telles quelles -- clic = ouvrir le fichier complet
+  // dans un nouvel onglet (le PDF/image reel, jamais un apercu reconstruit).
+  async function loadDealDocuments(doc) {
+    const list = document.getElementById('dealDocsList');
+    if (!list) return;
+    let supporting = [];
+    try { supporting = await fetch(`/api/documents/${doc.id}/supporting`).then(r => r.json()); } catch { /* liste indisponible */ }
+    if (Array.isArray(supporting) && supporting.length > 0) {
+      list.insertAdjacentHTML('beforeend', supporting.map(s => `
+        <div class="deal-doc-line" data-open-file="/api/documents/${doc.id}/supporting/${s.id}/file">
+          <span class="doc-cat">${escapeHtml(SUPPORTING_CATALOG.find(c => c.id === s.category)?.label || s.category)}</span>
+          <span class="doc-name">${escapeHtml(s.filename)}</span>
+        </div>`).join(''));
+    }
+    list.querySelectorAll('[data-open-file]').forEach(line => line.addEventListener('click', () => window.open(line.dataset.openFile, '_blank', 'noopener')));
+  }
+
+  // ---------- chat du dossier : modes deterministes + question libre ----------
+  function appendDealChatEntry(userLabel, leezHTML) {
+    const log = document.getElementById('dealChatLog');
+    if (!log) return null;
+    log.querySelector('.deal-chat-empty')?.remove();
+    if (userLabel) log.insertAdjacentHTML('beforeend', `<div class="deal-chat-msg user">${escapeHtml(userLabel)}</div>`);
+    const el = document.createElement('div');
+    el.className = 'deal-chat-msg leez';
+    el.innerHTML = leezHTML;
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return el;
+  }
+
+  // Mode Analyse : 100% deterministe -- confronte les criteres du fonds
+  // (computeMandateFit, deja calcule serveur) et les donnees extraites avec
+  // leurs sources cliquables (page + citation verifiee). Aucun appel au
+  // modele : c'est un rendu des donnees deja verifiees, presente en chat.
+  function appendDealChatAnalyse() {
+    const doc = currentDoc;
+    const fi = doc.ficheIdentite || {};
+    const ind = doc.indicateurs || {};
+    const fit = doc.audit?.mandateFit;
+    let critHTML;
+    if (!fit || !fit.configured || fit.criteria.length === 0) {
+      critHTML = '<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l\'onglet Critères pour activer la comparaison.</div>';
+    } else {
+      critHTML = `<div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
+        <span class="triage-criterion-icon">${c.status === 'ok' ? '✓' : c.status === 'echec' ? '✕' : '?'}</span>
+        <span><b>${escapeHtml(c.label)}</b><br>${escapeHtml(c.detail)}</span>
+      </div>`).join('')}</div>`;
+    }
+    const rows = [
+      ['adresse', 'Adresse', fi.adresse], ['typeActif', "Type d'actif", fi.typeActif], ['surfaceLocativeGLA', 'Surface locative (GLA)', fi.surfaceLocativeGLA],
+      ['prixDemande', 'Prix demandé', fi.prixDemande], ['rendementAffiche', 'Rendement affiché', fi.rendementAffiche], ['taxeFonciere', 'Taxe foncière', fi.taxeFonciere],
+    ].map(([key, label, f]) => {
+      const v = f && f.value != null && f.value !== '' ? formatFicheValue(key, f.value) : null;
+      const src = f && f.page ? `<button class="cite-link" data-cite-page="${f.page}" data-cite-quote="${escapeHtml(f.quote || '')}">p. ${f.page} →</button>` : '';
+      return `<tr><td>${label}</td><td>${v ? escapeHtml(String(v)) : '<span style="color:var(--text-faint);font-style:italic;">non communiqué</span>'}</td><td>${src}</td></tr>`;
+    }).join('');
+    const calcRows = [
+      ['Taux de capitalisation recalculé', ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : null],
+      ["Taux d'occupation physique (TOP)", ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : null],
+      ["Résultat net d'exploitation (NOI)", ind.resultatNetExploitation != null ? fmt(ind.resultatNetExploitation) + ' €' : null],
+    ].map(([label, v]) => `<tr><td>${label}</td><td>${v ? v : '<span style="color:var(--text-faint);font-style:italic;">non calculable</span>'}</td><td><span class="label">CALCULÉ</span></td></tr>`).join('');
+    const el = appendDealChatEntry('Analyse — données du dossier vs critères du fonds', `
+      <div class="label" style="margin-bottom:8px;">CONFORMITÉ AUX CRITÈRES DU FONDS</div>${critHTML}
+      <div class="label" style="margin:16px 0 4px;">DONNÉES EXTRAITES (CLIC SUR LA SOURCE = PAGE EXACTE, PHRASE SURLIGNÉE)</div>
+      <table class="chat-field-table">${rows}${calcRows}</table>
+      <button class="cite-link" data-open-extract style="margin-top:10px;">Ouvrir la grille complète (état locatif, T12, surfaces) →</button>`);
+    el?.querySelectorAll('[data-cite-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.citePage), btn.dataset.citeQuote)));
+    el?.querySelector('[data-open-extract]')?.addEventListener('click', () => goDossierPage('extract'));
+  }
+
+  // Mode Points a verifier : alertes deja calculees (audit.cards), ce que
+  // le dossier ne dit pas (criteres intestables + points a creuser) --
+  // deterministe egalement.
+  function appendDealChatPoints() {
+    const doc = currentDoc;
+    const cards = (doc.audit?.cards || []).filter(c => c.niveau === 'rouge' || c.niveau === 'orange');
+    const bloquants = (doc.audit?.mandateFit?.criteria || []).filter(c => c.status === 'indetermine');
+    const points = doc.audit?.pointsACreuser || [];
+    const cardsHTML = cards.length === 0
+      ? '<div class="flag"><span class="dot green"></span><div><div class="flag-body">Aucune alerte détectée sur les critères vérifiés par Leez.</div></div></div>'
+      : cards.map(c => `<div class="flag"><span class="dot ${c.niveau === 'rouge' ? 'pink' : 'amber'}"></span><div><div class="flag-title">${escapeHtml(c.titre)}</div><div class="flag-body">${escapeHtml(c.constat)}</div></div></div>`).join('');
+    const bloquantsHTML = bloquants.length === 0 ? '' : `
+      <div class="label" style="margin:14px 0 6px;">BLOQUANT — UN CRITÈRE DU MANDAT NE PEUT PAS ÊTRE TESTÉ</div>
+      ${bloquants.map(c => `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">${escapeHtml(c.label)}</div><div class="flag-body">${escapeHtml(c.detail)}</div></div></div>`).join('')}`;
+    const pointsHTML = points.length === 0 ? '' : `
+      <div class="label" style="margin:14px 0 6px;">À DEMANDER AVANT DE CONCLURE</div>
+      ${points.map(p => `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">${escapeHtml(p.titre)}</div><div class="flag-body">${escapeHtml(p.detail || '')}</div></div></div>`).join('')}`;
+    appendDealChatEntry('Points à vérifier avant de décider', `
+      <div class="label" style="margin-bottom:6px;">ALERTES (${cards.length})</div>
+      <div class="flags-list">${cardsHTML}</div>${bloquantsHTML}${pointsHTML}`);
+  }
+
+  // Question libre : meme moteur que l'Assistant global (dealChat.js cote
+  // serveur -- reponse par paragraphes, chacun avec sa source). Une erreur
+  // (ex. credits API epuises) s'affiche telle quelle, jamais masquee.
+  async function sendDealChatQuestion() {
+    const input = document.getElementById('dealChatInput');
+    const q = (input?.value || '').trim();
+    if (!q) return;
+    input.value = '';
+    const thinking = appendDealChatEntry(q, '<span style="color:var(--text-faint);">Réponse en cours…</span>');
+    try {
+      const fd = new FormData();
+      fd.append('question', q);
+      fd.append('dossierId', currentDoc.id);
+      const res = await fetch('/api/assistant/ask', { method: 'POST', body: fd });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Erreur lors de la réponse.');
+      const paras = (d.paragraphs || []).map(p => {
+        const src = p.sourceType === 'dossier' && p.page > 0
+          ? ` <button class="cite-link" data-cite-page="${p.page}" data-cite-quote="${escapeHtml(p.quote || '')}">p. ${p.page} →</button>` : '';
+        return `<p style="margin:0 0 8px;">${escapeHtml(p.text)}${src}</p>`;
+      }).join('');
+      thinking.innerHTML = paras || '<span style="color:var(--text-faint);">Aucune réponse.</span>';
+      if (d.caveat) thinking.insertAdjacentHTML('beforeend', `<p class="assistant-caveat">${escapeHtml(d.caveat)}</p>`);
+      thinking.querySelectorAll('[data-cite-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.citePage), btn.dataset.citeQuote)));
+    } catch (err) {
+      thinking.innerHTML = `<span style="color:var(--amber);">${escapeHtml(err.message)}</span>`;
+    }
   }
 
   // Photos du bien affichees sur le Sommaire : reutilise les documents
@@ -3314,7 +3272,7 @@
       overlayCloseBtn.style.display = 'inline-block';
     }
   }
-  document.getElementById('presentationRailBtn').addEventListener('click', () => openPresentationDeck(currentDoc));
+  document.getElementById('presentationRailBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
 
   // ================= COPILOTE DE LA PRÉSENTATION (barre flottante) =================
   // Exactement le meme composant visuel que #simFloatChat sur le Simulateur
@@ -4114,6 +4072,8 @@
     stagedOM = null;
     stagedSupporting = {};
     fileInput.value = '';
+    const nameInput = document.getElementById('ingestNameInput');
+    if (nameInput) nameInput.value = '';
     dropzone.classList.remove('staged');
     dropzone.querySelector('.primary').textContent = 'Offering Memorandum (OM) — glissez un PDF, ou cliquez pour parcourir';
     dropzone.querySelector('.secondary').textContent = "PDF texte natif · jusqu'à 32 Mo · déclenche l'analyse automatique";
@@ -4134,6 +4094,15 @@
     if (meta.length) formData.append('supportingMeta', JSON.stringify(meta));
 
     if (hasOM) {
+      // Le nom du dossier est choisi par l'analyste -- obligatoire (c'est
+      // lui qui identifie la carte dans le Vault et dans Mémoire).
+      const dossierName = (document.getElementById('ingestNameInput')?.value || '').trim();
+      if (!dossierName) {
+        alert("Choisissez d'abord un nom pour ce dossier.");
+        document.getElementById('ingestNameInput')?.focus();
+        return;
+      }
+      formData.append('displayName', dossierName);
       formData.append('file', stagedOM);
       statusCard.className = 'import-overlay'; statusCard.style.display = 'flex';
       document.getElementById('statusPhaseLabel').textContent = 'Envoi du document…';
