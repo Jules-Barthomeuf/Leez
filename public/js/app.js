@@ -860,6 +860,10 @@
         </div>
       </div>
 
+      ${stepComplete ? `<div style="display:flex;justify-content:flex-end;margin-top:14px;">
+        <a class="btn btn-outline" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx, formules actives)</a>
+      </div>` : ''}
+
       <div class="deal-photos-panel" id="dealPhotosGallery" style="display:none;"></div>
 
       ${recapHTML}

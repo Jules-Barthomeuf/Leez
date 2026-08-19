@@ -12,6 +12,7 @@ const { computeMandateFit, computeAuditCards, computePointsACreuser, computeAudi
 const { computeIndicateurs, computeMix, parseFrenchNumber } = require('../services/indicators');
 const { runConsistencyChecks } = require('../services/consistency');
 const { computeReconciliation } = require('../services/reconciliation');
+const { buildFeederWorkbook } = require('../services/exportExcel');
 const { isValidCategoryType } = require('../services/supportingCatalog');
 const { extractContexteNarratif } = require('../services/extraction');
 const { verifyContexteNarratif, locateQuote, deriveBox } = require('../services/verification');
@@ -469,6 +470,22 @@ router.get('/documents/:id/file', asyncHandler(async (req, res) => {
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier source introuvable.' });
   res.setHeader('Content-Type', 'application/pdf');
   fs.createReadStream(filePath).pipe(res);
+}));
+
+// Export Excel "feeder" (Écran 7) -- classeur .xlsx pret pour le modele de
+// souscription du fonds, formules natives (voir exportExcel.js). Dossier
+// incomplet = pas de donnees exploitables, jamais un classeur a moitie
+// rempli.
+router.get('/documents/:id/export/xlsx', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  if (doc.status !== 'complete') return res.status(400).json({ error: "L'extraction du dossier doit être terminée avant l'export." });
+  const shaped = shapeDocument(doc);
+  const buffer = await buildFeederWorkbook(shaped);
+  const safeName = (shaped.filename || 'leez-export').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.pdf$/i, '');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}_feeder.xlsx"`);
+  res.send(buffer);
 }));
 
 router.delete('/documents/:id', asyncHandler(async (req, res) => {
