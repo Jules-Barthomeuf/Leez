@@ -313,10 +313,12 @@
 
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
-  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'workflows', 'ingest', 'analyze', 'settings', 'account'];
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
-  let currentViewName = 'dashboard';
+  // Le Vault (liste des dossiers) est l'ecran d'arrivee par defaut -- pas
+  // l'Assistant : l'analyste arrive sur son travail, le chat est un outil.
+  let currentViewName = 'dossiers';
   // Declares ici (et non plus loin, pres du reste du code de l'ecran
   // Agents) : showView() est appelee des le tout debut du script (voir
   // applyRouteFromHash() au boot) et reference ces deux variables via
@@ -434,7 +436,9 @@
     // fichier). La microtache ne s'execute qu'apres l'evaluation complete
     // du script : plus aucune constante en zone morte.
     if (name === 'memoire') queueMicrotask(renderMemoire);
-    if (name === 'workflows') queueMicrotask(renderWorkflows);
+    // Le schema d'extraction reel (renderWorkflows) vit desormais en bas de
+    // la page Criteres : il documente ce sur quoi les tests s'appuient.
+    if (name === 'settings') queueMicrotask(renderWorkflows);
     // Le sondage du bloc Enrichissement (voir renderDeal/loadEnrichmentBlock)
     // n'a de sens que sur le Sommaire -- l'arreter en quittant la vue evite
     // des requetes inutiles sur les autres pages du dossier.
@@ -455,7 +459,7 @@
     const isDossierView = DOSSIER_SUBVIEWS.includes(currentViewName) || (currentViewName === 'analyze' && dossierMode);
     let hash = '';
     if (isDossierView && currentDoc) hash = `#dossiers/${currentDoc.id}/${currentViewName}`;
-    else if (currentViewName !== 'dashboard') hash = `#${currentViewName}`;
+    else if (currentViewName !== 'dossiers') hash = `#${currentViewName}`;
     if (location.hash === hash) return;
     history.pushState(null, '', location.pathname + location.search + hash);
   }
@@ -481,7 +485,7 @@
         if (parts[0] === 'analyze') dossierMode = false;
         showView(parts[0]);
       } else {
-        showView('dashboard');
+        showView('dossiers');
       }
     } finally {
       syncingRoute = false;
@@ -543,20 +547,26 @@
   };
 
   const statusChip = doc => {
-    if (doc.status === 'complete') return '<span class="chip conf-high">TERMINÉ</span>';
+    if (doc.status === 'complete') return '<span class="chip conf-high">ANALYSÉ</span>';
     if (doc.status === 'unsupported_scanned') return '<span class="chip conf-scan">SCAN NON PRIS EN CHARGE</span>';
     if (doc.status === 'error') return '<span class="chip conf-low">ERREUR</span>';
     return '<span class="chip status-trace">EN COURS</span>';
   };
 
-  // ================= DEALS PIPELINE (liste) ================= //
+  // ================= VAULT (liste des dossiers actifs) ================= //
   async function renderDossiersList() {
     const list = document.getElementById('dossiersList');
     list.innerHTML = '<div class="dossiers-empty">Chargement…</div>';
-    const docs = await fetchDocuments();
-    document.getElementById('dossiersCount').textContent = `${docs.length} deal${docs.length > 1 ? 's' : ''}`;
+    const allDocs = await fetchDocuments();
+    // Un dossier rejeté sort du Vault : il vit dans Mémoire (motif, rappel
+    // en un clic) -- jamais supprimé, simplement plus dans la pile active.
+    const docs = allDocs.filter(d => d.stage !== 'rejete');
+    const nbRejetes = allDocs.length - docs.length;
+    document.getElementById('dossiersCount').textContent =
+      `${docs.length} dossier${docs.length > 1 ? 's' : ''} actif${docs.length > 1 ? 's' : ''}` +
+      (nbRejetes > 0 ? ` · ${nbRejetes} refusé${nbRejetes > 1 ? 's' : ''} dans Mémoire` : '');
     if (docs.length === 0) {
-      list.innerHTML = '<div class="dossiers-empty">Aucun deal importé pour l\'instant.</div>';
+      list.innerHTML = `<div class="dossiers-empty">${nbRejetes > 0 ? 'Aucun dossier actif — les dossiers refusés sont dans Mémoire.' : "Aucun dossier importé pour l'instant."}</div>`;
       return;
     }
     list.innerHTML = docs.map(d => {
@@ -581,6 +591,7 @@
           <div><div class="label">Prix demandé</div><div class="dossier-val">${prixDemande}</div></div>
           <div><div class="label">Taux de capitalisation</div><div class="dossier-val">${cap}</div></div>
           <div><div class="label">Occupation (TOP)</div><div class="dossier-val">${occ}</div></div>
+          <div><div class="label">Champs cités vérifiés</div><div class="dossier-val">${d.verification && d.verification.total > 0 ? Math.round((d.verification.verified / d.verification.total) * 100) + ' %' : '—'}</div></div>
         </div>
         <div class="label dossier-row-time">${when}</div>
         <button class="dossier-row-delete" data-delete-id="${d.id}" title="Supprimer ce deal" aria-label="Supprimer ce deal">✕</button>
@@ -832,12 +843,10 @@
       if (!fit || !fit.configured || fit.criteria.length === 0) {
         mandateHTML = `<div class="flag"><span class="dot faint"></span><div><div class="flag-title">Aucun critère configuré</div><div class="flag-body">Définissez les critères d'investissement du fonds dans Réglages pour activer le match mandat.</div></div></div>`;
       } else {
-        const total = fit.criteria.length;
-        const okCount = fit.criteria.filter(c => c.status === 'ok').length;
-        const pct = total > 0 ? Math.round((okCount / total) * 100) : 0;
-        const verdictLabel = { conforme: 'Conforme', a_examiner: 'À examiner', hors_mandat: 'Hors mandat' }[fit.verdict];
-        mandateHTML = `<div class="triage-mandate-score"><span class="triage-mandate-pct">${pct} %</span><span class="mandate-verdict-badge ${fit.verdict}">${verdictLabel}</span></div>
-          <div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
+        // Pas de score global agrege : l'analyste doit voir critere par
+        // critere SUR QUOI ca casse (valeur constatee + seuil), pas un
+        // pourcentage qui melange un critere bloquant et un critere mineur.
+        mandateHTML = `<div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
             <span class="triage-criterion-icon">${c.status === 'ok' ? '✓' : c.status === 'echec' ? '✕' : '?'}</span>
             <span><b>${escapeHtml(c.label)}</b><br>${escapeHtml(c.detail)}</span>
           </div>`).join('')}</div>`;
@@ -850,6 +859,31 @@
         // (computeAuditCards) -- en tronquer une partie masquerait un vrai
         // signal (un dossier avec beaucoup d'alertes DOIT le montrer).
         : cards.map(c => `<div class="flag"><span class="dot ${c.niveau === 'rouge' ? 'pink' : 'amber'}"></span><div><div class="flag-title">${escapeHtml(c.titre)}</div><div class="flag-body">${escapeHtml(c.constat)}</div></div></div>`).join('');
+    }
+
+    // Bloc 3 de la pre-analyse : "ce que le dossier ne dit pas". Distingue
+    // ce qui est BLOQUANT pour decider (un test du mandat configure mais
+    // sans donnee pour repondre) de ce qui est simplement absent -- c'est
+    // cette distinction qui separe un NO-GO d'un "il me manque une info".
+    let unknownHTML = '';
+    if (stepComplete) {
+      const fitCriteria = doc.audit?.mandateFit?.criteria || [];
+      const bloquants = fitCriteria.filter(c => c.status === 'indetermine');
+      const points = doc.audit?.pointsACreuser || [];
+      const missingFields = Object.entries(FICHE_LABELS)
+        .filter(([k]) => !(fi[k] && fi[k].value != null))
+        .map(([, label]) => label);
+      const bloquantsHTML = bloquants.length === 0 ? '' : `
+        <div class="label" style="margin-bottom:8px;">BLOQUANT POUR DÉCIDER — UN CRITÈRE DU MANDAT NE PEUT PAS ÊTRE TESTÉ</div>
+        ${bloquants.map(c => `<div class="flag"><span class="dot pink"></span><div><div class="flag-title">${escapeHtml(c.label)}</div><div class="flag-body">${escapeHtml(c.detail)}</div></div></div>`).join('')}`;
+      const pointsHTML = points.length === 0 ? '' : `
+        <div class="label" style="margin:${bloquants.length ? '16px' : '0'} 0 8px;">À DEMANDER AVANT DE CONCLURE</div>
+        ${points.map(p => `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">${escapeHtml(p.titre)}</div><div class="flag-body">${escapeHtml(p.detail || '')}</div></div></div>`).join('')}`;
+      const absentsHTML = missingFields.length === 0 ? '' : `
+        <div class="label" style="margin:${bloquants.length || points.length ? '16px' : '0'} 0 8px;">ABSENT DU DOCUMENT, NON BLOQUANT (${missingFields.length})</div>
+        <div class="workflow-fields">${missingFields.map(l => `<span class="workflow-field">${escapeHtml(l)}</span>`).join('')}</div>`;
+      unknownHTML = (bloquantsHTML + pointsHTML + absentsHTML) ||
+        '<div class="flag"><span class="dot green"></span><div><div class="flag-title">Rien à signaler</div><div class="flag-body">Tous les champs attendus ont été extraits et cités.</div></div></div>';
     }
 
     // Repli utilise uniquement HORS "dossier complet" (erreur/scan/en cours) --
@@ -909,6 +943,16 @@
         ${stepComplete ? `<a class="btn btn-outline" style="margin-left:auto;" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx)</a>` : ''}
       </div>
 
+      ${doc.stage === 'rejete' && doc.decisionMotif ? `
+      <div class="decision-banner">
+        <div><div class="decision-title">Dossier refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
+        Motif : ${escapeHtml(doc.decisionMotif)}<br>Ce dossier vit dans Mémoire — rappelez-le dans le Vault en changeant son stade ci-dessus si le contexte a changé.</div>
+      </div>` : doc.decisionMotif ? `
+      <div class="decision-banner recalled">
+        <div><div class="decision-title">Rappelé dans le Vault — précédemment refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
+        Ancien motif de refus : ${escapeHtml(doc.decisionMotif)}</div>
+      </div>` : ''}
+
       <div class="deal-photos-panel" id="dealPhotosGallery" style="display:none;"></div>
 
       ${recapHTML}
@@ -928,8 +972,12 @@
 
       ${stepComplete ? `
       <div class="split-panels" style="margin-top:20px;">
-        <div class="panel"><div class="panel-head"><h3>Match mandat</h3></div><div class="flags-list triage-mandate-panel">${mandateHTML}</div></div>
-        <div class="panel"><div class="panel-head"><h3>Points de vigilance${vigilanceCount > 0 ? ` (${vigilanceCount})` : ''}</h3></div><div class="flags-list">${vigilanceHTML}</div></div>
+        <div class="panel"><div class="panel-head"><h3>1 · Verdict par critère</h3><span class="label">VALEUR CONSTATÉE vs SEUIL DU MANDAT</span></div><div class="flags-list triage-mandate-panel">${mandateHTML}</div></div>
+        <div class="panel"><div class="panel-head"><h3>2 · Points d'attention${vigilanceCount > 0 ? ` (${vigilanceCount})` : ''}</h3><span class="label">TRIÉS PAR GRAVITÉ · SOURCÉS</span></div><div class="flags-list">${vigilanceHTML}</div></div>
+      </div>
+      <div class="split-panels" style="margin-top:20px;">
+        <div class="panel"><div class="panel-head"><h3>3 · Ce que le dossier ne dit pas</h3><span class="label">BLOQUANT vs SIMPLEMENT ABSENT</span></div><div class="flags-list">${unknownHTML}</div></div>
+        <div class="panel"><div class="panel-head"><h3>4 · Précédents</h3><span class="label">CE QUE MÉMOIRE REMONTE</span></div><div class="flags-list" id="dealPrecedents"><div class="flag"><span class="dot trace"></span><div><div class="flag-body">Recherche dans la mémoire du fonds…</div></div></div></div></div>
       </div>` : `
       <div class="split-panels" style="margin-top:20px;">
         <div class="panel"><div class="panel-head"><h3>Points de vigilance</h3></div><div class="flags-list">${flagsHTML}</div></div>
@@ -937,6 +985,7 @@
 
     loadDealPhotos(doc);
     if (stepComplete) loadEnrichmentBlock(doc.id);
+    if (stepComplete) loadDealPrecedents(doc);
 
     document.querySelectorAll('#dealBody [data-go-dossier]').forEach(btn => btn.addEventListener('click', () => goDossierPage(btn.dataset.goDossier)));
     // Barre d'action décisive (stade du deal) : PATCH puis re-rendu -- la
@@ -945,12 +994,10 @@
     document.querySelectorAll('#dealBody [data-set-stage]').forEach(btn => btn.addEventListener('click', async () => {
       const stage = btn.dataset.setStage;
       if (stage === (currentDoc.stage || 'triage')) return;
-      const res = await fetch(`/api/documents/${currentDoc.id}/stage`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage }),
-      });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Échec du changement de stade.'); return; }
-      currentDoc.stage = (await res.json()).stage;
-      renderDeal(currentDoc);
+      // Le rejet passe par la modale de motif (obligatoire) -- les autres
+      // stades s'appliquent directement.
+      if (stage === 'rejete') { openRejectModal(); return; }
+      await applyStageChange(stage);
     }));
     document.getElementById('dealRetryBtn')?.addEventListener('click', async (e) => {
       const btn = e.target;
@@ -1004,6 +1051,73 @@
   // du dossier. Recuperation async separee (comme la Presentation) pour ne
   // pas retarder le reste du Sommaire ; masque entierement la section si
   // aucune photo n'a ete deposee.
+  // ---------- décision (stade, rejet avec motif, précédents) ----------
+  async function applyStageChange(stage, motif) {
+    const res = await fetch(`/api/documents/${currentDoc.id}/stage`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(motif ? { stage, motif } : { stage }),
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Échec du changement de stade.'); return false; }
+    // Repart des donnees reellement en base (motif/date/auteur ecrits par le
+    // serveur), jamais d'un etat local optimiste.
+    await refreshCurrentDoc();
+    return true;
+  }
+  function openRejectModal() {
+    document.getElementById('rejectMotifInput').value = '';
+    document.getElementById('rejectModal').classList.add('open');
+    document.getElementById('rejectMotifInput').focus();
+  }
+  function closeRejectModal() { document.getElementById('rejectModal').classList.remove('open'); }
+  document.getElementById('rejectModalClose').addEventListener('click', closeRejectModal);
+  document.getElementById('rejectCancelBtn').addEventListener('click', closeRejectModal);
+  document.getElementById('rejectModalBackdrop').addEventListener('click', closeRejectModal);
+  document.getElementById('rejectConfirmBtn').addEventListener('click', async () => {
+    const motif = document.getElementById('rejectMotifInput').value.trim();
+    if (!motif) { alert('Un motif est obligatoire pour rejeter un dossier.'); return; }
+    if (await applyStageChange('rejete', motif)) closeRejectModal();
+  });
+
+  // Bloc 4 de la pre-analyse : precedents remontes de la memoire du fonds.
+  // Similarite DETERMINISTE et affichee telle quelle (meme type d'actif, ou
+  // meme ville citee) -- des comparables issus des propres dossiers du
+  // fonds, jamais "du marche", et jamais un score de similarite opaque.
+  async function loadDealPrecedents(doc) {
+    const el = document.getElementById('dealPrecedents');
+    if (!el) return;
+    try {
+      const all = await fetchDocuments();
+      const fi = doc.ficheIdentite || {};
+      const myType = (fi.typeActif?.value || '').toLowerCase();
+      const myVille = (fi.codePostalVille?.value || '').toLowerCase();
+      const matches = all.filter(d => {
+        if (d.id === doc.id) return false;
+        const t = (d.ficheIdentite?.typeActif?.value || '').toLowerCase();
+        const v = (d.ficheIdentite?.codePostalVille?.value || '').toLowerCase();
+        return (myType && t && (t.includes(myType) || myType.includes(t))) || (myVille && v && v === myVille);
+      });
+      if (matches.length === 0) {
+        el.innerHTML = '<div class="flag"><span class="dot faint"></span><div><div class="flag-body">Aucun dossier comparable (même typologie ou même ville) dans la mémoire du fonds pour l\'instant.</div></div></div>';
+        return;
+      }
+      el.innerHTML = matches.slice(0, 4).map(d => {
+        const name = d.ficheIdentite?.adresse?.value || d.filename;
+        const prix = d.ficheIdentite?.prixDemande?.value || '—';
+        const cap = d.indicateurs?.capRateRecalcule != null ? fmt2(d.indicateurs.capRateRecalcule) + ' %' : '—';
+        const decision = d.stage === 'rejete' && d.decisionMotif
+          ? `Refusé${d.decidedAt ? ' le ' + new Date(d.decidedAt).toLocaleDateString('fr-FR') : ''} — ${escapeHtml(d.decisionMotif)}`
+          : STAGE_LABELS[d.stage] || 'Triage';
+        return `<div class="flag" data-precedent-id="${d.id}" style="cursor:pointer;">
+          <span class="dot ${d.stage === 'rejete' ? 'pink' : 'trace'}"></span>
+          <div><div class="flag-title">${escapeHtml(name)}</div>
+          <div class="flag-body">${escapeHtml(prix)} · capi recalculée ${cap} · ${decision}</div></div>
+        </div>`;
+      }).join('');
+      el.querySelectorAll('[data-precedent-id]').forEach(row => row.addEventListener('click', () => openDossier(row.dataset.precedentId)));
+    } catch {
+      el.innerHTML = '<div class="flag"><span class="dot faint"></span><div><div class="flag-body">Mémoire indisponible.</div></div></div>';
+    }
+  }
+
   async function loadDealPhotos(doc) {
     const gallery = document.getElementById('dealPhotosGallery');
     if (!gallery) return;
@@ -2570,7 +2684,39 @@
     const body = document.getElementById('memoireDealsBody');
     if (!body) return;
     body.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);">Chargement…</td></tr>';
-    const docs = await fetchDocuments();
+    const allDocs = await fetchDocuments();
+
+    // Deals refusés : la partie la plus précieuse de la mémoire -- motif,
+    // auteur, date, et un RAPPEL vers le Vault en un clic (rien n'est
+    // jamais supprimé ; un refus n'est pas définitif, le contexte change).
+    const rejected = allDocs.filter(d => d.stage === 'rejete');
+    const rejBody = document.getElementById('memoireRejectedBody');
+    document.getElementById('memoireRejectedCount').textContent = `${rejected.length} REFUSÉ${rejected.length > 1 ? 'S' : ''}`;
+    rejBody.innerHTML = rejected.length === 0
+      ? '<tr><td colspan="7" style="color:var(--text-faint);font-style:italic;">Aucun dossier refusé pour l\'instant.</td></tr>'
+      : rejected.map(d => {
+        const name = d.ficheIdentite?.adresse?.value || d.filename;
+        const type = d.ficheIdentite?.typeActif?.value || '—';
+        const prix = d.ficheIdentite?.prixDemande?.value || '—';
+        const when = d.decidedAt ? new Date(d.decidedAt).toLocaleDateString('fr-FR') : '—';
+        return `<tr data-doc-id="${d.id}">
+          <td style="font-weight:600;color:var(--text);">${escapeHtml(name)}</td><td>${escapeHtml(type)}</td>
+          <td class="num">${escapeHtml(prix)}</td><td>${when}</td><td>${escapeHtml(d.decidedBy || '—')}</td>
+          <td class="memoire-motif">${escapeHtml(d.decisionMotif || '—')}</td>
+          <td><button class="btn btn-outline" data-recall-id="${d.id}" style="white-space:nowrap;">↩ Rappeler dans le Vault</button></td>
+        </tr>`;
+      }).join('');
+    rejBody.querySelectorAll('tr[data-doc-id]').forEach(tr => tr.addEventListener('click', () => openDossier(tr.dataset.docId)));
+    rejBody.querySelectorAll('[data-recall-id]').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const res = await fetch(`/api/documents/${btn.dataset.recallId}/stage`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: 'triage' }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Échec du rappel.'); return; }
+      renderMemoire();
+    }));
+
+    const docs = allDocs;
     document.getElementById('memoireDealsCount').textContent = `${docs.length} DEAL${docs.length > 1 ? 'S' : ''}`;
     if (docs.length === 0) {
       body.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);font-style:italic;">Aucun deal importé pour l\'instant.</td></tr>';

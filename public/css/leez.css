@@ -1834,3 +1834,23 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   border-radius:999px;padding:4px 11px;
 }
 .workflow-note{font-family:var(--sans);font-size:.78rem;color:var(--text-faint);line-height:1.6;margin-top:20px;font-style:italic;}
+
+/* ---------- Critères -> tests visibles ---------- */
+.criteria-tests{display:flex;flex-direction:column;gap:10px;}
+.criteria-test{
+  font-family:var(--sans);font-size:.8rem;color:var(--text-muted);line-height:1.6;
+  padding:12px 16px;background:var(--surface-raised);border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm);
+}
+.criteria-test strong{color:var(--text);}
+
+/* ---------- Décision (bannière de refus / rappel depuis Mémoire) ---------- */
+.decision-banner{
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--pink-dim);border:1px solid var(--pink);
+  border-radius:var(--radius);padding:16px 20px;margin-top:14px;
+  font-family:var(--sans);font-size:.82rem;color:var(--text-body);line-height:1.6;
+}
+.decision-banner.recalled{background:var(--amber-dim);border-color:var(--amber);}
+.decision-banner .decision-title{font-weight:700;color:var(--text);margin-bottom:2px;}
+.memoire-motif{max-width:340px;white-space:normal;line-height:1.5;}

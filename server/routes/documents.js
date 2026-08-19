@@ -52,6 +52,9 @@ function shapeDocument(doc) {
     presentationHiddenCards: doc.presentation_hidden_cards_json ?? [],
     dealRecap: doc.deal_recap_json ?? null,
     stage: doc.stage || 'triage',
+    decisionMotif: doc.decision_motif ?? null,
+    decidedAt: doc.decided_at ?? null,
+    decidedBy: doc.decided_by ?? null,
   };
 }
 
@@ -174,9 +177,30 @@ router.post('/documents', uploadCombined, asyncHandler(async (req, res) => {
   res.status(201).json({ id, filename: file.originalname, status: 'uploaded' });
 }));
 
+// Indice de vérification (miroir serveur de confidenceStats/walkCited dans
+// app.js) : compte les champs cités -- objets {value, quote, page} -- et
+// ceux dont la valeur est présente. Sert aux cartes du Vault sans expédier
+// les JSON complets au client.
+function countCitedFields(node, acc) {
+  if (node == null) return acc;
+  if (Array.isArray(node)) { node.forEach(n => countCitedFields(n, acc)); return acc; }
+  if (typeof node !== 'object') return acc;
+  if ('value' in node && 'quote' in node && 'page' in node) {
+    acc.total++; if (node.value !== null && node.value !== undefined) acc.verified++;
+    return acc;
+  }
+  Object.values(node).forEach(v => countCitedFields(v, acc));
+  return acc;
+}
+
 router.get('/documents', asyncHandler(async (req, res) => {
   const docs = await listDocuments(req.workspaceId);
-  res.json(docs.map(doc => ({
+  res.json(docs.map(doc => {
+    const verification = { total: 0, verified: 0 };
+    countCitedFields(doc.fiche_identite_json, verification);
+    countCitedFields(doc.etat_locatif_json, verification);
+    countCitedFields(doc.t12_json, verification);
+    return {
     id: doc.id,
     filename: doc.filename,
     uploadedAt: doc.uploaded_at,
@@ -185,10 +209,15 @@ router.get('/documents', asyncHandler(async (req, res) => {
     pageCount: doc.page_count,
     ficheIdentite: doc.fiche_identite_json ?? null,
     indicateurs: doc.indicateurs_json ?? null,
-    isDemo: !!doc.is_demo,
-    supportingCount: doc.supporting_count ?? 0,
-    stage: doc.stage || 'triage',
-  })));
+      isDemo: !!doc.is_demo,
+      supportingCount: doc.supporting_count ?? 0,
+      stage: doc.stage || 'triage',
+      verification,
+      decisionMotif: doc.decision_motif ?? null,
+      decidedAt: doc.decided_at ?? null,
+      decidedBy: doc.decided_by ?? null,
+    };
+  }));
 }));
 
 router.get('/documents/:id', asyncHandler(async (req, res) => {
@@ -244,8 +273,22 @@ router.patch('/documents/:id/stage', asyncHandler(async (req, res) => {
   if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
   const stage = req.body?.stage;
   if (!DEAL_STAGES.includes(stage)) return res.status(400).json({ error: `Stade invalide — attendu : ${DEAL_STAGES.join(', ')}.` });
-  await updateDocument(doc.id, { stage }, req.workspaceId);
-  res.json({ ok: true, stage });
+  const fields = { stage };
+  if (stage === 'rejete') {
+    // Une décision de rejet porte TOUJOURS un motif : c'est ce motif qui
+    // fait la valeur de Mémoire ("refusé en mars pour concentration
+    // locative") -- un rejet muet serait une perte d'information définitive.
+    const motif = typeof req.body?.motif === 'string' ? req.body.motif.trim() : '';
+    if (!motif) return res.status(400).json({ error: 'Un motif est obligatoire pour rejeter un dossier.' });
+    fields.decision_motif = motif;
+    fields.decided_at = new Date().toISOString();
+    fields.decided_by = req.userEmail || null;
+  }
+  // Un rappel depuis Mémoire (stage quittant 'rejete') CONSERVE
+  // volontairement decision_motif/decided_at/decided_by : ils deviennent
+  // l'historique "précédemment refusé" affiché en tête du dossier.
+  await updateDocument(doc.id, fields, req.workspaceId);
+  res.json({ ok: true, stage, decisionMotif: fields.decision_motif ?? doc.decision_motif ?? null });
 }));
 
 // Verrouillage du Simulateur pour la Presentation comite : le moteur de

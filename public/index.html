@@ -24,14 +24,12 @@
     <button class="btn btn-solid sidebar-new-deal" data-go="ingest">+ Nouveau deal</button>
     <nav class="sidebar-nav">
       <div class="sidebar-section-label">Plateforme</div>
+      <button data-view="dossiers"><span class="sidebar-ico">▤</span>Vault</button>
+      <button data-view="memoire"><span class="sidebar-ico">🏛</span>Mémoire</button>
+      <button data-view="settings"><span class="sidebar-ico">◎</span>Critères</button>
       <button data-view="dashboard"><span class="sidebar-ico">✦</span>Assistant</button>
-      <button data-view="dossiers"><span class="sidebar-ico">▤</span>Pipeline Deals</button>
-      <button data-view="memoire"><span class="sidebar-ico">🏛</span>Mémoire Institutionnelle</button>
-      <button data-view="workflows"><span class="sidebar-ico">⚡</span>Bibliothèque de Workflows</button>
-      <button data-view="ingest"><span class="sidebar-ico">⇪</span>Importer</button>
+      <div class="sidebar-section-label">Outils</div>
       <button data-view="analyze"><span class="sidebar-ico">∿</span>Simulateur</button>
-      <div class="sidebar-section-label">Workspace</div>
-      <button data-view="settings"><span class="sidebar-ico">◎</span>Paramètres du Mandat</button>
       <button data-view="account"><span class="sidebar-ico">◉</span>Mon compte</button>
     </nav>
     <div class="sidebar-foot">
@@ -57,14 +55,14 @@
 
       <div class="main-content">
         <div class="breadcrumb" id="sharedBreadcrumb" style="display:none;">
-          <button data-go="dossiers">Deals</button>
+          <button data-go="dossiers">Vault</button>
           <span class="sep">/</span>
           <span class="current" id="breadcrumbName">—</span>
           <span class="chip conf-mid" id="demoChip" style="display:none;">DÉMONSTRATION</span>
         </div>
 
         <!-- ================= DASHBOARD ================= -->
-        <section class="view active" id="view-dashboard">
+        <section class="view" id="view-dashboard">
           <div class="agent-web-layout" id="agentWebLayout">
             <div class="agent-shell" id="agentShell">
               <div class="agent-intro" id="agentIntro">
@@ -135,33 +133,44 @@
         </section>
 
         <!-- ================= DOSSIERS ================= -->
-        <section class="view" id="view-dossiers">
+        <section class="view active" id="view-dossiers">
           <div class="view-head">
             <div>
-              <h1>Deals Pipeline</h1>
+              <h1>Vault</h1>
               <div class="label" id="dossiersCount">—</div>
             </div>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
               <input type="search" id="dossiersFilter" class="pipeline-filter" placeholder="Filtrer — adresse, type d'actif…" autocomplete="off">
-              <button class="btn btn-outline" data-go="ingest">+ Nouveau deal</button>
+              <button class="btn btn-solid" data-go="ingest">⇪ Déposer un dossier</button>
             </div>
           </div>
+          <!-- Pas de puce "Rejeté" ici : un dossier rejeté sort du Vault et
+               vit dans Mémoire (avec son motif et un bouton de rappel). -->
           <div class="pipeline-stage-chips" id="pipelineStageChips">
             <button class="stage-chip active" data-stage-filter="">Tous</button>
             <button class="stage-chip" data-stage-filter="triage">Triage</button>
             <button class="stage-chip" data-stage-filter="underwriting">Underwriting</button>
             <button class="stage-chip" data-stage-filter="comite">Comité</button>
             <button class="stage-chip" data-stage-filter="attente">En attente</button>
-            <button class="stage-chip" data-stage-filter="rejete">Rejeté</button>
           </div>
           <div class="dossiers-list" id="dossiersList"></div>
         </section>
 
         <!-- ================= MÉMOIRE INSTITUTIONNELLE ================= -->
         <section class="view" id="view-memoire">
-          <div class="view-head"><div><h1>Mémoire Institutionnelle</h1><div class="label">DEALS ANALYSÉS PAR LE FONDS · BASE DE CONNAISSANCES INTERROGEABLE</div></div></div>
+          <div class="view-head"><div><h1>Mémoire</h1><div class="label">L'HISTORIQUE DU FONDS : DEALS ANALYSÉS, DÉCISIONS ET MOTIFS, COMPARABLES INTERNES</div></div></div>
 
           <div class="panel" style="overflow:hidden;">
+            <div class="panel-head"><h3>Deals refusés</h3><span class="label" id="memoireRejectedCount">—</span></div>
+            <div style="overflow-x:auto;">
+              <table class="memoire-table">
+                <thead><tr><th>Actif</th><th>Type</th><th class="num">Prix demandé</th><th>Refusé le</th><th>Par</th><th>Motif</th><th></th></tr></thead>
+                <tbody id="memoireRejectedBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel" style="overflow:hidden;margin-top:20px;">
             <div class="panel-head"><h3>Deals analysés</h3><span class="label" id="memoireDealsCount">—</span></div>
             <div style="overflow-x:auto;">
               <table class="memoire-table">
@@ -182,11 +191,6 @@
           </div>
         </section>
 
-        <!-- ================= BIBLIOTHÈQUE DE WORKFLOWS ================= -->
-        <section class="view" id="view-workflows">
-          <div class="view-head"><div><h1>Bibliothèque de Workflows</h1><div class="label">MODÈLES D'EXTRACTION — CE QUE LEEZ EXTRAIT RÉELLEMENT, CHAMP PAR CHAMP</div></div></div>
-          <div id="workflowsBody"></div>
-        </section>
 
         <!-- ================= SOMMAIRE (DEAL) ================= -->
         <section class="view" id="view-deal">
@@ -684,7 +688,7 @@
 
         <!-- ================= RÉGLAGES DU FONDS ================= -->
         <section class="view" id="view-settings">
-          <div class="view-head"><div><h1>Paramètres du Mandat</h1><div class="label">CRITÈRES STRICTS D'INVESTISSEMENT DU FONDS — UTILISÉS PAR LE TRIAGE ET LES POINTS D'ATTENTION</div></div></div>
+          <div class="view-head"><div><h1>Critères</h1><div class="label">LE MANDAT DU FONDS — CHAQUE CRITÈRE DEVIENT UN TEST VISIBLE, APPLIQUÉ À CHAQUE DOSSIER</div></div></div>
           <div class="panel settings-form">
             <div class="settings-field">
               <label class="label" for="settingsTailleMin">Taille de deal minimum (€)</label>
@@ -710,6 +714,22 @@
             <span class="label" id="settingsSaved" style="margin-left:14px;display:none;color:var(--green);">Enregistré.</span>
             <p style="font-size:.78rem;color:var(--text-faint);margin-top:18px;line-height:1.5;">Laissez un champ vide pour ne pas l'appliquer au filtrage. Sans critère renseigné, l'onglet Points d'attention n'affiche aucune alerte de non-conformité.</p>
           </div>
+
+          <!-- Traduction des critères en tests VISIBLES : montre exactement
+               comment chaque valeur saisie ci-dessus est appliquée par
+               computeMandateFit (interpretation.js) -- c'est là que se
+               construit la confiance de l'analyste dans le verdict. -->
+          <div class="panel" style="padding:24px 28px;margin-top:20px;">
+            <div class="panel-head" style="padding:0 0 12px;"><h3 style="font-size:1.05rem;">Comment ces critères deviennent des tests</h3><span class="label">APPLIQUÉS TELS QUELS, DÉTERMINISTES, À CHAQUE DOSSIER</span></div>
+            <div class="criteria-tests">
+              <div class="criteria-test"><strong>Taille du deal</strong> — le prix demandé cité dans le document est comparé à la fourchette min/max. Prix non extrait → test « indéterminé », jamais un verdict par défaut.</div>
+              <div class="criteria-test"><strong>Typologie</strong> — le type d'actif cité doit contenir l'une de vos typologies (comparaison de texte, insensible à la casse).</div>
+              <div class="criteria-test"><strong>Localisation</strong> — correspondance textuelle approximative sur adresse, code postal/ville et sous-marché cités. C'est un test de texte, pas une géolocalisation.</div>
+              <div class="criteria-test"><strong>Rendement cible</strong> — comparé au taux de capitalisation <em>recalculé</em> par Leez (loyers réels de l'état locatif ÷ prix), pas au rendement affiché par le vendeur.</div>
+            </div>
+          </div>
+
+          <div id="workflowsBody"></div>
         </section>
 
       </div>
@@ -770,6 +790,25 @@
     <button class="source-modal-close" id="assistantDossierModalClose" aria-label="Fermer">✕</button>
     <div class="source-modal-head"><span class="label">CHOISIR UN DOSSIER</span></div>
     <div class="formula-modal-body" id="assistantDossierModalBody"></div>
+  </div>
+</div>
+
+<!-- Motif de rejet : une décision de rejet porte TOUJOURS un motif -- c'est
+     lui qui fait la valeur de Mémoire ("refusé en mars pour concentration
+     locative"). Le serveur refuse un rejet sans motif (PATCH /stage). -->
+<div class="source-modal" id="rejectModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="rejectModalBackdrop"></div>
+  <div class="source-modal-panel formula-modal-panel">
+    <button class="source-modal-close" id="rejectModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head"><span class="label">REJETER CE DOSSIER</span></div>
+    <div class="formula-modal-body">
+      <p style="font-family:var(--sans);font-size:.82rem;color:var(--text-muted);line-height:1.6;margin:0 0 14px;">Le dossier sortira du Vault et rejoindra Mémoire avec ce motif. Rien n'est supprimé : vous pourrez le rappeler dans le Vault en un clic si le contexte change (baisse de prix, locataire resigné…).</p>
+      <textarea id="rejectMotifInput" class="notes-textarea" style="min-height:110px;" placeholder="Motif du refus — ex. « Concentration locative : 3 locataires = 69,5 % des loyers » ou « Hors critères : ticket 42 M€ vs cible 15–20 M€ »"></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button class="btn btn-outline" id="rejectCancelBtn">Annuler</button>
+        <button class="btn btn-solid" id="rejectConfirmBtn">Rejeter le dossier</button>
+      </div>
+    </div>
   </div>
 </div>
 
