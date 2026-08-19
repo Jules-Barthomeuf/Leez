@@ -258,38 +258,34 @@
           </div>
         </section>
 
-        <!-- ================= EXTRAIRE ================= -->
+        <!-- ================= EXTRAIRE (grille type "sheet") ================= -->
         <section class="view" id="view-extract">
-          <div class="view-head"><div><h1>Données extraites</h1></div></div>
-
-          <div class="extract-tabs">
-            <button class="etab active" data-etab="identite">Fiche signalétique</button>
-            <button class="etab" data-etab="contexte">Contexte</button>
-            <button class="etab" data-etab="rentroll">État locatif</button>
-            <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
-            <button class="etab" data-etab="mix">Répartition des surfaces</button>
-            <button class="etab" data-etab="metrics">Indicateurs clés</button>
+          <div class="sheet-topbar">
+            <div>
+              <h1 class="sheet-title" id="sheetTitle">Grille d'extraction</h1>
+              <span class="label" id="etabLabel" style="display:none;"></span><span class="label" id="etabHint" style="display:none;"></span>
+            </div>
+            <div class="sheet-topbar-actions">
+              <button class="btn btn-ghost" id="editUndoBtn" disabled>↺ Annuler la dernière modification</button>
+              <button class="btn btn-outline" id="sheetAssistantBtn">Ouvrir dans l'Assistant</button>
+              <a class="btn btn-outline" id="sheetExportLink" href="#" download>⬇ Exporter</a>
+            </div>
           </div>
 
-          <div class="extract-split">
-            <div class="extract-grid-side">
-              <div class="extract-toolbar">
-                <span class="label" id="etabLabel">FICHE SIGNALÉTIQUE DU BIEN</span>
-                <div class="extract-toolbar-right">
-                  <button class="btn btn-ghost" id="editUndoBtn" disabled>↺ Annuler la dernière modification</button>
-                  <span class="label" id="etabHint">DONNÉES ISSUES DE LA DESCRIPTION DU BIEN</span>
-                </div>
-              </div>
+          <div class="sheet-toolbar">
+            <input type="search" id="sheetFilter" class="vault-mini-search" placeholder="Filtrer les lignes…" autocomplete="off">
+            <label class="sheet-toggle"><input type="checkbox" id="sheetVerifiedToggle"> Surligner les cellules vérifiées</label>
+          </div>
 
-              <div class="extract-scroll" data-pane="identite"><div id="paneIdentite"></div></div>
-              <div class="extract-scroll" data-pane="contexte" style="display:none;">
-                <div class="memo-generate-prompt" id="contexteGeneratePrompt">
-                  <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut rédiger une synthèse en plusieurs paragraphes du contexte de la vente (motif, processus, historique de détention, profil d'acquéreur recherché), à partir du texte réel du document. Chaque paragraphe est appuyé par des citations vérifiées individuellement — cette synthèse est une lecture rédigée, pas une donnée extraite au même titre que la fiche d'identité.</p>
-                  <button class="btn btn-solid" id="contexteGenerateBtn">Générer l'analyse du contexte</button>
-                </div>
-                <div id="contexteBody" style="display:none;padding:20px;"></div>
-              </div>
-              <div class="extract-scroll" data-pane="rentroll" style="display:none;">
+          <div class="sheet" id="extractSheet">
+            <div class="sheet-group" data-group="identite">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> Fiche signalétique <span class="sheet-group-count" id="groupCountIdentite"></span></button>
+              <div class="sheet-group-body"><div id="paneIdentite"></div></div>
+            </div>
+
+            <div class="sheet-group" data-group="rentroll">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> État locatif <span class="sheet-group-count" id="groupCountRentroll"></span></button>
+              <div class="sheet-group-body" style="overflow-x:auto;">
                 <table class="rr-table">
                   <thead><tr>
                     <th>Lot</th><th>Locataire</th><th>Type</th><th class="num">Surface m²</th><th class="num">% total loyer</th><th class="num">Loyer facial €/m²/an</th><th class="num">Loyer écon. €/m²/an</th><th class="num">Loyer mensuel</th><th class="num">Loyer annuel</th><th>Indexation</th><th>Prise d'effet</th><th>Échéance</th><th>Prochaine échéance triennale</th><th>Sources</th>
@@ -297,19 +293,31 @@
                   <tbody id="rrBody"></tbody>
                 </table>
               </div>
-              <div class="extract-scroll" data-pane="t12" style="display:none;">
+            </div>
+
+            <div class="sheet-group" data-group="t12">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> Compte d'exploitation — 12 mois glissants <span class="sheet-group-count" id="groupCountT12"></span></button>
+              <div class="sheet-group-body">
                 <table>
                   <thead><tr><th>Poste</th><th class="num">Montant</th><th>Source</th></tr></thead>
                   <tbody id="t12Body"></tbody>
                 </table>
               </div>
-              <div class="extract-scroll" data-pane="mix" style="display:none;">
+            </div>
+
+            <div class="sheet-group" data-group="mix">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> Répartition des surfaces <span class="sheet-group-count" id="groupCountMix"></span></button>
+              <div class="sheet-group-body">
                 <table>
                   <thead><tr><th>Tranche de surface</th><th class="num">Lots</th><th class="num">Surface totale</th><th class="num">Loyer moyen/m²</th></tr></thead>
                   <tbody id="mixBody"></tbody>
                 </table>
               </div>
-              <div class="extract-scroll" data-pane="metrics" style="display:none;">
+            </div>
+
+            <div class="sheet-group" data-group="metrics">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> Indicateurs clés <span class="sheet-group-count" id="groupCountMetrics"></span></button>
+              <div class="sheet-group-body">
                 <table class="metric-table">
                   <thead><tr><th>Indicateur</th><th class="num">Valeur</th><th>Source</th><th style="text-align:center;">État</th></tr></thead>
                   <tbody id="metricsBody"></tbody>
@@ -317,6 +325,19 @@
               </div>
             </div>
 
+            <div class="sheet-group collapsed" data-group="contexte">
+              <button class="sheet-group-head" type="button"><span class="chev">▾</span> Contexte de la vente <span class="sheet-group-count">analyse rédigée</span></button>
+              <div class="sheet-group-body">
+                <div class="memo-generate-prompt" id="contexteGeneratePrompt">
+                  <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut rédiger une synthèse en plusieurs paragraphes du contexte de la vente (motif, processus, historique de détention, profil d'acquéreur recherché), à partir du texte réel du document. Chaque paragraphe est appuyé par des citations vérifiées individuellement — cette synthèse est une lecture rédigée, pas une donnée extraite au même titre que la fiche d'identité.</p>
+                  <button class="btn btn-solid" id="contexteGenerateBtn">Générer l'analyse du contexte</button>
+                </div>
+                <div id="contexteBody" style="display:none;padding:20px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:none;">
             <div class="ai-side" id="aiSide">
               <div class="ai-side-head">
                 <div class="ai-mode-tabs">

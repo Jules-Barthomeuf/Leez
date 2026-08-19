@@ -2180,7 +2180,7 @@
 
     currentT12 = doc.t12 || [];
     const t12RowsHTML = currentT12.map((r, i) => `
-      <tr data-idx="${i}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="mono" style="color:var(--text-faint);font-size:.72rem;">${r.montant?.edited ? 'MODIFIÉ' : (r.montant?.page ? 'p.' + r.montant.page : '—')}</td></tr>`).join('');
+      <tr data-idx="${i}" class="${r.montant?.page && !r.montant?.edited ? 'row-cited' : ''}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="mono" style="color:var(--text-faint);font-size:.72rem;">${r.montant?.edited ? 'MODIFIÉ' : (r.montant?.page ? 'p.' + r.montant.page : '—')}</td></tr>`).join('');
     // Lignes de synthese (Total des charges / Loyer net-NOI) : jamais
     // extraites, toujours recalculees a partir des postes ci-dessus
     // (computeT12Totals cote serveur) -- pas de data-idx (non cliquables,
@@ -2244,7 +2244,39 @@
       return `<tr data-idx="${i}"><td>${m.label}</td><td class="num">${m.value}</td><td class="src">${m.source}</td><td style="text-align:center;"><span class="dot ${problematic ? 'pink' : 'green'}" title="${problematic ? 'Problème potentiel — voir le commentaire' : 'Aucun problème détecté'}"></span></td></tr>`;
     }).join('');
     document.getElementById('metricsBody').onclick = e => { const tr = e.target.closest('tr'); if (!tr) return; selectRow('metricsBody', tr, currentMetricRows, metricCommentData); };
+
+    // Chrome de la feuille (design "sheet") : titre, lien d'export, compteurs
+    // de groupes -- tous derives des donnees deja rendues ci-dessus.
+    const sheetTitle = document.getElementById('sheetTitle');
+    if (sheetTitle) sheetTitle.textContent = `Grille d'extraction — ${doc.displayName || fi.adresse?.value || doc.filename}`;
+    const exportLink = document.getElementById('sheetExportLink');
+    if (exportLink) exportLink.href = `/api/documents/${doc.id}/export/xlsx`;
+    const setCount = (id, n, unit) => { const el = document.getElementById(id); if (el) el.textContent = `${n} ${unit}${n > 1 ? 's' : ''}`; };
+    setCount('groupCountIdentite', currentIdFields.length, 'champ');
+    const rrCount = document.getElementById('groupCountRentroll');
+    if (rrCount) rrCount.textContent = currentEtatLocatif.length > 1 ? `${currentEtatLocatif.length} baux` : `${currentEtatLocatif.length} bail`;
+    setCount('groupCountT12', currentT12.length, 'poste');
+    setCount('groupCountMix', currentMix.length, 'tranche');
+    setCount('groupCountMetrics', currentMetricRows.length, 'indicateur');
   }
+
+  // Repli/depli des groupes, filtre de lignes et bascule "cellules
+  // verifiees" de la feuille d'extraction -- cablage statique (les corps de
+  // groupes sont re-remplis par renderExtract, les groupes eux-memes sont
+  // fixes dans le HTML).
+  document.querySelectorAll('#extractSheet .sheet-group-head').forEach(head => head.addEventListener('click', () => {
+    head.closest('.sheet-group').classList.toggle('collapsed');
+  }));
+  document.getElementById('sheetVerifiedToggle')?.addEventListener('change', e => {
+    document.getElementById('extractSheet').classList.toggle('show-verified', e.target.checked);
+  });
+  document.getElementById('sheetFilter')?.addEventListener('input', () => {
+    const q = (document.getElementById('sheetFilter').value || '').trim().toLowerCase();
+    document.querySelectorAll('#extractSheet .id-field, #extractSheet tbody tr').forEach(row => {
+      row.style.display = !q || row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  document.getElementById('sheetAssistantBtn')?.addEventListener('click', () => goDossierPage('deal'));
 
   // Onglet "Contexte" : paragraphes redigés par l'IA (pas des champs courts),
   // generes uniquement a la demande de l'analyste (coût d'appel API dedie).
