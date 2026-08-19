@@ -559,40 +559,36 @@
     // Un dossier rejeté sort du Vault : il vit dans Mémoire (motif, rappel
     // en un clic) -- jamais supprimé, simplement plus dans la pile active.
     const docs = allDocs.filter(d => d.stage !== 'rejete');
-    const nbRejetes = allDocs.length - docs.length;
-    document.getElementById('dossiersCount').textContent =
-      `${docs.length} dossier${docs.length > 1 ? 's' : ''} actif${docs.length > 1 ? 's' : ''}` +
-      (nbRejetes > 0 ? ` · ${nbRejetes} refusé${nbRejetes > 1 ? 's' : ''} dans Mémoire` : '');
+    renderSidebarRecents(docs);
     if (docs.length === 0) {
+      const nbRejetes = allDocs.length - docs.length;
       list.innerHTML = `<div class="dossiers-empty">${nbRejetes > 0 ? 'Aucun dossier actif — les dossiers refusés sont dans Mémoire.' : "Aucun dossier importé pour l'instant."}</div>`;
       return;
     }
+    const FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h4.3c.4 0 .78.16 1.06.44l1.2 1.2c.28.28.66.44 1.06.44h5.38A1.5 1.5 0 0 1 20 7.58V18.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13Z"/></svg>';
     list.innerHTML = docs.map(d => {
-      const fi = d.ficheIdentite, ind = d.indicateurs;
+      const fi = d.ficheIdentite;
       const name = d.displayName || (fi && fi.adresse && fi.adresse.value) || d.filename;
       const type = (fi && fi.typeActif && fi.typeActif.value) ? fi.typeActif.value : null;
-      const prixDemande = (fi && fi.prixDemande && fi.prixDemande.value) ? fi.prixDemande.value : '—';
-      const cap = ind && ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—';
       const nbDocs = 1 + (d.supportingCount || 0);
-      const verif = d.verification && d.verification.total > 0 ? Math.round((d.verification.verified / d.verification.total) * 100) + ' %' : '—';
-      return `<div class="deal-card" data-doc-id="${d.id}">
-        <button class="deal-card-delete" data-delete-id="${d.id}" title="Supprimer ce dossier" aria-label="Supprimer ce dossier">✕</button>
-        <h3 class="dossier-name">${escapeHtml(name)}</h3>
-        <div class="deal-card-badges">
-          ${type ? `<span class="chip conf-mid">${escapeHtml(type.toUpperCase())}</span>` : ''}
-          ${statusChip(d)}${stageBadge(d.stage)}${d.isDemo ? '<span class="chip conf-mid">DÉMO</span>' : ''}
-        </div>
-        <div class="deal-card-stats">
-          <div><div class="label">Prix demandé</div><div class="dossier-val">${escapeHtml(String(prixDemande))}</div></div>
-          <div><div class="label">Capi recalculée</div><div class="dossier-val">${cap}</div></div>
-          <div><div class="label">Documents</div><div class="dossier-val">${nbDocs}</div></div>
-          <div><div class="label">Champs vérifiés</div><div class="dossier-val">${verif}</div></div>
+      const dotColor = d.status === 'complete' ? 'var(--green)' : d.status === 'error' ? 'var(--pink)' : d.status === 'unsupported_scanned' ? 'var(--amber)' : 'var(--text-faint)';
+      const verif = d.verification && d.verification.total > 0 ? ` · ${Math.round((d.verification.verified / d.verification.total) * 100)} % vérifiés` : '';
+      const sub = `${nbDocs} document${nbDocs > 1 ? 's' : ''}${type ? ' · ' + escapeHtml(type) : ''}${d.stage !== 'triage' && STAGE_LABELS[d.stage] ? ' · ' + STAGE_LABELS[d.stage] : ''}${verif}`;
+      return `<div class="deal-card" data-doc-id="${d.id}" data-stage="${STAGE_LABELS[d.stage] ? d.stage : 'triage'}">
+        <div class="deal-card-thumb">${FOLDER_SVG}</div>
+        <div class="deal-card-meta">
+          <div class="deal-card-name-row">
+            <h3 class="dossier-name">${escapeHtml(name)}</h3>
+            <span class="deal-card-dot" style="background:${dotColor};" title="${d.status === 'complete' ? 'Analysé' : STATUS_LABELS[d.status] || d.status}"></span>
+            <button class="deal-card-menu" data-delete-id="${d.id}" title="Supprimer ce dossier" aria-label="Options du dossier">···</button>
+          </div>
+          <div class="deal-card-sub">${sub}${d.isDemo ? ' · Démonstration' : ''}</div>
         </div>
       </div>`;
     }).join('');
     applyPipelineFilter();
     list.querySelectorAll('.deal-card').forEach(card => card.addEventListener('click', () => openDossier(card.dataset.docId)));
-    list.querySelectorAll('.deal-card-delete').forEach(btn => btn.addEventListener('click', async e => {
+    list.querySelectorAll('.deal-card-menu').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
       const name = btn.closest('.deal-card').querySelector('.dossier-name').textContent;
       if (!confirm(`Supprimer définitivement le dossier « ${name} » et le fichier importé associé ?`)) return;
@@ -601,16 +597,49 @@
     }));
   }
 
+  // Dossiers recents sous "Vault" dans la sidebar (comme les projets
+  // recents Harvey) : les 3 dossiers actifs les plus recents, reels.
+  function renderSidebarRecents(docs) {
+    const el = document.getElementById('sidebarRecentDossiers');
+    if (!el) return;
+    el.innerHTML = (docs || []).slice(0, 3).map(d => {
+      const name = d.displayName || d.ficheIdentite?.adresse?.value || d.filename;
+      return `<button data-recent-id="${d.id}" title="${escapeHtml(name)}">${escapeHtml(name)}</button>`;
+    }).join('');
+    el.querySelectorAll('[data-recent-id]').forEach(btn => btn.addEventListener('click', () => openDossier(btn.dataset.recentId)));
+  }
+
   // Filtres locaux du pipeline : correspondance de texte + stade d'analyse
   // -- purement côté client, aucune requête, jamais une "recherche
   // intelligente".
+  let pipelineStageFilter = '';
   function applyPipelineFilter() {
     const q = (document.getElementById('dossiersFilter')?.value || '').trim().toLowerCase();
     document.querySelectorAll('#dossiersList .deal-card').forEach(card => {
-      card.style.display = !q || card.textContent.toLowerCase().includes(q) ? '' : 'none';
+      const matchText = !q || card.textContent.toLowerCase().includes(q);
+      const matchStage = !pipelineStageFilter || card.dataset.stage === pipelineStageFilter;
+      card.style.display = matchText && matchStage ? '' : 'none';
     });
   }
   document.getElementById('dossiersFilter')?.addEventListener('input', applyPipelineFilter);
+  document.querySelectorAll('#vaultTabs .vault-tab').forEach(tab => tab.addEventListener('click', () => {
+    pipelineStageFilter = tab.dataset.stageTab;
+    document.querySelectorAll('#vaultTabs .vault-tab').forEach(t => t.classList.toggle('active', t === tab));
+    applyPipelineFilter();
+  }));
+  // Tuile "Mémoire du fonds" du Vault -- navigation simple.
+  document.querySelectorAll('[data-go-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.goView)));
+
+  // Nom reel du workspace dans l'en-tete de la sidebar (comme Harvey).
+  (async () => {
+    try {
+      const ws = await fetch('/api/workspace').then(r => r.ok ? r.json() : null);
+      if (ws?.name) {
+        document.getElementById('sidebarWsName').textContent = ws.name;
+        document.getElementById('sidebarWsMark').textContent = ws.name.trim().charAt(0).toUpperCase();
+      }
+    } catch { /* nom par defaut */ }
+  })();
 
   // ================= OUVERTURE D'UN DOSSIER ================= //
   function applyCurrentDocRenders() {

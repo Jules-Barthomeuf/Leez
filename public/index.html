@@ -20,19 +20,22 @@
 
 <div class="app" id="appShell">
   <aside class="sidebar">
-    <a class="sidebar-logo" href="/">Leez</a>
-    <button class="btn btn-solid sidebar-new-deal" data-go="ingest">+ Nouveau deal</button>
+    <div class="sidebar-ws">
+      <span class="sidebar-ws-mark" id="sidebarWsMark">L</span>
+      <span class="sidebar-ws-name" id="sidebarWsName">Leez</span>
+      <span class="sidebar-ws-chev">⌄</span>
+    </div>
+    <button class="sidebar-create" data-go="ingest">+ Créer</button>
     <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Plateforme</div>
+      <button data-view="dashboard"><span class="sidebar-ico">✦</span>Assistant</button>
       <button data-view="dossiers"><span class="sidebar-ico">▤</span>Vault</button>
+      <div class="sidebar-subitems" id="sidebarRecentDossiers"></div>
       <button data-view="memoire"><span class="sidebar-ico">🏛</span>Mémoire</button>
       <button data-view="settings"><span class="sidebar-ico">◎</span>Critères</button>
-      <button data-view="dashboard"><span class="sidebar-ico">✦</span>Assistant</button>
-      <div class="sidebar-section-label">Outils</div>
       <button data-view="analyze"><span class="sidebar-ico">∿</span>Simulateur</button>
-      <button data-view="account"><span class="sidebar-ico">◉</span>Mon compte</button>
     </nav>
     <div class="sidebar-foot">
+      <button class="sidebar-foot-btn" data-view="account"><span class="sidebar-ico">◉</span>Mon compte</button>
       <span class="nav-status" id="navStatus">Vérification…</span>
     </div>
   </aside>
@@ -124,14 +127,33 @@
 
         <!-- ================= DOSSIERS ================= -->
         <section class="view active" id="view-dossiers">
-          <div class="view-head">
-            <div>
-              <h1>Vault</h1>
-              <div class="label" id="dossiersCount">—</div>
-            </div>
-            <button class="btn btn-solid" data-go="ingest">⇪ Déposer un dossier</button>
+          <div class="vault-title-block">
+            <h1>Vault</h1>
+            <p class="vault-sub">Importez, stockez et analysez les documents de vos deals</p>
           </div>
-          <input type="search" id="dossiersFilter" class="vault-search" placeholder="Rechercher un dossier — nom, adresse, type d'actif…" autocomplete="off">
+
+          <div class="vault-actions">
+            <button class="vault-action-tile" data-go="ingest">
+              <span class="vault-action-ico">⇪</span>
+              <span class="vault-action-text"><b>Créer un dossier</b><span>Importez un OM et ses documents annexes</span></span>
+            </button>
+            <button class="vault-action-tile" data-go-view="memoire">
+              <span class="vault-action-ico">🏛</span>
+              <span class="vault-action-text"><b>Mémoire du fonds</b><span>Dossiers décidés, motifs et comparables internes</span></span>
+            </button>
+          </div>
+
+          <div class="vault-tabs-row">
+            <div class="vault-tabs" id="vaultTabs">
+              <button class="vault-tab active" data-stage-tab="">Tous les dossiers</button>
+              <button class="vault-tab" data-stage-tab="triage">Triage</button>
+              <button class="vault-tab" data-stage-tab="underwriting">Underwriting</button>
+              <button class="vault-tab" data-stage-tab="comite">Comité</button>
+              <button class="vault-tab" data-stage-tab="attente">En attente</button>
+            </div>
+            <input type="search" id="dossiersFilter" class="vault-mini-search" placeholder="Rechercher" autocomplete="off">
+          </div>
+
           <div class="vault-grid" id="dossiersList"></div>
         </section>
 
