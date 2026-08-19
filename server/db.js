@@ -186,7 +186,7 @@ async function deleteDocument(id, workspaceId) {
 async function listDocuments(workspaceId) {
   const { rows } = await pool.query(`
     SELECT d.id, d.filename, d.uploaded_at, d.status, d.error_message, d.page_count,
-           d.fiche_identite_json, d.indicateurs_json, d.is_demo,
+           d.fiche_identite_json, d.indicateurs_json, d.is_demo, d.stage,
            (SELECT COUNT(*)::int FROM supporting_documents s WHERE s.document_id = d.id) AS supporting_count
     FROM documents d WHERE d.workspace_id = $1 ORDER BY d.uploaded_at DESC
   `, [workspaceId]);
@@ -303,6 +303,16 @@ async function listKbChunks() {
 async function clearKbChunks() {
   await pool.query('DELETE FROM kb_chunks');
 }
+// Sources distinctes de la base de connaissances, avec leur volume -- sert
+// a l'ecran Memoire Institutionnelle pour montrer honnetement ce que la
+// base contient reellement (et si elle est vide, le dire).
+async function listKbSources() {
+  const { rows } = await pool.query(`
+    SELECT source_file, theme, COUNT(*)::int AS chunks
+    FROM kb_chunks GROUP BY source_file, theme ORDER BY source_file
+  `);
+  return rows;
+}
 async function countKbChunks() {
   // COUNT(*) revient en bigint -> pg le donne en string (evite une perte de
   // precision silencieuse sur de tres gros volumes) : reconversion explicite.
@@ -321,5 +331,5 @@ module.exports = {
   createAgentFinding, listAgentFindingsForRun, listAgentFindingsForDossier, getAgentFinding, setFindingValidationStatus,
   getSetting, setSetting,
   createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument,
-  insertKbChunk, listKbChunks, clearKbChunks, countKbChunks,
+  insertKbChunk, listKbChunks, clearKbChunks, countKbChunks, listKbSources,
 };

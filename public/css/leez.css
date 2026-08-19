@@ -104,7 +104,7 @@ button{font-family:inherit;}
 .app-main{flex:1;min-width:0;}
 
 .sidebar{
-  width:228px;flex-shrink:0;
+  width:252px;flex-shrink:0;
   position:sticky;top:0;height:100vh;
   display:flex;flex-direction:column;
   background:var(--surface);
@@ -1780,3 +1780,57 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .export-card-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .export-card .label{letter-spacing:.1em;}
 .export-unavailable{font-family:var(--sans);font-size:.76rem;color:var(--text-faint);}
+
+/* ---------- Stade du deal (pipeline + barre d'action Triage) ---------- */
+.pipeline-stage-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.stage-chip{
+  font-family:var(--sans);font-size:.76rem;color:var(--text-muted);
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:999px;padding:6px 14px;cursor:pointer;
+  transition:all .15s var(--ease);
+}
+.stage-chip:hover{color:var(--text);border-color:var(--text-muted);}
+.stage-chip.active{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600;}
+.stage-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--sans);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 10px;border-radius:999px;border:1px solid var(--border-strong);color:var(--text-muted);
+}
+.stage-badge.st-underwriting{color:var(--trace);border-color:var(--trace);background:var(--trace-dim);}
+.stage-badge.st-comite{color:var(--green);border-color:var(--green);background:var(--green-dim);}
+.stage-badge.st-attente{color:var(--amber);border-color:var(--amber);background:var(--amber-dim);}
+.stage-badge.st-rejete{color:var(--pink);border-color:var(--pink);background:var(--pink-dim);}
+
+.deal-stage-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;margin-top:14px;
+}
+.deal-stage-bar .label{margin-right:4px;}
+
+/* ---------- Mémoire Institutionnelle ---------- */
+.memoire-table{width:100%;}
+.memoire-table tbody tr{cursor:pointer;}
+.memoire-table td.num,.memoire-table th.num{text-align:right;}
+.kb-result{
+  border:1px solid var(--border-soft);border-radius:var(--radius-sm);
+  padding:14px 16px;margin-top:10px;background:var(--surface-raised);
+}
+.kb-result .kb-source{font-family:var(--sans);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px;}
+.kb-result .kb-text{font-family:var(--sans);font-size:.8rem;color:var(--text-body);line-height:1.6;}
+
+/* ---------- Bibliothèque de Workflows ---------- */
+.workflow-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;margin-top:8px;
+}
+.workflow-card h3{font-family:var(--serif);font-weight:400;font-size:1.3rem;color:var(--text);margin:0 0 4px;}
+.workflow-stage{margin-top:18px;padding-top:16px;border-top:1px solid var(--border-soft);}
+.workflow-stage-title{font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:8px;}
+.workflow-fields{display:flex;flex-wrap:wrap;gap:6px;}
+.workflow-field{
+  font-family:var(--sans);font-size:.72rem;color:var(--text-muted);
+  background:var(--surface-raised);border:1px solid var(--border-soft);
+  border-radius:999px;padding:4px 11px;
+}
+.workflow-note{font-family:var(--sans);font-size:.78rem;color:var(--text-faint);line-height:1.6;margin-top:20px;font-style:italic;}

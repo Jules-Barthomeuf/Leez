@@ -25,11 +25,13 @@
     <nav class="sidebar-nav">
       <div class="sidebar-section-label">Plateforme</div>
       <button data-view="dashboard"><span class="sidebar-ico">✦</span>Assistant</button>
-      <button data-view="dossiers"><span class="sidebar-ico">▤</span>Deals Pipeline</button>
+      <button data-view="dossiers"><span class="sidebar-ico">▤</span>Pipeline Deals</button>
+      <button data-view="memoire"><span class="sidebar-ico">🏛</span>Mémoire Institutionnelle</button>
+      <button data-view="workflows"><span class="sidebar-ico">⚡</span>Bibliothèque de Workflows</button>
       <button data-view="ingest"><span class="sidebar-ico">⇪</span>Importer</button>
       <button data-view="analyze"><span class="sidebar-ico">∿</span>Simulateur</button>
       <div class="sidebar-section-label">Workspace</div>
-      <button data-view="settings"><span class="sidebar-ico">◎</span>Critères du mandat</button>
+      <button data-view="settings"><span class="sidebar-ico">◎</span>Paramètres du Mandat</button>
       <button data-view="account"><span class="sidebar-ico">◉</span>Mon compte</button>
     </nav>
     <div class="sidebar-foot">
@@ -140,11 +142,50 @@
               <div class="label" id="dossiersCount">—</div>
             </div>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-              <input type="search" id="dossiersFilter" class="pipeline-filter" placeholder="Filtrer — adresse, type d'actif, statut…" autocomplete="off">
+              <input type="search" id="dossiersFilter" class="pipeline-filter" placeholder="Filtrer — adresse, type d'actif…" autocomplete="off">
               <button class="btn btn-outline" data-go="ingest">+ Nouveau deal</button>
             </div>
           </div>
+          <div class="pipeline-stage-chips" id="pipelineStageChips">
+            <button class="stage-chip active" data-stage-filter="">Tous</button>
+            <button class="stage-chip" data-stage-filter="triage">Triage</button>
+            <button class="stage-chip" data-stage-filter="underwriting">Underwriting</button>
+            <button class="stage-chip" data-stage-filter="comite">Comité</button>
+            <button class="stage-chip" data-stage-filter="attente">En attente</button>
+            <button class="stage-chip" data-stage-filter="rejete">Rejeté</button>
+          </div>
           <div class="dossiers-list" id="dossiersList"></div>
+        </section>
+
+        <!-- ================= MÉMOIRE INSTITUTIONNELLE ================= -->
+        <section class="view" id="view-memoire">
+          <div class="view-head"><div><h1>Mémoire Institutionnelle</h1><div class="label">DEALS ANALYSÉS PAR LE FONDS · BASE DE CONNAISSANCES INTERROGEABLE</div></div></div>
+
+          <div class="panel" style="overflow:hidden;">
+            <div class="panel-head"><h3>Deals analysés</h3><span class="label" id="memoireDealsCount">—</span></div>
+            <div style="overflow-x:auto;">
+              <table class="memoire-table">
+                <thead><tr><th>Actif</th><th>Type</th><th class="num">Prix demandé</th><th class="num">Prix / m²</th><th class="num">Taux de capi.</th><th class="num">Occupation</th><th>Stade</th><th>Importé le</th></tr></thead>
+                <tbody id="memoireDealsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:20px;padding:24px 26px;">
+            <div class="panel-head" style="padding:0 0 6px;"><h3 style="font-size:1.05rem;">Base de connaissances</h3><span class="label" id="memoireKbStats">—</span></div>
+            <p style="font-family:var(--sans);font-size:.8rem;color:var(--text-muted);line-height:1.6;margin:0 0 14px;">Recherche par similarité dans les documents de référence ingérés (droit des baux commerciaux, indexation, charges…). Chaque résultat cite sa source et ses pages — jamais une réponse générée sans ancrage.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <input type="search" id="memoireKbQuery" class="pipeline-filter" style="flex:1;min-width:240px;" placeholder="Ex. indexation ILAT clause plancher…" autocomplete="off">
+              <button class="btn btn-solid" id="memoireKbSearchBtn">Rechercher</button>
+            </div>
+            <div id="memoireKbResults" style="margin-top:16px;"></div>
+          </div>
+        </section>
+
+        <!-- ================= BIBLIOTHÈQUE DE WORKFLOWS ================= -->
+        <section class="view" id="view-workflows">
+          <div class="view-head"><div><h1>Bibliothèque de Workflows</h1><div class="label">MODÈLES D'EXTRACTION — CE QUE LEEZ EXTRAIT RÉELLEMENT, CHAMP PAR CHAMP</div></div></div>
+          <div id="workflowsBody"></div>
         </section>
 
         <!-- ================= SOMMAIRE (DEAL) ================= -->
@@ -643,7 +684,7 @@
 
         <!-- ================= RÉGLAGES DU FONDS ================= -->
         <section class="view" id="view-settings">
-          <div class="view-head"><div><h1>Réglages du fonds</h1><div class="label">CRITÈRES D'INVESTISSEMENT UTILISÉS PAR L'ONGLET AUDIT</div></div></div>
+          <div class="view-head"><div><h1>Paramètres du Mandat</h1><div class="label">CRITÈRES STRICTS D'INVESTISSEMENT DU FONDS — UTILISÉS PAR LE TRIAGE ET LES POINTS D'ATTENTION</div></div></div>
           <div class="panel settings-form">
             <div class="settings-field">
               <label class="label" for="settingsTailleMin">Taille de deal minimum (€)</label>

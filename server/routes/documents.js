@@ -51,6 +51,7 @@ function shapeDocument(doc) {
     vendorClaims: doc.vendor_claims_json ?? null,
     presentationHiddenCards: doc.presentation_hidden_cards_json ?? [],
     dealRecap: doc.deal_recap_json ?? null,
+    stage: doc.stage || 'triage',
   };
 }
 
@@ -186,6 +187,7 @@ router.get('/documents', asyncHandler(async (req, res) => {
     indicateurs: doc.indicateurs_json ?? null,
     isDemo: !!doc.is_demo,
     supportingCount: doc.supporting_count ?? 0,
+    stage: doc.stage || 'triage',
   })));
 }));
 
@@ -230,6 +232,20 @@ router.post('/documents/:id/retry', asyncHandler(async (req, res) => {
   resumePipeline(doc.id, pdfBuffer, req.workspaceId, doc.failed_stage);
 
   res.json({ ok: true, resumingFrom: doc.failed_stage || 'extracting_pages' });
+}));
+
+// Stade d'analyse du deal (triage / underwriting / comite / attente /
+// rejete) : toujours une decision MANUELLE de l'analyste depuis la barre
+// d'action de l'ecran Triage -- jamais deduit par le modele. Liste blanche
+// stricte, en miroir de la contrainte CHECK en base (migration 013).
+const DEAL_STAGES = ['triage', 'underwriting', 'comite', 'attente', 'rejete'];
+router.patch('/documents/:id/stage', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  const stage = req.body?.stage;
+  if (!DEAL_STAGES.includes(stage)) return res.status(400).json({ error: `Stade invalide — attendu : ${DEAL_STAGES.join(', ')}.` });
+  await updateDocument(doc.id, { stage }, req.workspaceId);
+  res.json({ ok: true, stage });
 }));
 
 // Verrouillage du Simulateur pour la Presentation comite : le moteur de

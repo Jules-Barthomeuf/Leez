@@ -313,7 +313,7 @@
 
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
-  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'workflows', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
   let currentViewName = 'dashboard';
@@ -426,6 +426,15 @@
     if (name !== 'extract') closeDataChatPanel();
     if (name === 'settings') loadSettingsForm();
     if (name === 'account') loadAccountForm();
+    // queueMicrotask : showView peut etre invoquee DES LE BOOT (routage par
+    // ancre, ligne applyRouteFromHash() plus bas) alors que les constantes
+    // que ces rendus consultent (FICHE_LABELS...) sont declarees plus loin
+    // dans le script -- un appel direct tomberait dans leur zone morte
+    // temporelle (meme piege que agentsPollTimer, voir la note en tete de
+    // fichier). La microtache ne s'execute qu'apres l'evaluation complete
+    // du script : plus aucune constante en zone morte.
+    if (name === 'memoire') queueMicrotask(renderMemoire);
+    if (name === 'workflows') queueMicrotask(renderWorkflows);
     // Le sondage du bloc Enrichissement (voir renderDeal/loadEnrichmentBlock)
     // n'a de sens que sur le Sommaire -- l'arreter en quittant la vue evite
     // des requetes inutiles sur les autres pages du dossier.
@@ -524,6 +533,15 @@
   // couche texte). Jamais confondu visuellement avec une vraie erreur --
   // le premier est un constat honnête sur une limite connue, le second un
   // vrai incident a corriger/relancer.
+  // Stade d'analyse du deal -- toujours fixe par une action manuelle de
+  // l'analyste (barre d'action du Triage), jamais deduit. Miroir de la
+  // liste blanche serveur (PATCH /documents/:id/stage).
+  const STAGE_LABELS = { triage: 'Triage', underwriting: 'Underwriting', comite: 'Comité', attente: 'En attente', rejete: 'Rejeté' };
+  const stageBadge = stage => {
+    const s = STAGE_LABELS[stage] ? stage : 'triage';
+    return `<span class="stage-badge st-${s}">${STAGE_LABELS[s]}</span>`;
+  };
+
   const statusChip = doc => {
     if (doc.status === 'complete') return '<span class="chip conf-high">TERMINÉ</span>';
     if (doc.status === 'unsupported_scanned') return '<span class="chip conf-scan">SCAN NON PRIS EN CHARGE</span>';
@@ -553,11 +571,11 @@
       const nbDocs = 1 + (d.supportingCount || 0);
       const uploaded = new Date(d.uploadedAt);
       const when = Number.isNaN(uploaded.getTime()) ? '' : uploaded.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      return `<div class="dossier-row" data-doc-id="${d.id}">
+      return `<div class="dossier-row" data-doc-id="${d.id}" data-stage="${STAGE_LABELS[d.stage] ? d.stage : 'triage'}">
         <span class="dot ${d.status === 'complete' ? 'green' : d.status === 'error' ? 'pink' : d.status === 'unsupported_scanned' ? 'amber' : 'trace'}"></span>
         <div class="dossier-row-main">
           <h3 class="dossier-name">${name}</h3>
-          <div class="label">${sub} · ${nbDocs} DOC${nbDocs > 1 ? 'S' : ''} ${statusChip(d)}${d.isDemo ? ' <span class="chip conf-mid">DÉMONSTRATION</span>' : ''}</div>
+          <div class="label">${sub} · ${nbDocs} DOC${nbDocs > 1 ? 'S' : ''} ${stageBadge(d.stage)} ${statusChip(d)}${d.isDemo ? ' <span class="chip conf-mid">DÉMONSTRATION</span>' : ''}</div>
         </div>
         <div class="dossier-row-stats">
           <div><div class="label">Prix demandé</div><div class="dossier-val">${prixDemande}</div></div>
@@ -579,16 +597,24 @@
     }));
   }
 
-  // Filtre local du pipeline : simple correspondance de texte sur le contenu
-  // affiché de chaque ligne (adresse, type d'actif, statut) -- purement
-  // côté client, aucune requête, jamais une "recherche intelligente".
+  // Filtres locaux du pipeline : correspondance de texte + stade d'analyse
+  // -- purement côté client, aucune requête, jamais une "recherche
+  // intelligente".
+  let pipelineStageFilter = '';
   function applyPipelineFilter() {
     const q = (document.getElementById('dossiersFilter')?.value || '').trim().toLowerCase();
     document.querySelectorAll('#dossiersList .dossier-row').forEach(row => {
-      row.style.display = !q || row.textContent.toLowerCase().includes(q) ? '' : 'none';
+      const matchText = !q || row.textContent.toLowerCase().includes(q);
+      const matchStage = !pipelineStageFilter || row.dataset.stage === pipelineStageFilter;
+      row.style.display = matchText && matchStage ? '' : 'none';
     });
   }
   document.getElementById('dossiersFilter')?.addEventListener('input', applyPipelineFilter);
+  document.querySelectorAll('#pipelineStageChips .stage-chip').forEach(chip => chip.addEventListener('click', () => {
+    pipelineStageFilter = chip.dataset.stageFilter;
+    document.querySelectorAll('#pipelineStageChips .stage-chip').forEach(c => c.classList.toggle('active', c === chip));
+    applyPipelineFilter();
+  }));
 
   // ================= OUVERTURE D'UN DOSSIER ================= //
   function applyCurrentDocRenders() {
@@ -876,9 +902,12 @@
         </div>
       </div>
 
-      ${stepComplete ? `<div style="display:flex;justify-content:flex-end;margin-top:14px;">
-        <a class="btn btn-outline" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx, formules actives)</a>
-      </div>` : ''}
+      <div class="deal-stage-bar">
+        <span class="label">STADE DU DEAL — DÉCISION DE L'ANALYSTE</span>
+        ${Object.entries(STAGE_LABELS).map(([key, label]) =>
+          `<button class="stage-chip${(doc.stage || 'triage') === key ? ' active' : ''}" data-set-stage="${key}">${label}</button>`).join('')}
+        ${stepComplete ? `<a class="btn btn-outline" style="margin-left:auto;" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx)</a>` : ''}
+      </div>
 
       <div class="deal-photos-panel" id="dealPhotosGallery" style="display:none;"></div>
 
@@ -910,6 +939,19 @@
     if (stepComplete) loadEnrichmentBlock(doc.id);
 
     document.querySelectorAll('#dealBody [data-go-dossier]').forEach(btn => btn.addEventListener('click', () => goDossierPage(btn.dataset.goDossier)));
+    // Barre d'action décisive (stade du deal) : PATCH puis re-rendu -- la
+    // valeur affichée repart TOUJOURS de la réponse serveur, jamais d'un
+    // état local optimiste qui pourrait mentir en cas d'échec.
+    document.querySelectorAll('#dealBody [data-set-stage]').forEach(btn => btn.addEventListener('click', async () => {
+      const stage = btn.dataset.setStage;
+      if (stage === (currentDoc.stage || 'triage')) return;
+      const res = await fetch(`/api/documents/${currentDoc.id}/stage`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Échec du changement de stade.'); return; }
+      currentDoc.stage = (await res.json()).stage;
+      renderDeal(currentDoc);
+    }));
     document.getElementById('dealRetryBtn')?.addEventListener('click', async (e) => {
       const btn = e.target;
       btn.disabled = true;
@@ -2516,6 +2558,117 @@
         </div>
       </div>`;
     document.getElementById('exportOpenPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
+  }
+
+  // ================= MÉMOIRE INSTITUTIONNELLE ================= //
+  // Deux blocs, tous deux appuyes sur des donnees REELLES : (1) l'historique
+  // des deals du workspace (la vraie memoire du fonds -- table comparables
+  // avec les indicateurs deja calcules), (2) la base de connaissances
+  // partagee (recherche par similarite existante, kbSearch.js). Si la base
+  // est vide, on le dit -- jamais une recherche qui echoue sans explication.
+  async function renderMemoire() {
+    const body = document.getElementById('memoireDealsBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);">Chargement…</td></tr>';
+    const docs = await fetchDocuments();
+    document.getElementById('memoireDealsCount').textContent = `${docs.length} DEAL${docs.length > 1 ? 'S' : ''}`;
+    if (docs.length === 0) {
+      body.innerHTML = '<tr><td colspan="8" style="color:var(--text-faint);font-style:italic;">Aucun deal importé pour l\'instant.</td></tr>';
+    } else {
+      body.innerHTML = docs.map(d => {
+        const fi = d.ficheIdentite, ind = d.indicateurs;
+        const name = (fi && fi.adresse && fi.adresse.value) ? fi.adresse.value : d.filename;
+        const type = (fi && fi.typeActif && fi.typeActif.value) ? fi.typeActif.value : '—';
+        const prixDemande = (fi && fi.prixDemande && fi.prixDemande.value) ? fi.prixDemande.value : '—';
+        const prixM2 = ind && ind.prixM2 != null ? fmt(ind.prixM2) + ' €/m²' : '—';
+        const cap = ind && ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—';
+        const occ = ind && ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : '—';
+        const when = new Date(d.uploadedAt);
+        const whenTxt = Number.isNaN(when.getTime()) ? '—' : when.toLocaleDateString('fr-FR');
+        return `<tr data-doc-id="${d.id}">
+          <td style="font-weight:600;color:var(--text);">${name}</td><td>${type}</td>
+          <td class="num">${prixDemande}</td><td class="num">${prixM2}</td><td class="num">${cap}</td><td class="num">${occ}</td>
+          <td>${stageBadge(d.stage)}</td><td>${whenTxt}</td>
+        </tr>`;
+      }).join('');
+      body.querySelectorAll('tr[data-doc-id]').forEach(tr => tr.addEventListener('click', () => openDossier(tr.dataset.docId)));
+    }
+    // Contenu reel de la base de connaissances -- affiche honnetement son
+    // volume, ou son etat vide.
+    try {
+      const stats = await (await fetch('/api/knowledge/stats')).json();
+      const el = document.getElementById('memoireKbStats');
+      el.textContent = stats.chunks > 0
+        ? `${stats.chunks} EXTRAITS · ${stats.sources.length} SOURCE${stats.sources.length > 1 ? 'S' : ''}`
+        : 'BASE VIDE — AUCUN DOCUMENT DE RÉFÉRENCE INGÉRÉ';
+    } catch { /* statut non bloquant */ }
+  }
+
+  async function runMemoireKbSearch() {
+    const q = (document.getElementById('memoireKbQuery')?.value || '').trim();
+    const out = document.getElementById('memoireKbResults');
+    if (!q || !out) return;
+    out.innerHTML = '<div class="label">RECHERCHE…</div>';
+    try {
+      const r = await fetch('/api/knowledge/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q, k: 5 }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erreur lors de la recherche.');
+      if (!d.results || d.results.length === 0) {
+        out.innerHTML = '<div class="label">AUCUN RÉSULTAT — LA BASE DE CONNAISSANCES EST PEUT-ÊTRE VIDE.</div>';
+        return;
+      }
+      out.innerHTML = d.results.map(c => `<div class="kb-result">
+          <div class="kb-source">${escapeHtml(c.source_file)} · ${escapeHtml(c.section_title || '')}${c.article_ref ? ' · ' + escapeHtml(c.article_ref) : ''} · p. ${c.page_start}${c.page_end !== c.page_start ? '–' + c.page_end : ''}</div>
+          <div class="kb-text">${escapeHtml(String(c.content).slice(0, 600))}${String(c.content).length > 600 ? '…' : ''}</div>
+        </div>`).join('');
+    } catch (err) {
+      out.innerHTML = `<div class="label" style="color:var(--amber);">${escapeHtml(err.message)}</div>`;
+    }
+  }
+  document.getElementById('memoireKbSearchBtn')?.addEventListener('click', runMemoireKbSearch);
+  document.getElementById('memoireKbQuery')?.addEventListener('keydown', e => { if (e.key === 'Enter') runMemoireKbSearch(); });
+
+  // ================= BIBLIOTHÈQUE DE WORKFLOWS ================= //
+  // Page en LECTURE SEULE decrivant ce que Leez extrait et calcule
+  // REELLEMENT aujourd'hui (le schema effectif du pipeline, pas un
+  // catalogue aspirationnel) : un seul workflow actif, decrit champ par
+  // champ depuis les memes catalogues que le reste de l'app.
+  function renderWorkflows() {
+    const el = document.getElementById('workflowsBody');
+    if (!el) return;
+    const rentRollFields = ['Lot', 'Locataire', 'Activité', 'Statut', 'Surface (m²)', 'Loyer facial (€/m²/an)', 'Loyer économique (€/m²/an)', 'Loyer mensuel', 'Loyer annuel', 'Indexation', 'Prise d\'effet', 'Échéance', 'Prochaine échéance triennale', 'Clause plancher', 'Franchise', 'Dépôt de garantie', 'Charges récupérables (%)'];
+    const signauxFields = ['Locataires en difficulté explicitement mentionnés', 'CAPEX techniques mentionnés non provisionnés', 'Affirmations marketing du vendeur (à confronter)'];
+    const indicateursFields = ['Prix / m²', 'Taux de capitalisation recalculé', 'Taux d\'occupation physique (TOP)', 'Revenu brut effectif (EGI)', 'Total des charges', 'Résultat net d\'exploitation (NOI)', 'Match mandat', 'Réconciliation OM vs pièces'];
+    const chip = f => `<span class="workflow-field">${escapeHtml(f)}</span>`;
+    el.innerHTML = `
+      <div class="workflow-card">
+        <span class="label">WORKFLOW ACTIF</span>
+        <h3>Mémorandum de vente (OM) — Immobilier commercial France</h3>
+        <p style="font-family:var(--sans);font-size:.8rem;color:var(--text-muted);line-height:1.6;margin:6px 0 0;">Chaque champ est extrait avec sa citation (page + extrait verbatim), vérifiée automatiquement contre le texte réel du document — un champ dont la citation ne se retrouve pas n'est jamais affiché comme un fait. Les indicateurs sont ensuite recalculés par du code déterministe, jamais par le modèle.</p>
+        <div class="workflow-stage">
+          <div class="workflow-stage-title">1 · Fiche d'identité du bien</div>
+          <div class="workflow-fields">${Object.values(FICHE_LABELS).map(chip).join('')}</div>
+        </div>
+        <div class="workflow-stage">
+          <div class="workflow-stage-title">2 · État locatif (rent roll)</div>
+          <div class="workflow-fields">${rentRollFields.map(chip).join('')}</div>
+        </div>
+        <div class="workflow-stage">
+          <div class="workflow-stage-title">3 · Compte d'exploitation (T12) &amp; répartition des surfaces</div>
+          <div class="workflow-fields">${['Poste par poste (produits / charges)', 'Montants annuels', 'Tranches de surface', 'Loyer moyen par tranche'].map(chip).join('')}</div>
+        </div>
+        <div class="workflow-stage">
+          <div class="workflow-stage-title">4 · Signaux de risque (uniquement s'ils sont explicites dans le document)</div>
+          <div class="workflow-fields">${signauxFields.map(chip).join('')}</div>
+        </div>
+        <div class="workflow-stage">
+          <div class="workflow-stage-title">5 · Calculs déterministes (aucun appel au modèle)</div>
+          <div class="workflow-fields">${indicateursFields.map(chip).join('')}</div>
+        </div>
+        <p class="workflow-note">D'autres modèles (abstraction de baux individuels, T12 seul, rapports techniques PCA/ESG) nécessitent de nouvelles extractions dédiées — ils ne figurent pas ici tant qu'ils n'existent pas réellement.</p>
+      </div>`;
   }
 
   // ================= VÉRIFICATION (affirmations du vendeur) ================= //
