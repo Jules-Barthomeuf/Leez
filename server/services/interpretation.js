@@ -169,7 +169,7 @@ function computeIndexationCard(doc) {
   return {
     id: 'indexation', famille: 'Indexation', niveau: 'orange',
     titre: 'Clause plancher non mentionnée',
-    constat: `${sansPlancher.length} bail${sansPlancher.length > 1 ? 'x' : ''} indexé${sansPlancher.length > 1 ? 's' : ''} (${typesUniques.join(', ')}) sans mention de clause plancher dans le document${totalLoyerConcerne ? ` — ${fmtEur(totalLoyerConcerne)}/an de loyers concernés` : ''}.`,
+    constat: `${sansPlancher.length} ${sansPlancher.length > 1 ? 'baux indexés' : 'bail indexé'} (${typesUniques.join(', ')}) sans mention de clause plancher dans le document${totalLoyerConcerne ? ` — ${fmtEur(totalLoyerConcerne)}/an de loyers concernés` : ''}.`,
     impact: "Aucune garantie contre une baisse de l'indice n'est mentionnée : à confirmer auprès du vendeur avant de modéliser une indexation systématiquement haussière.",
     page: example.typeIndexation.page, quote: example.typeIndexation.quote,
     actionType: null, actionLabel: null,

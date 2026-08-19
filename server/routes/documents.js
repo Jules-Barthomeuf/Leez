@@ -13,6 +13,7 @@ const { computeIndicateurs, computeMix, parseFrenchNumber } = require('../servic
 const { runConsistencyChecks } = require('../services/consistency');
 const { computeReconciliation } = require('../services/reconciliation');
 const { buildFeederWorkbook } = require('../services/exportExcel');
+const { buildIcMemo } = require('../services/exportMemo');
 const { isValidCategoryType } = require('../services/supportingCatalog');
 const { extractContexteNarratif } = require('../services/extraction');
 const { verifyContexteNarratif, locateQuote, deriveBox } = require('../services/verification');
@@ -486,6 +487,31 @@ router.get('/documents/:id/export/xlsx', asyncHandler(async (req, res) => {
   const safeName = (shaped.filename || 'leez-export').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.pdf$/i, '');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}_feeder.xlsx"`);
+  res.send(buffer);
+}));
+
+// Note de comité (.docx) : gabarit déterministe peuplé des mêmes blocs déjà
+// calculés pour GET /documents/:id (audit, mandat, réconciliation) -- voir
+// exportMemo.js. Même garde que l'export Excel : jamais un mémo à moitié
+// rempli sur une extraction incomplète.
+router.get('/documents/:id/export/docx', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  if (doc.status !== 'complete') return res.status(400).json({ error: "L'extraction du dossier doit être terminée avant l'export." });
+  const shaped = shapeDocument(doc);
+  const criteria = await getSetting('fund_criteria', req.workspaceId);
+  const cards = computeAuditCards(shaped, criteria);
+  shaped.audit = {
+    summary: computeAuditSummary(cards),
+    cards,
+    pointsACreuser: computePointsACreuser(shaped),
+    mandateFit: computeMandateFit(shaped, criteria),
+  };
+  shaped.reconciliation = computeReconciliation(shaped);
+  const buffer = await buildIcMemo(shaped);
+  const safeName = (shaped.filename || 'leez-export').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.pdf$/i, '');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}_note_comite.docx"`);
   res.send(buffer);
 }));
 

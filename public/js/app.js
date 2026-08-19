@@ -2500,7 +2500,15 @@
         </div>
       </div>
       <div class="export-card">
-        <span class="label">NOTE DE COMITÉ</span>
+        <span class="label">MÉMO IC FLASH</span>
+        <h3>Note de comité (.docx)</h3>
+        <p>Un mémo Word d'une page : fiche de synthèse, conformité au mandat, points de vigilance, réconciliation OM vs pièces, points à creuser. Gabarit déterministe peuplé des données vérifiées — la recommandation finale (Pass / Deep dive) est laissée vide, à vous.</p>
+        <div class="export-card-actions">
+          ${ready ? `<a class="btn btn-outline" href="/api/documents/${doc.id}/export/docx" download>⬇ Télécharger le mémo</a>` : lockNote}
+        </div>
+      </div>
+      <div class="export-card">
+        <span class="label">PRÉSENTATION</span>
         <h3>Présentation comité</h3>
         <p>Un deck pré-mis en page, peuplé uniquement des données vérifiées du deal (fiche de synthèse, état locatif, indicateurs recalculés), avec copilote de mise en forme. Exportable en PDF via l'impression, ou vers Google Slides.</p>
         <div class="export-card-actions">
