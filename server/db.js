@@ -185,9 +185,10 @@ async function deleteDocument(id, workspaceId) {
 
 async function listDocuments(workspaceId) {
   const { rows } = await pool.query(`
-    SELECT id, filename, uploaded_at, status, error_message, page_count,
-           fiche_identite_json, indicateurs_json, is_demo
-    FROM documents WHERE workspace_id = $1 ORDER BY uploaded_at DESC
+    SELECT d.id, d.filename, d.uploaded_at, d.status, d.error_message, d.page_count,
+           d.fiche_identite_json, d.indicateurs_json, d.is_demo,
+           (SELECT COUNT(*)::int FROM supporting_documents s WHERE s.document_id = d.id) AS supporting_count
+    FROM documents d WHERE d.workspace_id = $1 ORDER BY d.uploaded_at DESC
   `, [workspaceId]);
   return rows;
 }

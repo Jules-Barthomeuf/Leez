@@ -184,6 +184,7 @@ router.get('/documents', asyncHandler(async (req, res) => {
     ficheIdentite: doc.fiche_identite_json ?? null,
     indicateurs: doc.indicateurs_json ?? null,
     isDemo: !!doc.is_demo,
+    supportingCount: doc.supporting_count ?? 0,
   })));
 }));
 

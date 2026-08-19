@@ -19,41 +19,43 @@
 </div>
 
 <div class="app" id="appShell">
-  <header class="nav">
-    <div class="nav-row">
-      <a class="nav-logo" href="/">Leez</a>
-      <ul class="nav-links">
-        <li><button data-view="dashboard">AI</button></li>
-        <li><button data-view="dossiers">Dossiers</button></li>
-        <li><button data-view="ingest">Importer</button></li>
-        <li><button data-view="analyze">Simulateur</button></li>
-      </ul>
-      <div class="nav-right">
-        <span class="nav-status" id="navStatus">Vérification…</span>
-        <button class="btn btn-ghost" data-go="account">Mon compte</button>
-        <button class="btn btn-ghost" data-go="settings">⚙ Réglages du fonds</button>
-        <button class="btn btn-outline" data-go="ingest">+ Nouveau dossier</button>
-      </div>
+  <aside class="sidebar">
+    <a class="sidebar-logo" href="/">Leez</a>
+    <button class="btn btn-solid sidebar-new-deal" data-go="ingest">+ Nouveau deal</button>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Plateforme</div>
+      <button data-view="dashboard"><span class="sidebar-ico">✦</span>Assistant</button>
+      <button data-view="dossiers"><span class="sidebar-ico">▤</span>Deals Pipeline</button>
+      <button data-view="ingest"><span class="sidebar-ico">⇪</span>Importer</button>
+      <button data-view="analyze"><span class="sidebar-ico">∿</span>Simulateur</button>
+      <div class="sidebar-section-label">Workspace</div>
+      <button data-view="settings"><span class="sidebar-ico">◎</span>Critères du mandat</button>
+      <button data-view="account"><span class="sidebar-ico">◉</span>Mon compte</button>
+    </nav>
+    <div class="sidebar-foot">
+      <span class="nav-status" id="navStatus">Vérification…</span>
     </div>
-  </header>
+  </aside>
 
+  <div class="app-main">
   <main>
     <div class="main-shell">
       <div class="dossier-rail" id="sharedRail" style="display:none;">
-        <button class="drail-item" data-rail="deal" data-go-dossier="deal">Sommaire</button>
-        <button class="drail-item" data-rail="extract" data-go-dossier="extract">Données</button>
+        <button class="drail-item" data-rail="deal" data-go-dossier="deal">Triage</button>
+        <button class="drail-item" data-rail="extract" data-go-dossier="extract">Matrix</button>
         <button class="drail-item" data-rail="audit" data-go-dossier="audit">Points d'attention</button>
         <button class="drail-item" data-rail="reconciliation" data-go-dossier="reconciliation">Réconciliation</button>
         <button class="drail-item" data-rail="verification" data-go-dossier="verification">Vérification</button>
         <button class="drail-item" id="presentationRailBtn">Présentation</button>
         <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
         <button class="drail-item" data-rail="notes" data-go-dossier="notes">Notes</button>
-        <button class="drail-item" data-rail="documents" data-go-dossier="documents">Documents</button>
+        <button class="drail-item" data-rail="documents" data-go-dossier="documents">Data Room</button>
+        <button class="drail-item" data-rail="export" data-go-dossier="export">Export</button>
       </div>
 
       <div class="main-content">
         <div class="breadcrumb" id="sharedBreadcrumb" style="display:none;">
-          <button data-go="dossiers">Dossiers</button>
+          <button data-go="dossiers">Deals</button>
           <span class="sep">/</span>
           <span class="current" id="breadcrumbName">—</span>
           <span class="chip conf-mid" id="demoChip" style="display:none;">DÉMONSTRATION</span>
@@ -134,10 +136,13 @@
         <section class="view" id="view-dossiers">
           <div class="view-head">
             <div>
-              <h1>Dossiers</h1>
+              <h1>Deals Pipeline</h1>
               <div class="label" id="dossiersCount">—</div>
             </div>
-            <button class="btn btn-outline" data-go="ingest">+ Nouveau dossier</button>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <input type="search" id="dossiersFilter" class="pipeline-filter" placeholder="Filtrer — adresse, type d'actif, statut…" autocomplete="off">
+              <button class="btn btn-outline" data-go="ingest">+ Nouveau deal</button>
+            </div>
           </div>
           <div class="dossiers-list" id="dossiersList"></div>
         </section>
@@ -151,7 +156,7 @@
         <section class="view" id="view-ingest">
           <div class="ingest-shell">
             <div class="ingest-hero">
-              <h1>Importer un dossier</h1>
+              <h1>Importer un deal</h1>
               <p>Le mémorandum de vente (OM) est le seul document analysé automatiquement : Leez en extrait chaque donnée avec sa page source et vérifie chaque citation contre le texte réel. Les autres documents sont simplement stockés dans le dossier, consultables tels quels dans l'onglet « Documents ».</p>
             </div>
 
@@ -350,6 +355,12 @@
           </div>
         </section>
 
+        <!-- ================= CENTRE D'EXPORT ================= -->
+        <section class="view" id="view-export">
+          <div class="view-head"><div><h1>Centre d'export</h1><div class="label">ARTÉFACTS GÉNÉRÉS UNIQUEMENT À PARTIR DES DONNÉES VÉRIFIÉES DU DEAL</div></div></div>
+          <div class="export-grid" id="exportGrid"></div>
+        </section>
+
         <!-- ================= SIMULATEUR ================= -->
         <section class="view" id="view-analyze">
           <div class="sim-scenario-bar" id="simScenarioBar">
@@ -518,7 +529,7 @@
         <!-- ================= DOCUMENTS ANNEXES ================= -->
         <section class="view" id="view-documents">
           <div class="view-head">
-            <div><h1>Documents</h1><div class="label">STOCKÉS TELS QUELS · AUCUNE EXTRACTION</div></div>
+            <div><h1>Data Room</h1><div class="label">DOCUMENTS DU DEAL · STOCKÉS TELS QUELS · AUCUNE EXTRACTION</div></div>
             <button class="btn btn-outline" data-go="ingest">+ Ajouter des documents</button>
           </div>
           <div id="supportingDocsList"></div>
@@ -663,6 +674,7 @@
       </div>
     </div>
   </main>
+  </div>
 </div>
 
 <!-- Copilote du Simulateur (barre flottante) -- deplace hors de #view-analyze

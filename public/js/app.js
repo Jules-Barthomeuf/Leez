@@ -312,7 +312,7 @@
   }).catch(() => {});
 
   // ================= ROUTEUR ================= //
-  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes'];
+  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
   const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
@@ -401,7 +401,7 @@
     document.getElementById('view-' + name).classList.add('active');
     if (name === 'dashboard') updateAgentShellHeight();
     const navTarget = DOSSIER_SUBVIEWS.includes(name) ? 'dossiers' : name;
-    document.querySelectorAll('.nav-links button').forEach(b => b.classList.toggle('active', b.dataset.view === navTarget));
+    document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.toggle('active', b.dataset.view === navTarget));
     if (DOSSIER_SUBVIEWS.includes(name)) dossierMode = true;
     else if (name !== 'analyze') dossierMode = false;
     const showChrome = DOSSIER_SUBVIEWS.includes(name) || (name === 'analyze' && dossierMode);
@@ -531,40 +531,44 @@
     return '<span class="chip status-trace">EN COURS</span>';
   };
 
-  // ================= DOSSIERS (liste) ================= //
+  // ================= DEALS PIPELINE (liste) ================= //
   async function renderDossiersList() {
     const list = document.getElementById('dossiersList');
     list.innerHTML = '<div class="dossiers-empty">Chargement…</div>';
     const docs = await fetchDocuments();
-    document.getElementById('dossiersCount').textContent = `${docs.length} document${docs.length > 1 ? 's' : ''}`;
+    document.getElementById('dossiersCount').textContent = `${docs.length} deal${docs.length > 1 ? 's' : ''}`;
     if (docs.length === 0) {
-      list.innerHTML = '<div class="dossiers-empty">Aucun dossier importé pour l\'instant.</div>';
+      list.innerHTML = '<div class="dossiers-empty">Aucun deal importé pour l\'instant.</div>';
       return;
     }
     list.innerHTML = docs.map(d => {
       const fi = d.ficheIdentite, ind = d.indicateurs;
       const name = (fi && fi.adresse && fi.adresse.value) ? fi.adresse.value : d.filename;
       const sub = (fi && fi.typeActif && fi.typeActif.value) ? fi.typeActif.value.toUpperCase() : d.filename.toUpperCase();
-      const prix = ind && ind.prixM2 != null ? fmt(ind.prixM2) + ' €/m²' : '—';
+      const prixDemande = (fi && fi.prixDemande && fi.prixDemande.value) ? fi.prixDemande.value : '—';
       const cap = ind && ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—';
       const occ = ind && ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : '—';
+      // OM analysé + pièces annexes stockées telles quelles = contenu réel de
+      // la data room de ce deal (jamais un nombre inventé).
+      const nbDocs = 1 + (d.supportingCount || 0);
       const uploaded = new Date(d.uploadedAt);
       const when = Number.isNaN(uploaded.getTime()) ? '' : uploaded.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
       return `<div class="dossier-row" data-doc-id="${d.id}">
         <span class="dot ${d.status === 'complete' ? 'green' : d.status === 'error' ? 'pink' : d.status === 'unsupported_scanned' ? 'amber' : 'trace'}"></span>
         <div class="dossier-row-main">
           <h3 class="dossier-name">${name}</h3>
-          <div class="label">${sub} ${statusChip(d)}${d.isDemo ? ' <span class="chip conf-mid">DÉMONSTRATION</span>' : ''}</div>
+          <div class="label">${sub} · ${nbDocs} DOC${nbDocs > 1 ? 'S' : ''} ${statusChip(d)}${d.isDemo ? ' <span class="chip conf-mid">DÉMONSTRATION</span>' : ''}</div>
         </div>
         <div class="dossier-row-stats">
-          <div><div class="label">Prix / m²</div><div class="dossier-val">${prix}</div></div>
+          <div><div class="label">Prix demandé</div><div class="dossier-val">${prixDemande}</div></div>
           <div><div class="label">Taux de capitalisation</div><div class="dossier-val">${cap}</div></div>
           <div><div class="label">Occupation (TOP)</div><div class="dossier-val">${occ}</div></div>
         </div>
         <div class="label dossier-row-time">${when}</div>
-        <button class="dossier-row-delete" data-delete-id="${d.id}" title="Supprimer ce dossier" aria-label="Supprimer ce dossier">✕</button>
+        <button class="dossier-row-delete" data-delete-id="${d.id}" title="Supprimer ce deal" aria-label="Supprimer ce deal">✕</button>
       </div>`;
     }).join('');
+    applyPipelineFilter();
     list.querySelectorAll('.dossier-row').forEach(row => row.addEventListener('click', () => openDossier(row.dataset.docId)));
     list.querySelectorAll('.dossier-row-delete').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
@@ -574,6 +578,17 @@
       renderDossiersList();
     }));
   }
+
+  // Filtre local du pipeline : simple correspondance de texte sur le contenu
+  // affiché de chaque ligne (adresse, type d'actif, statut) -- purement
+  // côté client, aucune requête, jamais une "recherche intelligente".
+  function applyPipelineFilter() {
+    const q = (document.getElementById('dossiersFilter')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('#dossiersList .dossier-row').forEach(row => {
+      row.style.display = !q || row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  document.getElementById('dossiersFilter')?.addEventListener('input', applyPipelineFilter);
 
   // ================= OUVERTURE D'UN DOSSIER ================= //
   function applyCurrentDocRenders() {
@@ -587,6 +602,7 @@
     renderAudit(currentDoc);
     renderReconciliation(currentDoc);
     renderVerification(currentDoc);
+    renderExportView(currentDoc);
     syncNotesTextareas(currentDoc.notes || '');
     if (window.LeezSimulator) window.LeezSimulator.setDossierDoc(currentDoc);
     // Presélectionne ce dossier dans l'indicateur de l'Assistant global --
@@ -1081,7 +1097,11 @@
     // champ tronque a l'impression du document source ("Locaux d'activité /")
     // -- n'apporte aucune information et se retire a l'AFFICHAGE seulement.
     if (!unit) return String(raw).replace(/\s*[/,-]\s*$/, '').trim();
-    const n = parseFloat(String(raw).replace(',', '.'));
+    // Retire d'abord les separateurs de milliers a la francaise (espace,
+    // espace insecable, espace fine) : parseFloat("42 000 000") s'arrete a la
+    // premiere espace et affichait "42 €" pour un prix cite "42 000 000 €" --
+    // une trahison de la valeur citee, pire qu'un affichage brut.
+    const n = parseFloat(String(raw).replace(/[\s  ]/g, '').replace(',', '.'));
     if (!Number.isFinite(n)) return raw;
     switch (unit) {
       case 'eur': return fmt(Math.round(n)) + ' €';
@@ -2457,6 +2477,37 @@
         <td><span class="chip" style="color:var(${signalColorVar});border-color:var(${signalColorVar});">${deltaText} · ${RECONCILIATION_SIGNAL_LABEL[r.signal]}</span></td>
       </tr>`;
     }).join('');
+  }
+
+  // ================= CENTRE D'EXPORT (artéfacts) ================= //
+  // Regroupe les artéfacts que Leez sait réellement produire aujourd'hui à
+  // partir des données vérifiées du deal : le feeder Excel (formules natives,
+  // route serveur /export/xlsx) et la présentation comité (générée dans le
+  // navigateur depuis les mêmes données, imprimable en PDF). Rien d'autre --
+  // jamais une carte pour un format non encore implémenté.
+  function renderExportView(doc) {
+    const grid = document.getElementById('exportGrid');
+    if (!grid) return;
+    const ready = doc.status === 'complete';
+    const lockNote = '<span class="export-unavailable">Disponible une fois l\'extraction terminée.</span>';
+    grid.innerHTML = `
+      <div class="export-card">
+        <span class="label">FEEDER DE MODÈLE FINANCIER</span>
+        <h3>Export Excel (.xlsx)</h3>
+        <p>État locatif, compte d'exploitation (T12) et synthèse restructurés en trois feuilles. Les totaux, le NOI et le taux de capitalisation recalculé sont de vraies formules Excel natives (SUM, SUMIF, références croisées) — le classeur reste vivant si vous corrigez une valeur, prêt à alimenter votre modèle de souscription.</p>
+        <div class="export-card-actions">
+          ${ready ? `<a class="btn btn-solid" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Télécharger le classeur</a>` : lockNote}
+        </div>
+      </div>
+      <div class="export-card">
+        <span class="label">NOTE DE COMITÉ</span>
+        <h3>Présentation comité</h3>
+        <p>Un deck pré-mis en page, peuplé uniquement des données vérifiées du deal (fiche de synthèse, état locatif, indicateurs recalculés), avec copilote de mise en forme. Exportable en PDF via l'impression, ou vers Google Slides.</p>
+        <div class="export-card-actions">
+          ${ready ? '<button class="btn btn-outline" id="exportOpenPresentationBtn">Ouvrir la présentation →</button>' : lockNote}
+        </div>
+      </div>`;
+    document.getElementById('exportOpenPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
   }
 
   // ================= VÉRIFICATION (affirmations du vendeur) ================= //
