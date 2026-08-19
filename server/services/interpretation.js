@@ -39,35 +39,81 @@ function computeMandateFit(doc, criteria) {
   const capRate = ind.capRateRecalcule;
   const results = [];
 
+  // Chaque critere porte aussi ses colonnes structurees pour la grille
+  // d'analyse (attendu / constate / page+quote de la citation source), en
+  // plus du `detail` historique (bloc Verdict, note de comite), et pour les
+  // criteres numeriques en echec un `gapPct` (ecart relatif au seuil) qui
+  // sert a designer l'ECART PRINCIPAL -- jamais un score agrege.
   if (criteria.tailleMin != null || criteria.tailleMax != null) {
-    let status = 'indetermine';
+    let status = 'indetermine', gapPct = null;
     if (prix != null) {
       const okMin = criteria.tailleMin == null || prix >= criteria.tailleMin;
       const okMax = criteria.tailleMax == null || prix <= criteria.tailleMax;
       status = okMin && okMax ? 'ok' : 'echec';
+      if (!okMax) gapPct = (prix - criteria.tailleMax) / criteria.tailleMax;
+      else if (!okMin) gapPct = (criteria.tailleMin - prix) / criteria.tailleMin;
     }
-    results.push({ id: 'taille', label: 'Taille du deal', detail: prix != null ? `${fmtEur(prix)} · cible ${fmtRange(criteria.tailleMin, criteria.tailleMax)}` : 'Prix demandé non extrait', status });
+    results.push({
+      id: 'taille', label: 'Taille du deal', status, gapPct,
+      attendu: fmtRange(criteria.tailleMin, criteria.tailleMax),
+      constate: prix != null ? fmtEur(prix) : null,
+      page: fi.prixDemande?.page ?? null, quote: fi.prixDemande?.quote ?? null,
+      ecartPhrase: status === 'echec' ? `Ticket : ${fmtEur(prix)} constaté pour une cible ${fmtRange(criteria.tailleMin, criteria.tailleMax)}` : null,
+      detail: prix != null ? `${fmtEur(prix)} · cible ${fmtRange(criteria.tailleMin, criteria.tailleMax)}` : 'Prix demandé non extrait',
+    });
   }
   if (criteria.typologies && criteria.typologies.length) {
     let status = 'indetermine';
     if (typeActif) status = criteria.typologies.some(t => typeActif.toLowerCase().includes(t.toLowerCase())) ? 'ok' : 'echec';
-    results.push({ id: 'typologie', label: 'Typologie', detail: typeActif ? `${typeActif} · cible [${criteria.typologies.join(', ')}]` : 'Typologie non extraite', status });
+    results.push({
+      id: 'typologie', label: 'Typologie', status, gapPct: null,
+      attendu: criteria.typologies.join(', '),
+      constate: typeActif || null,
+      page: fi.typeActif?.page ?? null, quote: fi.typeActif?.quote ?? null,
+      ecartPhrase: status === 'echec' ? `Typologie : ${typeActif} hors cibles [${criteria.typologies.join(', ')}]` : null,
+      detail: typeActif ? `${typeActif} · cible [${criteria.typologies.join(', ')}]` : 'Typologie non extraite',
+    });
   }
   if (criteria.localisation) {
     let status = 'indetermine';
     const texteLoc = [fi.adresse?.value, fi.codePostalVille?.value, fi.sousMarche?.value].filter(Boolean).join(' ').toLowerCase();
     if (texteLoc) status = texteLoc.includes(criteria.localisation.toLowerCase()) ? 'ok' : 'echec';
-    results.push({ id: 'localisation', label: 'Localisation (correspondance textuelle approximative)', detail: `Cible : ${criteria.localisation}`, status });
+    const constate = [fi.adresse?.value, fi.codePostalVille?.value].filter(Boolean).join(', ') || null;
+    results.push({
+      id: 'localisation', label: 'Localisation (correspondance textuelle approximative)', status, gapPct: null,
+      attendu: criteria.localisation,
+      constate,
+      page: fi.adresse?.page ?? fi.codePostalVille?.page ?? null, quote: fi.adresse?.quote ?? fi.codePostalVille?.quote ?? null,
+      ecartPhrase: status === 'echec' ? `Localisation : « ${constate} » ne correspond pas à « ${criteria.localisation} »` : null,
+      detail: `Cible : ${criteria.localisation}`,
+    });
   }
   if (criteria.rendementCibleMin != null) {
-    let status = 'indetermine';
-    if (capRate != null) status = capRate >= criteria.rendementCibleMin ? 'ok' : 'echec';
-    results.push({ id: 'rendement', label: 'Rendement cible', detail: capRate != null ? `${fmt2pct(capRate)} · cible ≥ ${fmt2pct(criteria.rendementCibleMin)}` : 'Rendement recalculé non disponible', status });
+    let status = 'indetermine', gapPct = null;
+    if (capRate != null) {
+      status = capRate >= criteria.rendementCibleMin ? 'ok' : 'echec';
+      if (status === 'echec') gapPct = (criteria.rendementCibleMin - capRate) / criteria.rendementCibleMin;
+    }
+    results.push({
+      id: 'rendement', label: 'Rendement net recalculé', status, gapPct,
+      attendu: `≥ ${fmt2pct(criteria.rendementCibleMin)}`,
+      constate: capRate != null ? fmt2pct(capRate) : null,
+      page: null, quote: null, calcule: true,
+      ecartPhrase: status === 'echec' ? `Rendement : ${fmt2pct(capRate)} constaté pour un minimum de ${fmt2pct(criteria.rendementCibleMin)}` : null,
+      detail: capRate != null ? `${fmt2pct(capRate)} · cible ≥ ${fmt2pct(criteria.rendementCibleMin)}` : 'Rendement recalculé non disponible',
+    });
   }
 
   const echecCount = results.filter(r => r.status === 'echec').length;
   const verdict = echecCount >= 2 ? 'hors_mandat' : echecCount === 1 ? 'a_examiner' : 'conforme';
-  return { configured: true, verdict, criteria: results };
+  // Ecart principal : parmi les criteres en echec, celui dont l'ecart
+  // relatif au seuil est le plus grand (les echecs binaires -- typologie,
+  // localisation -- ne passent devant que s'il n'y a aucun echec numerique).
+  const echecs = results.filter(r => r.status === 'echec');
+  const numeriques = echecs.filter(r => r.gapPct != null).sort((a, b) => b.gapPct - a.gapPct);
+  const principal = numeriques[0] || echecs[0] || null;
+  const ecartPrincipal = principal ? { label: principal.label, phrase: principal.ecartPhrase } : null;
+  return { configured: true, verdict, criteria: results, ecartPrincipal };
 }
 function computeMandateCards(doc, criteria) {
   const fit = computeMandateFit(doc, criteria);

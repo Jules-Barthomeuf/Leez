@@ -406,8 +406,6 @@
     document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.toggle('active', b.dataset.view === navTarget));
     if (DOSSIER_SUBVIEWS.includes(name)) dossierMode = true;
     else if (name !== 'analyze') dossierMode = false;
-    const showChrome = DOSSIER_SUBVIEWS.includes(name) || (name === 'analyze' && dossierMode);
-    document.getElementById('sharedBreadcrumb').style.display = showChrome ? 'flex' : 'none';
     document.getElementById('simScenarioBar').style.display = (name === 'analyze' && !dossierMode) ? 'flex' : 'none';
     // Copilote du Simulateur : deplace hors de #view-analyze (voir le
     // commentaire HTML a cote de #simFloatChat) -- sa visibilite doit donc
@@ -582,7 +580,7 @@
             <span class="deal-card-dot" style="background:${dotColor};" title="${d.status === 'complete' ? 'Analysé' : STATUS_LABELS[d.status] || d.status}"></span>
             <button class="deal-card-menu" data-delete-id="${d.id}" title="Supprimer ce dossier" aria-label="Options du dossier">···</button>
           </div>
-          <div class="deal-card-sub">${sub}${d.isDemo ? ' · Démonstration' : ''}</div>
+          <div class="deal-card-sub">${sub}</div>
         </div>
       </div>`;
     }).join('');
@@ -630,23 +628,11 @@
   // Tuile "Mémoire du fonds" du Vault -- navigation simple.
   document.querySelectorAll('[data-go-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.goView)));
 
-  // Nom reel du workspace dans l'en-tete de la sidebar (comme Harvey).
-  (async () => {
-    try {
-      const ws = await fetch('/api/workspace').then(r => r.ok ? r.json() : null);
-      if (ws?.name) {
-        document.getElementById('sidebarWsName').textContent = ws.name;
-        document.getElementById('sidebarWsMark').textContent = ws.name.trim().charAt(0).toUpperCase();
-      }
-    } catch { /* nom par defaut */ }
-  })();
 
   // ================= OUVERTURE D'UN DOSSIER ================= //
   function applyCurrentDocRenders() {
     const fi = currentDoc.ficheIdentite;
     const name = (fi && fi.adresse && fi.adresse.value) ? fi.adresse.value : currentDoc.filename;
-    document.getElementById('breadcrumbName').textContent = name;
-    document.getElementById('demoChip').style.display = currentDoc.isDemo ? 'inline-flex' : 'none';
     renderDeal(currentDoc);
     renderExtract(currentDoc);
     renderContexte(currentDoc);
@@ -845,7 +831,7 @@
       <div class="dossier-open-head">
         <button class="dossier-back" id="dealBackBtn" aria-label="Retour au Vault">\u2190</button>
         <div class="dossier-open-title">
-          <h1>${escapeHtml(name)}${doc.isDemo ? ' <span class="chip conf-mid">D\u00c9MO</span>' : ''}</h1>
+          <h1>${escapeHtml(name)}</h1>
           <div class="dossier-open-sub">${subParts.map(escapeHtml).join(' \u00b7 ')}</div>
         </div>
         <div class="dossier-open-actions">
@@ -888,6 +874,8 @@
         </div>
       </div>
 
+      <div class="deal-analysis-zone" id="dealAnalysisZone" style="display:none;"></div>
+
       <div class="deal-section" id="dealQueriesSection" style="${(doc.queries || []).length ? '' : 'display:none;'}">
         <div class="deal-section-head"><span class="deal-section-title">Requ\u00eates r\u00e9centes</span></div>
         <div class="deal-queries" id="dealQueriesRows"></div>
@@ -929,7 +917,7 @@
     document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
     document.getElementById('dealPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
     document.getElementById('dealOpenGridBtn')?.addEventListener('click', () => goDossierPage('extract'));
-    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => { appendDealChatAnalyse(); logDealQuery('Analyse \u2014 donn\u00e9es du dossier vs crit\u00e8res du fonds', 'analyse'); });
+    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => armAnalysisPrompt());
     document.getElementById('dealModePoints')?.addEventListener('click', () => { appendDealChatPoints(); logDealQuery('Points \u00e0 v\u00e9rifier avant de d\u00e9cider', 'points'); });
     document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
     document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
@@ -1026,51 +1014,214 @@
     return el;
   }
 
-  // Mode Analyse : 100% deterministe -- confronte les criteres du fonds
-  // (computeMandateFit, deja calcule serveur) et les donnees extraites avec
-  // leurs sources cliquables (page + citation verifiee). Aucun appel au
-  // modele : c'est un rendu des donnees deja verifiees, presente en chat.
-  function appendDealChatAnalyse() {
+  // ---------- Mode Analyse : grille progressive (criteres du fonds) ----------
+  // 100% deterministe -- confronte les criteres du fonds (computeMandateFit,
+  // deja calcule serveur) aux donnees extraites, avec construction
+  // PROGRESSIVE de la grille : ligne d'etat par etapes, lignes pre-remplies
+  // (les criteres sont connus avant lecture), cellules Constate/Verdict/
+  // Source qui se remplissent une a une. Jamais un spinner unique.
+  const ANALYSIS_PROMPT = "Analyse ce dossier : confronte les données extraites aux critères du fonds et donne un verdict par critère, avec la source de chaque valeur.";
+  let analysisPromptArmed = false;
+  let typingPromptTimer = null;
+
+  // Clic sur le chip Analyse : le prompt s'ecrit dans le chat (animation de
+  // frappe), l'analyste doit ensuite APPUYER SUR ENVOYER -- le lancement
+  // reste un geste explicite, jamais un declenchement automatique.
+  function armAnalysisPrompt() {
+    const input = document.getElementById('dealChatInput');
+    if (!input) return;
+    clearInterval(typingPromptTimer);
+    analysisPromptArmed = true;
+    document.querySelector('.deal-ask')?.classList.remove('collapsed');
+    input.focus();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { input.value = ANALYSIS_PROMPT; return; }
+    input.value = '';
+    let i = 0;
+    typingPromptTimer = setInterval(() => {
+      i += 2;
+      input.value = ANALYSIS_PROMPT.slice(0, i);
+      if (i >= ANALYSIS_PROMPT.length) clearInterval(typingPromptTimer);
+    }, 14);
+  }
+  // Toute frappe manuelle desarme le mode analyse : le texte n'est plus le
+  // prompt canonique, l'envoi redevient une question libre normale.
+  document.addEventListener('input', e => {
+    if (e.target?.id === 'dealChatInput' && e.isTrusted) analysisPromptArmed = false;
+  });
+
+
+
+  async function runDealAnalysis() {
     const doc = currentDoc;
-    const fi = doc.ficheIdentite || {};
-    const ind = doc.indicateurs || {};
+    const zone = document.getElementById('dealAnalysisZone');
+    if (!zone) return;
+    logDealQuery('Analyse — données du dossier vs critères du fonds', 'analyse');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Le chat se replie en une ligne, la zone de resultat s'ouvre dessous.
+    document.querySelector('.deal-ask')?.classList.add('collapsed');
+    const input = document.getElementById('dealChatInput');
+    if (input) input.value = '';
+    zone.style.display = '';
+
     const fit = doc.audit?.mandateFit;
-    let critHTML;
     if (!fit || !fit.configured || fit.criteria.length === 0) {
-      critHTML = '<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l\'onglet Critères pour activer la comparaison.</div>';
-    } else {
-      critHTML = `<div class="triage-criteria-list">${fit.criteria.map(c => `<div class="triage-criterion st-${c.status}">
-        <span class="triage-criterion-icon">${c.status === 'ok' ? '✓' : c.status === 'echec' ? '✕' : '?'}</span>
-        <span><b>${escapeHtml(c.label)}</b><br>${escapeHtml(c.detail)}</span>
-      </div>`).join('')}</div>`;
+      zone.innerHTML = `<div class="panel" style="padding:22px 26px;"><div class="flag"><span class="dot faint"></span><div><div class="flag-title">Aucun critère configuré</div><div class="flag-body">Définissez le mandat du fonds dans l'onglet Critères pour activer l'analyse — la grille confronte chaque critère aux données extraites.</div><button class="btn btn-outline" id="analysisGoCriteria" style="margin-top:10px;">Ouvrir les Critères →</button></div></div></div>`;
+      document.getElementById('analysisGoCriteria')?.addEventListener('click', () => showView('settings'));
+      return;
     }
-    const rows = [
-      ['adresse', 'Adresse', fi.adresse], ['typeActif', "Type d'actif", fi.typeActif], ['surfaceLocativeGLA', 'Surface locative (GLA)', fi.surfaceLocativeGLA],
-      ['prixDemande', 'Prix demandé', fi.prixDemande], ['rendementAffiche', 'Rendement affiché', fi.rendementAffiche], ['taxeFonciere', 'Taxe foncière', fi.taxeFonciere],
-    ].map(([key, label, f]) => {
-      const v = f && f.value != null && f.value !== '' ? formatFicheValue(key, f.value) : null;
-      const src = f && f.page ? `<button class="cite-link" data-cite-page="${f.page}" data-cite-quote="${escapeHtml(f.quote || '')}">p. ${f.page} →</button>` : '';
-      return `<tr><td>${label}</td><td>${v ? escapeHtml(String(v)) : '<span style="color:var(--text-faint);font-style:italic;">non communiqué</span>'}</td><td>${src}</td></tr>`;
-    }).join('');
-    const calcRows = [
-      ['Taux de capitalisation recalculé', ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : null],
-      ["Taux d'occupation physique (TOP)", ind.tauxOccupation != null ? fmt2(ind.tauxOccupation) + ' %' : null],
-      ["Résultat net d'exploitation (NOI)", ind.resultatNetExploitation != null ? fmt(ind.resultatNetExploitation) + ' €' : null],
-    ].map(([label, v]) => `<tr><td>${label}</td><td>${v ? v : '<span style="color:var(--text-faint);font-style:italic;">non calculable</span>'}</td><td><span class="label">CALCULÉ</span></td></tr>`).join('');
-    const el = appendDealChatEntry('Analyse — données du dossier vs critères du fonds', `
-      <div class="label" style="margin-bottom:8px;">CONFORMITÉ AUX CRITÈRES DU FONDS</div>${critHTML}
-      <div class="label" style="margin:16px 0 4px;">DONNÉES EXTRAITES (CLIC SUR LA SOURCE = PAGE EXACTE, PHRASE SURLIGNÉE)</div>
-      <table class="chat-field-table">${rows}${calcRows}</table>
-      <button class="cite-link" data-open-extract style="margin-top:10px;">Ouvrir la grille complète (état locatif, T12, surfaces) →</button>`);
-    el?.querySelectorAll('[data-cite-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.citePage), btn.dataset.citeQuote)));
-    el?.querySelector('[data-open-extract]')?.addEventListener('click', () => goDossierPage('extract'));
+
+    const nbDocs = 1 + (doc.supportingCountCache ?? 0);
+    const VERDICT_ICON = { ok: '✓', echec: '✗', indetermine: '⊘' };
+    // Grille immediatement visible : lignes = criteres (connus d'avance),
+    // colonnes Constate/Verdict/Source en attente (squelette grise).
+    zone.innerHTML = `
+      <div class="analysis-status" id="analysisStatus"><span class="analysis-status-dot"></span><span id="analysisStatusText">Lecture des données vérifiées… 1 / ${nbDocs} document${nbDocs > 1 ? 's' : ''}</span></div>
+      <div class="analysis-summary" id="analysisSummary" style="visibility:hidden;"></div>
+      <div class="analysis-split">
+        <div class="analysis-grid-wrap">
+          <table class="analysis-grid" id="analysisGrid">
+            <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th style="text-align:center;">Verdict</th><th>Source</th></tr></thead>
+            <tbody>${fit.criteria.map((c, i) => `
+              <tr data-crit-idx="${i}" class="pending">
+                <td class="crit-label">${escapeHtml(c.label)}</td>
+                <td>${escapeHtml(c.attendu || '—')}</td>
+                <td class="cell-constate"><span class="cell-skeleton"></span></td>
+                <td class="cell-verdict" style="text-align:center;"><span class="cell-skeleton" style="width:18px;"></span></td>
+                <td class="cell-source"><span class="cell-skeleton" style="width:36px;"></span></td>
+              </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div class="analysis-source-panel" id="analysisSourcePanel" style="display:none;">
+          <div class="interp-source-head">
+            <span class="label">Page <span id="analysisSourcePageNum"></span> du document source</span>
+            <button class="source-modal-close" id="analysisSourceClose" aria-label="Fermer">✕</button>
+          </div>
+          <div class="source-modal-body">
+            <iframe id="analysisSourceFrame" class="source-modal-frame" title="Page source du document"></iframe>
+            <div class="source-modal-text" id="analysisSourceText" style="display:none;"></div>
+            <div class="source-modal-quote" id="analysisSourceQuote" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="analysis-actions" id="analysisActions" style="visibility:hidden;">
+        <a class="btn btn-outline" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Exporter (.xlsx)</a>
+        <button class="btn btn-outline" id="analysisCopyBtn">⧉ Copier la grille</button>
+        <button class="btn btn-outline" id="analysisPointsBtn">⚠ Points à vérifier</button>
+        <span style="flex:1;"></span>
+        <button class="btn ${doc.stage === 'underwriting' || doc.stage === 'comite' ? 'btn-solid' : 'btn-outline'}" id="analysisPursueBtn">${doc.stage === 'underwriting' || doc.stage === 'comite' ? '✓ Poursuivi' : '▶ Poursuivre'}</button>
+        <button class="btn btn-outline" id="analysisAbandonBtn" ${doc.stage === 'rejete' ? 'disabled' : ''}>✕ Abandonner</button>
+      </div>
+      <div id="analysisPointsZone"></div>`;
+    zone.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+
+    const statusText = document.getElementById('analysisStatusText');
+    if (!reduced) { await sleep(700); }
+    statusText.textContent = 'Confrontation aux critères du fonds…';
+
+    // Remplissage progressif, dans le desordre -- chaque ligne complete
+    // prend sa couleur de verdict. Les valeurs sont REELLES (deja
+    // verifiees) : seule leur apparition est progressive.
+    const order = fit.criteria.map((_, i) => i);
+    if (!reduced) for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    for (const idx of order) {
+      if (!reduced) await sleep(260 + Math.random() * 240);
+      const c = fit.criteria[idx];
+      const tr = zone.querySelector(`tr[data-crit-idx="${idx}"]`);
+      if (!tr) continue;
+      tr.classList.remove('pending');
+      tr.classList.add(`st-${c.status}`);
+      tr.querySelector('.cell-constate').innerHTML = c.constate != null ? escapeHtml(c.constate)
+        : `<button class="cell-missing" data-missing-crit="${escapeHtml(c.label)}" title="Non trouvé dans l'OM — cliquer pour interroger les documents du dossier">—</button>`;
+      tr.querySelector('.cell-verdict').innerHTML = `<span class="verdict-ico v-${c.status}">${VERDICT_ICON[c.status]}</span>`;
+      tr.querySelector('.cell-source').innerHTML = c.page
+        ? `<button class="cite-link" data-src-page="${c.page}" data-src-quote="${escapeHtml(c.quote || '')}">voir</button>`
+        : (c.calcule ? '<span class="label">CALCULÉ</span>' : '—');
+    }
+
+    // Tri final : non conformes en haut, puis non trouves, puis conformes --
+    // l'information qui fait decider au-dessus de la ligne de flottaison.
+    const tbody = zone.querySelector('#analysisGrid tbody');
+    const rank = { echec: 0, indetermine: 1, ok: 2 };
+    [...tbody.querySelectorAll('tr')]
+      .sort((a, b) => rank[fit.criteria[+a.dataset.critIdx].status] - rank[fit.criteria[+b.dataset.critIdx].status])
+      .forEach(tr => tbody.appendChild(tr));
+
+    // Bandeau de synthese : decompte des trois verdicts + ecart principal.
+    // Pas de score global -- l'analyste voit sur quoi ca casse.
+    const counts = { ok: 0, echec: 0, indetermine: 0 };
+    fit.criteria.forEach(c => counts[c.status]++);
+    document.getElementById('analysisSummary').innerHTML = `
+      <div class="analysis-counts">
+        <span class="ac ac-ok">${counts.ok} conforme${counts.ok > 1 ? 's' : ''}</span>
+        <span class="ac ac-echec">${counts.echec} non conforme${counts.echec > 1 ? 's' : ''}</span>
+        <span class="ac ac-indetermine">${counts.indetermine} non trouvé${counts.indetermine > 1 ? 's' : ''}</span>
+      </div>
+      ${fit.ecartPrincipal ? `<div class="analysis-ecart"><span class="label">ÉCART PRINCIPAL</span><div>${escapeHtml(fit.ecartPrincipal.phrase || fit.ecartPrincipal.label)}</div></div>` : ''}`;
+    document.getElementById('analysisSummary').style.visibility = '';
+    statusText.textContent = `Analyse terminée · ${fit.criteria.length} critère${fit.criteria.length > 1 ? 's' : ''} confronté${fit.criteria.length > 1 ? 's' : ''}`;
+    document.getElementById('analysisStatus').classList.add('done');
+    document.getElementById('analysisActions').style.visibility = '';
+
+    // ---------- interactions de la grille ----------
+    // "voir" -> panneau source a DROITE (PDF a la bonne page, phrase
+    // surlignee), la grille reste visible a gauche.
+    zone.querySelectorAll('[data-src-page]').forEach(btn => btn.addEventListener('click', () => {
+      const panel = document.getElementById('analysisSourcePanel');
+      panel.style.display = '';
+      document.getElementById('analysisSourcePageNum').textContent = btn.dataset.srcPage;
+      loadSourcePage(Number(btn.dataset.srcPage), btn.dataset.srcQuote, {
+        frameEl: document.getElementById('analysisSourceFrame'),
+        textEl: document.getElementById('analysisSourceText'),
+        quoteEl: document.getElementById('analysisSourceQuote'),
+      });
+    }));
+    document.getElementById('analysisSourceClose')?.addEventListener('click', () => {
+      document.getElementById('analysisSourcePanel').style.display = 'none';
+    });
+    // "—" (non trouve) -> pre-remplit une question ciblee dans le chat sur
+    // les autres documents du dossier.
+    zone.querySelectorAll('[data-missing-crit]').forEach(btn => btn.addEventListener('click', () => {
+      const ask = document.querySelector('.deal-ask');
+      ask?.classList.remove('collapsed');
+      const inp = document.getElementById('dealChatInput');
+      if (inp) { inp.value = `Où trouver « ${btn.dataset.missingCrit} » dans les documents du dossier ?`; inp.focus(); }
+      analysisPromptArmed = false;
+      ask?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    // Copie de la grille (TSV) dans le presse-papier.
+    document.getElementById('analysisCopyBtn')?.addEventListener('click', async () => {
+      const lines = [['Critère', 'Attendu', 'Constaté', 'Verdict'].join('\t')];
+      [...tbody.querySelectorAll('tr')].forEach(tr => {
+        const c = fit.criteria[+tr.dataset.critIdx];
+        lines.push([c.label, c.attendu || '—', c.constate || '—', { ok: 'Conforme', echec: 'Non conforme', indetermine: 'Non trouvé' }[c.status]].join('\t'));
+      });
+      try {
+        await navigator.clipboard.writeText(lines.join('\n'));
+        const b = document.getElementById('analysisCopyBtn');
+        b.textContent = '✓ Copié'; setTimeout(() => { b.textContent = '⧉ Copier la grille'; }, 1800);
+      } catch { alert('Copie impossible dans ce navigateur.'); }
+    });
+    // Points a verifier : enchaine le second mode SOUS la grille, sans
+    // repasser par le chat.
+    document.getElementById('analysisPointsBtn')?.addEventListener('click', () => {
+      const pz = document.getElementById('analysisPointsZone');
+      const built = buildPointsHTML(currentDoc);
+      pz.innerHTML = `<div class="panel" style="padding:20px 24px;margin-top:16px;"><div class="panel-head" style="padding:0 0 10px;"><h3 style="font-size:1rem;">Points à vérifier</h3></div>${built}</div>`;
+      logDealQuery('Points à vérifier avant de décider', 'points');
+      pz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    // La decision, accessible directement depuis l'ecran d'analyse.
+    document.getElementById('analysisPursueBtn')?.addEventListener('click', async () => {
+      if (currentDoc.stage === 'underwriting' || currentDoc.stage === 'comite') return;
+      await applyStageChange('underwriting');
+    });
+    document.getElementById('analysisAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
   }
 
   // Mode Points a verifier : alertes deja calculees (audit.cards), ce que
   // le dossier ne dit pas (criteres intestables + points a creuser) --
   // deterministe egalement.
-  function appendDealChatPoints() {
-    const doc = currentDoc;
+  function buildPointsHTML(doc) {
     const cards = (doc.audit?.cards || []).filter(c => c.niveau === 'rouge' || c.niveau === 'orange');
     const bloquants = (doc.audit?.mandateFit?.criteria || []).filter(c => c.status === 'indetermine');
     const points = doc.audit?.pointsACreuser || [];
@@ -1083,9 +1234,11 @@
     const pointsHTML = points.length === 0 ? '' : `
       <div class="label" style="margin:14px 0 6px;">À DEMANDER AVANT DE CONCLURE</div>
       ${points.map(p => `<div class="flag"><span class="dot amber"></span><div><div class="flag-title">${escapeHtml(p.titre)}</div><div class="flag-body">${escapeHtml(p.detail || '')}</div></div></div>`).join('')}`;
-    appendDealChatEntry('Points à vérifier avant de décider', `
-      <div class="label" style="margin-bottom:6px;">ALERTES (${cards.length})</div>
-      <div class="flags-list">${cardsHTML}</div>${bloquantsHTML}${pointsHTML}`);
+    return `<div class="label" style="margin-bottom:6px;">ALERTES (${cards.length})</div>
+      <div class="flags-list">${cardsHTML}</div>${bloquantsHTML}${pointsHTML}`;
+  }
+  function appendDealChatPoints() {
+    appendDealChatEntry('Points à vérifier avant de décider', buildPointsHTML(currentDoc));
   }
 
   // Question libre : meme moteur que l'Assistant global (dealChat.js cote
@@ -1095,6 +1248,9 @@
     const input = document.getElementById('dealChatInput');
     const q = (input?.value || '').trim();
     if (!q) return;
+    // Prompt d'analyse arme (chip Analyse + Envoyer) : lance la grille
+    // progressive au lieu d'une question libre au modele.
+    if (analysisPromptArmed) { analysisPromptArmed = false; runDealAnalysis(); return; }
     input.value = '';
     logDealQuery(q, 'question');
     const thinking = appendDealChatEntry(q, '<span style="color:var(--text-faint);">Réponse en cours…</span>');
