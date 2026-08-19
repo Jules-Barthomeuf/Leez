@@ -129,7 +129,12 @@ function buildFundCriteriaBlock(fundCriteria, mandateFit) {
   return block;
 }
 
-async function askAboutDossier({ doc, question, fundCriteria, image }) {
+async function askAboutDossier({ doc, question, fundCriteria, image, useDoc = true, useKb = true }) {
+  // Cases "Sources" du chat (Documents du dossier / Mémoire) : decochee,
+  // une source est reellement EXCLUE du contexte envoye au modele -- pas
+  // seulement masquee a l'affichage. L'analyste voit d'ou vient la reponse
+  // avant de la lire.
+  if (!useDoc) doc = null;
   // doc peut etre null : l'Assistant est desormais global (ecran d'accueil),
   // le dossier est optionnel (selecteur cote client). Sans dossier, la
   // conversation generale/KB/actions restent disponibles, mais toute
@@ -137,7 +142,7 @@ async function askAboutDossier({ doc, question, fundCriteria, image }) {
   // bloc ci-dessous le dit explicitement au modele plutot que de laisser un
   // champ vide ambigu.
   const pages = doc ? (doc.pages_json || []) : [];
-  const kbChunks = await search(question, 4).catch(() => []);
+  const kbChunks = useKb ? await search(question, 4).catch(() => []) : [];
   const kbRefMap = new Map(kbChunks.map((c, i) => [`REF${i + 1}`, c]));
 
   const dossierHeader = doc

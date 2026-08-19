@@ -42,7 +42,10 @@ router.post('/assistant/ask', uploadImage, asyncHandler(async (req, res) => {
     // peuvent changer entre deux questions, l'Assistant doit refleter la
     // configuration actuelle, pas celle du demarrage du serveur.
     const fundCriteria = (await getSetting('fund_criteria', req.workspaceId)) || null;
-    const result = await askAboutDossier({ doc, question, fundCriteria, image });
+    // Flags de sources (chat du dossier) -- valeurs FormData, donc chaines.
+    const useDoc = req.body?.useDoc !== 'false' && req.body?.useDoc !== false;
+    const useKb = req.body?.useKb !== 'false' && req.body?.useKb !== false;
+    const result = await askAboutDossier({ doc, question, fundCriteria, image, useDoc, useKb });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message || "Erreur lors de la réponse." });

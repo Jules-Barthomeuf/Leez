@@ -2178,3 +2178,39 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   .analysis-split{flex-direction:column;}
   .analysis-source-panel{width:100%;position:static;}
 }
+
+/* ---------- Chat du dossier : sélecteurs Mode / Sources ---------- */
+.deal-ask-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.ask-select-wrap{position:relative;}
+.ask-select{
+  all:unset;cursor:pointer;font-family:var(--sans);font-size:.76rem;color:var(--text-body);
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:999px;padding:6px 13px;white-space:nowrap;
+}
+.ask-select:hover{border-color:var(--text-muted);}
+.ask-menu{
+  position:absolute;bottom:calc(100% + 8px);left:0;z-index:40;min-width:270px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:0 8px 28px rgba(35,29,20,.12);padding:6px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.ask-menu button{
+  all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;
+  padding:9px 12px;border-radius:var(--radius-sm);
+  font-family:var(--sans);font-size:.8rem;color:var(--text);
+}
+.ask-menu button:hover{background:var(--surface-raised);}
+.ask-menu button b{font-weight:600;}
+.ask-menu button span,.ask-menu label span{font-size:.7rem;color:var(--text-faint);font-weight:400;}
+.ask-menu-sources label{
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;cursor:pointer;
+  padding:9px 12px;border-radius:var(--radius-sm);
+  font-family:var(--sans);font-size:.8rem;color:var(--text);
+}
+.ask-menu-sources label:hover{background:var(--surface-raised);}
+.ask-menu-sources input{accent-color:var(--text);}
+.web-external-tag{
+  display:inline-block;font-family:var(--sans);font-size:.64rem;letter-spacing:.09em;
+  color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber);
+  border-radius:999px;padding:2px 10px;margin-bottom:8px;
+}

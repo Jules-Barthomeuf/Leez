@@ -856,17 +856,31 @@
       <div class="deal-ask">
         <div class="deal-chat-log" id="dealChatLog" style="display:none;"></div>
         <div class="deal-ask-card">
-          <textarea id="dealChatInput" rows="2" placeholder="Posez une question sur ce dossier\u2026"></textarea>
+          <textarea id="dealChatInput" rows="2" placeholder="Poser une question\u2026"></textarea>
           <div class="deal-ask-bar">
-            <span class="deal-ask-hint">R\u00e9ponses cit\u00e9es sur le texte r\u00e9el du dossier \u2014 jamais une valeur invent\u00e9e</span>
+            <div class="deal-ask-controls">
+              <div class="ask-select-wrap">
+                <button type="button" class="ask-select" id="dealModeBtn">Mode : Question \u2304</button>
+                <div class="ask-menu" id="dealModeMenu" style="display:none;">
+                  <button type="button" data-mode="analyse"><b>Analyse</b><span>La grille crit\u00e8res \u00d7 constat\u00e9 \u00d7 verdict</span></button>
+                  <button type="button" data-mode="points"><b>Points \u00e0 v\u00e9rifier</b><span>Bloquants, \u00e0 creuser, manquants</span></button>
+                  <button type="button" data-mode="question"><b>Question</b><span>Une r\u00e9ponse en prose, cit\u00e9e</span></button>
+                </div>
+              </div>
+              <div class="ask-select-wrap">
+                <button type="button" class="ask-select" id="dealSourcesBtn">Sources : Documents \u2304</button>
+                <div class="ask-menu ask-menu-sources" id="dealSourcesMenu" style="display:none;">
+                  <label><input type="checkbox" data-source="docs" checked> Documents du dossier</label>
+                  <label><input type="checkbox" data-source="web"> Web <span>fiabilit\u00e9 plus faible \u2014 marqu\u00e9 comme externe</span></label>
+                  <label><input type="checkbox" data-source="memoire"> M\u00e9moire <span>base de connaissances juridique/financi\u00e8re</span></label>
+                </div>
+              </div>
+            </div>
             <button class="agent-send-btn" id="dealChatSendBtn" aria-label="Envoyer">\u2192</button>
           </div>
         </div>
         <div class="deal-ask-chips">
-          <button class="deal-ask-chip" id="dealModeAnalyse">\ud83d\udccb Analyse (crit\u00e8res du fonds)</button>
-          <button class="deal-ask-chip" id="dealModePoints">\u26a0 Points \u00e0 v\u00e9rifier</button>
           <button class="deal-ask-chip" id="dealOpenGridBtn">\u25a6 Grille d'extraction</button>
-        </div>
         <div class="deal-ask-chips">
           <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/docx" download>\u2b07 Note de comit\u00e9</a>
           <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/xlsx" download>\u2b07 Excel (formules actives)</a>
@@ -917,8 +931,7 @@
     document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
     document.getElementById('dealPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
     document.getElementById('dealOpenGridBtn')?.addEventListener('click', () => goDossierPage('extract'));
-    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => armAnalysisPrompt());
-    document.getElementById('dealModePoints')?.addEventListener('click', () => { appendDealChatPoints(); logDealQuery('Points \u00e0 v\u00e9rifier avant de d\u00e9cider', 'points'); });
+    wireDealChatControls();
     document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
     document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDealChatQuestion(); }
@@ -1021,35 +1034,70 @@
   // (les criteres sont connus avant lecture), cellules Constate/Verdict/
   // Source qui se remplissent une a une. Jamais un spinner unique.
   const ANALYSIS_PROMPT = "Analyse ce dossier : confronte les données extraites aux critères du fonds et donne un verdict par critère, avec la source de chaque valeur.";
-  let analysisPromptArmed = false;
-  let typingPromptTimer = null;
+  const POINTS_PROMPT = "Points à vérifier avant de décider : bloquants, à creuser, manquants.";
+  // Mode et sources du chat du dossier -- etat module (survit aux re-rendus
+  // du dossier). Trois modes, trois formes de sortie : la grille (Analyse),
+  // la liste priorisee (Points), la prose citee (Question). Les sources
+  // cochees sont reellement transmises au serveur (jamais un simple filtre
+  // d'affichage) -- l'analyste voit d'ou viendra la reponse AVANT de la lire.
+  const DEAL_MODE_LABELS = { analyse: 'Analyse', points: 'Points à vérifier', question: 'Question' };
+  let dealChatMode = 'question';
+  let dealChatSources = { docs: true, web: false, memoire: false };
 
-  // Clic sur le chip Analyse : le prompt s'ecrit dans le chat (animation de
-  // frappe), l'analyste doit ensuite APPUYER SUR ENVOYER -- le lancement
-  // reste un geste explicite, jamais un declenchement automatique.
-  function armAnalysisPrompt() {
+  function setDealChatMode(mode) {
+    dealChatMode = mode;
+    const btn = document.getElementById('dealModeBtn');
+    if (btn) btn.textContent = `Mode : ${DEAL_MODE_LABELS[mode]} \u2304`;
     const input = document.getElementById('dealChatInput');
     if (!input) return;
-    clearInterval(typingPromptTimer);
-    analysisPromptArmed = true;
-    document.querySelector('.deal-ask')?.classList.remove('collapsed');
+    // Le texte APPARAIT en entier, d'un coup -- jamais une animation de frappe.
+    if (mode === 'analyse') input.value = ANALYSIS_PROMPT;
+    else if (mode === 'points') input.value = POINTS_PROMPT;
+    else input.value = '';
     input.focus();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { input.value = ANALYSIS_PROMPT; return; }
-    input.value = '';
-    let i = 0;
-    typingPromptTimer = setInterval(() => {
-      i += 2;
-      input.value = ANALYSIS_PROMPT.slice(0, i);
-      if (i >= ANALYSIS_PROMPT.length) clearInterval(typingPromptTimer);
-    }, 14);
   }
-  // Toute frappe manuelle desarme le mode analyse : le texte n'est plus le
-  // prompt canonique, l'envoi redevient une question libre normale.
+  // Change le mode sans toucher au champ de saisie (retour a Question apres
+  // un lancement, ou quand l'analyste edite le prompt a la main -- son texte
+  // devient une question libre, jamais silencieusement remplace).
+  function setDealChatModeSilent(mode) {
+    dealChatMode = mode;
+    const btn = document.getElementById('dealModeBtn');
+    if (btn) btn.textContent = `Mode : ${DEAL_MODE_LABELS[mode]} ⌄`;
+  }
   document.addEventListener('input', e => {
-    if (e.target?.id === 'dealChatInput' && e.isTrusted) analysisPromptArmed = false;
+    if (e.target?.id === 'dealChatInput' && e.isTrusted && dealChatMode !== 'question') setDealChatModeSilent('question');
   });
 
-
+  function updateDealSourcesLabel() {
+    const btn = document.getElementById('dealSourcesBtn');
+    if (!btn) return;
+    const parts = [];
+    if (dealChatSources.docs) parts.push('Documents');
+    if (dealChatSources.web) parts.push('Web');
+    if (dealChatSources.memoire) parts.push('Mémoire');
+    btn.textContent = `Sources : ${parts.length ? parts.join(' + ') : 'aucune'} \u2304`;
+  }
+  function wireDealChatControls() {
+    const modeBtn = document.getElementById('dealModeBtn');
+    const modeMenu = document.getElementById('dealModeMenu');
+    const srcBtn = document.getElementById('dealSourcesBtn');
+    const srcMenu = document.getElementById('dealSourcesMenu');
+    if (!modeBtn) return;
+    const closeMenus = () => { modeMenu.style.display = 'none'; srcMenu.style.display = 'none'; };
+    modeBtn.addEventListener('click', e => { e.stopPropagation(); srcMenu.style.display = 'none'; modeMenu.style.display = modeMenu.style.display === 'none' ? '' : 'none'; });
+    srcBtn.addEventListener('click', e => { e.stopPropagation(); modeMenu.style.display = 'none'; srcMenu.style.display = srcMenu.style.display === 'none' ? '' : 'none'; });
+    document.addEventListener('click', closeMenus);
+    modeMenu.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { setDealChatMode(b.dataset.mode); closeMenus(); }));
+    srcMenu.addEventListener('click', e => e.stopPropagation());
+    srcMenu.querySelectorAll('[data-source]').forEach(cb => {
+      cb.checked = dealChatSources[cb.dataset.source];
+      cb.addEventListener('change', () => { dealChatSources[cb.dataset.source] = cb.checked; updateDealSourcesLabel(); });
+    });
+    // Restaure l'etat courant (mode/sources) apres un re-rendu du dossier.
+    const btnLabel = document.getElementById('dealModeBtn');
+    if (btnLabel) btnLabel.textContent = `Mode : ${DEAL_MODE_LABELS[dealChatMode]} \u2304`;
+    updateDealSourcesLabel();
+  }
 
   async function runDealAnalysis() {
     const doc = currentDoc;
@@ -1185,7 +1233,7 @@
       ask?.classList.remove('collapsed');
       const inp = document.getElementById('dealChatInput');
       if (inp) { inp.value = `Où trouver « ${btn.dataset.missingCrit} » dans les documents du dossier ?`; inp.focus(); }
-      analysisPromptArmed = false;
+
       ask?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }));
     // Copie de la grille (TSV) dans le presse-papier.
@@ -1246,18 +1294,49 @@
   // (ex. credits API epuises) s'affiche telle quelle, jamais masquee.
   async function sendDealChatQuestion() {
     const input = document.getElementById('dealChatInput');
+    // Le MODE selectionne dicte la forme de sortie -- jamais une detection
+    // de texte. Analyse -> grille progressive ; Points -> liste priorisee ;
+    // Question -> prose citee.
+    if (dealChatMode === 'analyse') { if (input) input.value = ''; setDealChatModeSilent('question'); runDealAnalysis(); return; }
+    if (dealChatMode === 'points') {
+      if (input) input.value = '';
+      setDealChatModeSilent('question');
+      appendDealChatPoints();
+      logDealQuery('Points à vérifier avant de décider', 'points');
+      return;
+    }
     const q = (input?.value || '').trim();
     if (!q) return;
-    // Prompt d'analyse arme (chip Analyse + Envoyer) : lance la grille
-    // progressive au lieu d'une question libre au modele.
-    if (analysisPromptArmed) { analysisPromptArmed = false; runDealAnalysis(); return; }
+    if (!dealChatSources.docs && !dealChatSources.web && !dealChatSources.memoire) {
+      alert('Cochez au moins une source (Documents, Web ou Mémoire).');
+      return;
+    }
     input.value = '';
     logDealQuery(q, 'question');
     const thinking = appendDealChatEntry(q, '<span style="color:var(--text-faint);">Réponse en cours…</span>');
     try {
+      if (dealChatSources.web) {
+        // Recherche web (SSE, meme moteur que l'assistant du dossier) --
+        // toujours MARQUEE comme externe : une donnee web ne se presente
+        // jamais au meme niveau qu'une citation du document.
+        let acc = '', sources = [], streamErr = null;
+        await streamSSE('/api/web-search', { question: q, dossierId: currentDoc.id }, evt => {
+          if (evt.type === 'delta') { acc += evt.text; thinking.innerHTML = '<div class="web-external-tag">SOURCE EXTERNE — WEB · FIABILITÉ À VÉRIFIER</div>' + formatAssistantText(acc); }
+          else if (evt.type === 'done') { sources = evt.sources || []; }
+          else if (evt.type === 'error') { streamErr = evt.error; }
+        }).catch(err => { streamErr = err.message || String(err); });
+        if (streamErr) throw new Error(streamErr);
+        if (!acc) { thinking.innerHTML = '<span style="color:var(--text-faint);">Aucune réponse trouvée via la recherche web.</span>'; return; }
+        const shown = sources.slice(0, 5);
+        thinking.innerHTML = '<div class="web-external-tag">SOURCE EXTERNE — WEB · FIABILITÉ À VÉRIFIER</div>' + formatAssistantText(acc) +
+          (shown.length ? `<div class="assistant-web-sources">${shown.map(s => `<a class="assistant-web-source" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer">🌐 ${escapeHtml(s.title || s.url)} →</a>`).join('')}</div>` : '');
+        return;
+      }
       const fd = new FormData();
       fd.append('question', q);
       fd.append('dossierId', currentDoc.id);
+      fd.append('useDoc', String(dealChatSources.docs));
+      fd.append('useKb', String(dealChatSources.memoire));
       const res = await fetch('/api/assistant/ask', { method: 'POST', body: fd });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Erreur lors de la réponse.');
