@@ -53,6 +53,7 @@ function shapeDocument(doc) {
     dealRecap: doc.deal_recap_json ?? null,
     stage: doc.stage || 'triage',
     displayName: doc.display_name ?? null,
+    queries: doc.queries_json ?? [],
     decisionMotif: doc.decision_motif ?? null,
     decidedAt: doc.decided_at ?? null,
     decidedBy: doc.decided_by ?? null,
@@ -121,7 +122,13 @@ const uploadCombined = multer({ storage, limits, fileFilter: uploadFilter })
 const uploadSupportingOnly = multer({ storage, limits, fileFilter: uploadFilter }).array('supportingFiles', 40);
 
 function shapeSupporting(s) {
-  return { id: s.id, category: s.category, type: s.type, filename: s.filename, uploadedAt: s.uploaded_at, mimeType: s.mime_type, isImage: (s.mime_type || '').startsWith('image/') };
+  // Taille reelle du fichier sur disque -- best effort (null si introuvable).
+  let sizeBytes = null;
+  try {
+    const ext = EXT_BY_MIME[s.mime_type] || 'pdf';
+    sizeBytes = fs.statSync(path.join(SUPPORTING_DIR, `${s.id}.${ext}`)).size;
+  } catch { /* fichier absent du disque */ }
+  return { id: s.id, category: s.category, type: s.type, filename: s.filename, uploadedAt: s.uploaded_at, mimeType: s.mime_type, isImage: (s.mime_type || '').startsWith('image/'), sizeBytes };
 }
 
 // Rattache des fichiers deja ecrits sur disque par multer (dans SUPPORTING_DIR,
@@ -246,7 +253,26 @@ router.get('/documents/:id', asyncHandler(async (req, res) => {
     shaped.reconciliation = computeReconciliation(shaped);
   }
 
+  // Taille reelle du fichier OM sur disque (colonne "Taille" de la table
+  // des documents du dossier) -- jamais une estimation.
+  try { shaped.fileSizeBytes = fs.statSync(path.join(UPLOAD_DIR, `${doc.id}.pdf`)).size; } catch { shaped.fileSizeBytes = null; }
+
   res.json(shaped);
+}));
+
+// Journal des requetes du dossier ("Requetes recentes") : append-only,
+// plafonne aux 20 plus recentes. label = l'intitule affiche (question ou
+// nom du mode), kind = type de sortie ('question' | 'analyse' | 'points').
+router.post('/documents/:id/queries', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  const label = typeof req.body?.label === 'string' ? req.body.label.trim().slice(0, 200) : '';
+  const kind = ['question', 'analyse', 'points'].includes(req.body?.kind) ? req.body.kind : 'question';
+  if (!label) return res.status(400).json({ error: 'Libellé de requête manquant.' });
+  const entry = { label, kind, by: req.userEmail || null, at: new Date().toISOString() };
+  const queries = [entry, ...(doc.queries_json || [])].slice(0, 20);
+  await updateDocument(doc.id, { queries_json: queries }, req.workspaceId);
+  res.json({ ok: true, queries });
 }));
 
 // Relance le pipeline a partir de l'etape en echec (doc.failedStage),

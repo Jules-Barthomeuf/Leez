@@ -785,95 +785,142 @@
   }
 
   // ================= SOMMAIRE (deal) ================= //
+  // Temps relatif pour les "Requetes recentes" ("il y a 10 min").
+  function timeAgo(iso) {
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return '';
+    const mins = Math.round((Date.now() - t) / 60000);
+    if (mins < 1) return "a l'instant";
+    if (mins < 60) return `il y a ${mins} min`;
+    const h = Math.round(mins / 60);
+    if (h < 24) return `il y a ${h} h`;
+    return new Date(iso).toLocaleDateString('fr-FR');
+  }
+  function fmtBytes(n) {
+    if (n == null) return '\u2014';
+    if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} Ko`;
+    return `${(n / (1024 * 1024)).toFixed(1).replace('.', ',')} Mo`;
+  }
+  // Couleur de pastille par categorie de document (badges de la table des
+  // fichiers) -- palette fixe, une couleur par categorie du catalogue.
+  const CATEGORY_DOT_COLORS = {
+    om: '#b0812a', photos: '#8a63d2', commercialisation: '#c2543a', locatif: '#2f8f5b',
+    financier: '#b0812a', technique: '#3a6ea5', reglementaire: '#a5473a', juridique: '#5b5ea6', esg: '#2e7d6e',
+  };
+  function categoryBadge(id, label) {
+    const color = CATEGORY_DOT_COLORS[id] || 'var(--text-faint)';
+    return `<span class="file-cat-badge"><span class="file-cat-dot" style="background:${color};"></span>${escapeHtml(label)}</span>`;
+  }
+  const QUERY_KIND_LABELS = { question: 'Question', analyse: 'Table d\u2019analyse', points: 'Points \u00e0 v\u00e9rifier' };
+
   function renderDeal(doc) {
     const fi = doc.ficheIdentite || {};
-    const ind = doc.indicateurs || {};
     const val = f => (f && f.value != null) ? f.value : null;
     const valFmt = (key, f) => { const v = val(f); return v != null ? formatFicheValue(key, v) : null; };
     const name = doc.displayName || val(fi.adresse) || doc.filename;
-    const addrLine = [val(fi.adresse), val(fi.codePostalVille)].filter(Boolean).join(', ');
     const typeActif = val(fi.typeActif);
     const stepComplete = doc.status === 'complete';
     const stepError = doc.status === 'error';
     const stepScanned = doc.status === 'unsupported_scanned';
+    const nbDocs = 1 + (doc.supportingCountCache ?? 0);
+    const subParts = [
+      `${nbDocs} document${nbDocs > 1 ? 's' : ''}`,
+      stepComplete ? 'Analys\u00e9' : (STATUS_LABELS[doc.status] || doc.status),
+      typeActif, valFmt('prixDemande', fi.prixDemande),
+      (doc.queries || []).length ? `${doc.queries.length} requ\u00eate${doc.queries.length > 1 ? 's' : ''}` : null,
+    ].filter(Boolean);
 
-    // Etat hors "complet" : message de statut honnete + relance si erreur.
     let statusBlockHTML = '';
     if (!stepComplete) {
       if (stepError) {
-        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot pink"></span><div><div class="flag-title">L'extraction a échoué</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Erreur inconnue.')}</div><button class="btn btn-solid" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button></div></div></div>`;
+        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot pink"></span><div><div class="flag-title">L'extraction a \u00e9chou\u00e9</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Erreur inconnue.')}</div><button class="btn btn-solid" id="dealRetryBtn" style="margin-top:12px;">Relancer l'extraction</button></div></div></div>`;
       } else if (stepScanned) {
-        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Ce PDF semble scanné, sans couche de texte extractible.')} Demandez au vendeur une version texte du document, ou son rent roll au format Excel.</div></div></div></div>`;
+        statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot amber"></span><div><div class="flag-title">Document non exploitable (scan sans texte)</div><div class="flag-body">${escapeHtml(doc.errorMessage || 'Ce PDF semble scann\u00e9, sans couche de texte extractible.')} Demandez au vendeur une version texte du document.</div></div></div></div>`;
       } else {
         statusBlockHTML = `<div class="panel" style="padding:22px 26px;margin-top:20px;"><div class="flag"><span class="dot trace"></span><div><div class="flag-title">Extraction en cours</div><div class="flag-body">${STATUS_LABELS[doc.status] || doc.status}</div></div></div></div>`;
       }
     }
 
     document.getElementById('dealBody').innerHTML = `
-      <div class="deal-header-card">
-        <div class="deal-header-info">
-          <div class="deal-header-eyebrow">${escapeHtml(doc.filename)}${typeActif ? ' &nbsp;·&nbsp; <span class="chip conf-mid">' + escapeHtml(typeActif.toUpperCase()) + '</span>' : ''}${doc.isDemo ? ' &nbsp;·&nbsp; <span class="chip conf-mid">DÉMONSTRATION — DONNÉES FICTIVES</span>' : ''}</div>
-          <h1 class="deal-title" style="font-size:2.2rem;">${escapeHtml(name)}</h1>
-          ${addrLine ? `<div class="deal-header-addr">${escapeHtml(addrLine)}</div>` : ''}
+      <div class="dossier-open-head">
+        <button class="dossier-back" id="dealBackBtn" aria-label="Retour au Vault">\u2190</button>
+        <div class="dossier-open-title">
+          <h1>${escapeHtml(name)}${doc.isDemo ? ' <span class="chip conf-mid">D\u00c9MO</span>' : ''}</h1>
+          <div class="dossier-open-sub">${subParts.map(escapeHtml).join(' \u00b7 ')}</div>
         </div>
-        <div class="deal-header-price">
-          <div class="dhp-item"><span class="label">Prix demandé</span><div class="val">${valFmt('prixDemande', fi.prixDemande) || '—'}</div></div>
-          <div class="dhp-item"><span class="label">Rendement affiché</span><div class="val">${valFmt('rendementAffiche', fi.rendementAffiche) || '—'}</div></div>
+        <div class="dossier-open-actions">
+          <button class="btn ${doc.stage === 'underwriting' || doc.stage === 'comite' ? 'btn-solid' : 'btn-outline'}" id="dealPursueBtn">${doc.stage === 'rejete' ? '\u21a9 Rappeler et poursuivre' : doc.stage === 'underwriting' || doc.stage === 'comite' ? '\u2713 Poursuivi' : '\u25b6 Poursuivre'}</button>
+          <button class="btn btn-outline" id="dealAbandonBtn" ${doc.stage === 'rejete' ? 'disabled' : ''}>\u2715 Abandonner</button>
         </div>
       </div>
 
       ${doc.stage === 'rejete' && doc.decisionMotif ? `
       <div class="decision-banner">
-        <div><div class="decision-title">Dossier refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
-        Motif : ${escapeHtml(doc.decisionMotif)}<br>Ce dossier vit dans Mémoire — le bouton « Poursuivre » ci-dessous le rappelle dans le Vault.</div>
+        <div><div class="decision-title">Dossier refus\u00e9${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
+        Motif : ${escapeHtml(doc.decisionMotif)}<br>Ce dossier vit dans M\u00e9moire \u2014 \u00ab Rappeler et poursuivre \u00bb le ram\u00e8ne dans le Vault.</div>
       </div>` : doc.decisionMotif ? `
       <div class="decision-banner recalled">
-        <div><div class="decision-title">Rappelé dans le Vault — précédemment refusé${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
+        <div><div class="decision-title">Rappel\u00e9 dans le Vault \u2014 pr\u00e9c\u00e9demment refus\u00e9${doc.decidedAt ? ' le ' + new Date(doc.decidedAt).toLocaleDateString('fr-FR') : ''}${doc.decidedBy ? ' par ' + escapeHtml(doc.decidedBy) : ''}</div>
         Ancien motif de refus : ${escapeHtml(doc.decisionMotif)}</div>
       </div>` : ''}
-
-      <div class="deal-decision-row">
-        <span class="label">DÉCISION</span>
-        <button class="btn ${doc.stage === 'underwriting' || doc.stage === 'comite' ? 'btn-solid' : 'btn-outline'}" id="dealPursueBtn">${doc.stage === 'rejete' ? '↩ Rappeler et poursuivre' : doc.stage === 'underwriting' || doc.stage === 'comite' ? '✓ Poursuivi' : '▶ Poursuivre'}</button>
-        <button class="btn btn-outline" id="dealAbandonBtn" ${doc.stage === 'rejete' ? 'disabled' : ''}>✕ Abandonner</button>
-        ${stepComplete ? `<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
-          <a class="btn btn-ghost" href="/api/documents/${doc.id}/export/xlsx" download>⬇ Excel</a>
-          <a class="btn btn-ghost" href="/api/documents/${doc.id}/export/docx" download>⬇ Note de comité</a>
-          <button class="btn btn-ghost" id="dealPresentationBtn">Présentation →</button>
-        </span>` : ''}
-      </div>
 
       ${statusBlockHTML}
 
       ${stepComplete ? `
-      <div class="deal-chat-panel">
-        <div class="deal-chat-log" id="dealChatLog">
-          <div class="deal-chat-empty">Posez une question sur ce dossier, ou lancez un mode : <b>Analyse</b> confronte les données extraites (avec leurs sources) aux critères du fonds ; <b>Points à vérifier</b> liste ce qui mérite attention avant de décider.</div>
-        </div>
-        <div class="deal-chat-dock">
-          <div class="deal-chat-modes">
-            <button class="stage-chip" id="dealModeAnalyse">📋 Analyse (critères du fonds)</button>
-            <button class="stage-chip" id="dealModePoints">⚠ Points à vérifier</button>
-          </div>
-          <div class="deal-chat-input-row">
-            <textarea id="dealChatInput" rows="1" placeholder="Posez une question sur ce dossier…"></textarea>
-            <button class="agent-send-btn" id="dealChatSendBtn" aria-label="Envoyer">↑</button>
+      <div class="deal-ask">
+        <div class="deal-chat-log" id="dealChatLog" style="display:none;"></div>
+        <div class="deal-ask-card">
+          <textarea id="dealChatInput" rows="2" placeholder="Posez une question sur ce dossier\u2026"></textarea>
+          <div class="deal-ask-bar">
+            <span class="deal-ask-hint">R\u00e9ponses cit\u00e9es sur le texte r\u00e9el du dossier \u2014 jamais une valeur invent\u00e9e</span>
+            <button class="agent-send-btn" id="dealChatSendBtn" aria-label="Envoyer">\u2192</button>
           </div>
         </div>
+        <div class="deal-ask-chips">
+          <button class="deal-ask-chip" id="dealModeAnalyse">\ud83d\udccb Analyse (crit\u00e8res du fonds)</button>
+          <button class="deal-ask-chip" id="dealModePoints">\u26a0 Points \u00e0 v\u00e9rifier</button>
+          <button class="deal-ask-chip" id="dealOpenGridBtn">\u25a6 Grille d'extraction</button>
+        </div>
+        <div class="deal-ask-chips">
+          <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/docx" download>\u2b07 Note de comit\u00e9</a>
+          <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/xlsx" download>\u2b07 Excel (formules actives)</a>
+          <button class="deal-ask-chip" id="dealPresentationBtn">Pr\u00e9sentation \u2192</button>
+        </div>
+      </div>
+
+      <div class="deal-section" id="dealQueriesSection" style="${(doc.queries || []).length ? '' : 'display:none;'}">
+        <div class="deal-section-head"><span class="deal-section-title">Requ\u00eates r\u00e9centes</span></div>
+        <div class="deal-queries" id="dealQueriesRows"></div>
       </div>` : ''}
 
-      <div class="panel" style="margin-top:20px;overflow:hidden;">
-        <div class="panel-head"><h3>Documents du dossier</h3><button class="btn btn-ghost" data-go="ingest">+ Ajouter</button></div>
-        <div id="dealDocsList">
-          <div class="deal-doc-line" data-open-file="/api/documents/${doc.id}/file">
-            <span class="doc-cat">Offering Memorandum</span>
-            <span class="doc-name">${escapeHtml(doc.filename)}</span>
-            ${statusChip(doc)}
-          </div>
+      <div class="deal-section">
+        <div class="deal-section-head">
+          <span class="deal-section-title">Documents du dossier</span>
+          <span class="deal-section-tools">
+            <input type="search" id="dealFilesFilter" class="vault-mini-search" placeholder="Rechercher" autocomplete="off">
+            <button class="btn btn-outline" data-go="ingest">\u21e7 Ajouter des fichiers</button>
+          </span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="deal-files-table">
+            <thead><tr><th>Nom</th><th>Cat\u00e9gorie</th><th>Type</th><th>Import\u00e9 le</th><th class="num">Taille</th></tr></thead>
+            <tbody id="dealFilesBody">
+              <tr data-open-file="/api/documents/${doc.id}/file">
+                <td class="file-name">\ud83d\udcc4 ${escapeHtml(doc.filename)}</td>
+                <td>${categoryBadge('om', 'Offering Memorandum')}</td>
+                <td>Fichier</td>
+                <td>${doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('fr-FR') : '\u2014'}</td>
+                <td class="num">${fmtBytes(doc.fileSizeBytes)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>`;
 
+    renderDealQueries(doc);
+
     // ---------- listeners ----------
+    document.getElementById('dealBackBtn')?.addEventListener('click', () => showView('dossiers'));
     document.querySelectorAll('#dealBody [data-go]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.go)));
     document.getElementById('dealPursueBtn')?.addEventListener('click', async () => {
       if (doc.stage === 'underwriting' || doc.stage === 'comite') return;
@@ -881,20 +928,27 @@
     });
     document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
     document.getElementById('dealPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
-    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => appendDealChatAnalyse());
-    document.getElementById('dealModePoints')?.addEventListener('click', () => appendDealChatPoints());
+    document.getElementById('dealOpenGridBtn')?.addEventListener('click', () => goDossierPage('extract'));
+    document.getElementById('dealModeAnalyse')?.addEventListener('click', () => { appendDealChatAnalyse(); logDealQuery('Analyse \u2014 donn\u00e9es du dossier vs crit\u00e8res du fonds', 'analyse'); });
+    document.getElementById('dealModePoints')?.addEventListener('click', () => { appendDealChatPoints(); logDealQuery('Points \u00e0 v\u00e9rifier avant de d\u00e9cider', 'points'); });
     document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
     document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDealChatQuestion(); }
     });
+    document.getElementById('dealFilesFilter')?.addEventListener('input', () => {
+      const q = document.getElementById('dealFilesFilter').value.trim().toLowerCase();
+      document.querySelectorAll('#dealFilesBody tr').forEach(tr => {
+        tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
     document.getElementById('dealRetryBtn')?.addEventListener('click', async (e) => {
       const btn = e.target;
       btn.disabled = true;
-      btn.textContent = 'Relance en cours…';
+      btn.textContent = 'Relance en cours\u2026';
       try {
         const res = await fetch(`/api/documents/${currentDoc.id}/retry`, { method: 'POST' });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || 'Échec de la relance.');
+        if (!res.ok) throw new Error(data.error || '\u00c9chec de la relance.');
         const IN_PROGRESS = ['extracting_pages', 'extracting_identite', 'extracting_t12', 'extracting_signaux', 'computing_indicators'];
         const poll = setInterval(async () => {
           const d2 = await fetchDocument(currentDoc.id);
@@ -909,28 +963,59 @@
     loadDealDocuments(doc);
   }
 
-  // Lignes de documents du dossier : l'OM (rendu directement ci-dessus) +
-  // les annexes stockees telles quelles -- clic = ouvrir le fichier complet
-  // dans un nouvel onglet (le PDF/image reel, jamais un apercu reconstruit).
+  function renderDealQueries(doc) {
+    const rows = document.getElementById('dealQueriesRows');
+    if (!rows) return;
+    const queries = (doc.queries || []).slice(0, 5);
+    document.getElementById('dealQueriesSection').style.display = queries.length ? '' : 'none';
+    rows.innerHTML = queries.map(q => `
+      <div class="deal-query-row">
+        <span class="deal-query-label">${escapeHtml(q.label)}</span>
+        <span class="deal-query-kind">${QUERY_KIND_LABELS[q.kind] || 'Question'}</span>
+        <span class="deal-query-by">${escapeHtml(q.by || '')}</span>
+        <span class="deal-query-when">${timeAgo(q.at)}</span>
+      </div>`).join('');
+  }
+
+  // Enregistre la requete dans le journal du dossier (best effort -- un
+  // echec ne bloque jamais la reponse elle-meme).
+  function logDealQuery(label, kind) {
+    fetch(`/api/documents/${currentDoc.id}/queries`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label, kind }),
+    }).then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.queries) { currentDoc.queries = d.queries; renderDealQueries(currentDoc); }
+    }).catch(() => {});
+  }
+
+  // Lignes annexes de la table des documents -- categorie (badge colore),
+  // date et taille reelles ; clic = fichier complet dans un nouvel onglet.
   async function loadDealDocuments(doc) {
-    const list = document.getElementById('dealDocsList');
-    if (!list) return;
+    const body = document.getElementById('dealFilesBody');
+    if (!body) return;
     let supporting = [];
     try { supporting = await fetch(`/api/documents/${doc.id}/supporting`).then(r => r.json()); } catch { /* liste indisponible */ }
     if (Array.isArray(supporting) && supporting.length > 0) {
-      list.insertAdjacentHTML('beforeend', supporting.map(s => `
-        <div class="deal-doc-line" data-open-file="/api/documents/${doc.id}/supporting/${s.id}/file">
-          <span class="doc-cat">${escapeHtml(SUPPORTING_CATALOG.find(c => c.id === s.category)?.label || s.category)}</span>
-          <span class="doc-name">${escapeHtml(s.filename)}</span>
-        </div>`).join(''));
+      // Compte total affiche dans le sous-titre (OM + annexes reelles).
+      doc.supportingCountCache = supporting.length;
+      body.insertAdjacentHTML('beforeend', supporting.map(s => {
+        const cat = SUPPORTING_CATALOG.find(c => c.id === s.category);
+        return `<tr data-open-file="/api/documents/${doc.id}/supporting/${s.id}/file">
+          <td class="file-name">${s.isImage ? '\ud83d\uddbc' : '\ud83d\udcc4'} ${escapeHtml(s.filename)}</td>
+          <td>${categoryBadge(s.category, s.type || cat?.label || s.category)}</td>
+          <td>Fichier</td>
+          <td>${s.uploadedAt ? new Date(s.uploadedAt).toLocaleDateString('fr-FR') : '\u2014'}</td>
+          <td class="num">${fmtBytes(s.sizeBytes)}</td>
+        </tr>`;
+      }).join(''));
     }
-    list.querySelectorAll('[data-open-file]').forEach(line => line.addEventListener('click', () => window.open(line.dataset.openFile, '_blank', 'noopener')));
+    body.querySelectorAll('[data-open-file]').forEach(tr => tr.addEventListener('click', () => window.open(tr.dataset.openFile, '_blank', 'noopener')));
   }
 
   // ---------- chat du dossier : modes deterministes + question libre ----------
   function appendDealChatEntry(userLabel, leezHTML) {
     const log = document.getElementById('dealChatLog');
     if (!log) return null;
+    log.style.display = 'flex';
     log.querySelector('.deal-chat-empty')?.remove();
     if (userLabel) log.insertAdjacentHTML('beforeend', `<div class="deal-chat-msg user">${escapeHtml(userLabel)}</div>`);
     const el = document.createElement('div');
@@ -1011,6 +1096,7 @@
     const q = (input?.value || '').trim();
     if (!q) return;
     input.value = '';
+    logDealQuery(q, 'question');
     const thinking = appendDealChatEntry(q, '<span style="color:var(--text-faint);">Réponse en cours…</span>');
     try {
       const fd = new FormData();

@@ -32,7 +32,7 @@ const JSONB_COLUMNS = new Set([
   'pages_json', 'fiche_identite_json', 'etat_locatif_json',
   't12_json', 'mix_json', 'expiry_json', 'indicateurs_json', 'consistency_json', 'red_flags_json',
   'contexte_narratif_json', 'simulation_json', 'vendor_claims_json',
-  'presentation_hidden_cards_json', 'deal_recap_json',
+  'presentation_hidden_cards_json', 'deal_recap_json', 'queries_json',
 ]);
 
 // ---------- espaces de travail & comptes nominatifs ----------
