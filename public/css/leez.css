@@ -1,23 +1,35 @@
 :root{
-  --bg:#0a0a0a;
-  --bg-soft:#0e0e10;
-  --surface:#131315;
-  --surface-raised:#17171a;
-  --border:rgba(255,255,255,.09);
-  --border-soft:rgba(255,255,255,.06);
-  --border-strong:rgba(255,255,255,.16);
-  --text:#f1eee7;
-  --text-body:#cfccc5;
-  --text-muted:#8b8985;
-  --text-faint:#5a5854;
-  --green:#7fd99a;
-  --green-dim:rgba(127,217,154,.14);
-  --amber:#e0b95f;
-  --amber-dim:rgba(224,185,95,.14);
-  --pink:#e2635c;
-  --pink-dim:rgba(226,99,92,.14);
-  --trace:#7fb8e0;
-  --trace-dim:rgba(127,184,224,.14);
+  /* Palette claire (migration depuis le theme sombre d'origine, voir
+     conversation du 2026-08-17 -- structure "vertical AI" + bords arrondis +
+     blanc en couleur generale). --surface legerement plus blanc que --bg
+     (au lieu de legerement plus clair comme en sombre) : meme principe
+     d'elevation "le premier plan est le plus lumineux" applique dans
+     l'autre sens, puisqu'on ne peut pas aller plus clair que blanc sur la
+     page elle-meme. Semantiques (green/amber/pink/trace) RECALCULEES ETROITE-
+     MENT pour ce fond clair -- les valeurs pastel d'origine etaient calibrees
+     pour rester lisibles en TEXTE sur fond noir ; reprises telles quelles
+     ici, elles auraient ete illisibles en texte sur blanc. Les variantes
+     -dim (fonds de pastille) restent des alpha-blends legers, qui donnent
+     spontanement une teinte pastel correcte sur blanc sans recalcul. */
+  --bg:#fbfaf7;
+  --bg-soft:#f1efe8;
+  --surface:#ffffff;
+  --surface-raised:#f5f3ec;
+  --border:rgba(35,29,20,.10);
+  --border-soft:rgba(35,29,20,.06);
+  --border-strong:rgba(35,29,20,.18);
+  --text:#211e19;
+  --text-body:#48423a;
+  --text-muted:#8a8377;
+  --text-faint:#b7b0a2;
+  --green:#2f8f5b;
+  --green-dim:rgba(47,143,91,.12);
+  --amber:#a3720a;
+  --amber-dim:rgba(163,114,10,.12);
+  --pink:#c1443c;
+  --pink-dim:rgba(193,68,60,.12);
+  --trace:#3172b3;
+  --trace-dim:rgba(49,114,179,.12);
   /* Alias semantiques pour le bloc Enrichissement/constellation -- memes
      valeurs que la palette existante (trace/green/amber), noms qui
      designent l'ETAT plutot que la teinte pour ce cas d'usage precis. */
@@ -30,9 +42,27 @@
   --sans:-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --ease:cubic-bezier(.4,0,.2,1);
   --ease-premium:cubic-bezier(.16,1,.3,1);
+  /* Bords arrondis -- un seul token, utilise en defaut global juste en
+     dessous (voir le commentaire a cote) plutot que copie/colle sur chaque
+     composant. */
+  --radius:10px;
+  --radius-sm:6px;
 }
 
 *{box-sizing:border-box;}
+/* Defaut global : arrondit tout ce qui a un fond/bordure carre par defaut
+   (panneaux, boutons, cartes, champs...) sans avoir a toucher chaque
+   selecteur un par un. Les elements deja ronds/en pilule (avatars, points,
+   boutons circulaires -- border-radius:50%/999px sur LEUR PROPRE selecteur)
+   restent inchanges : leur regle est plus specifique que ce defaut global et
+   l'emporte dans la cascade. */
+*{border-radius:var(--radius);}
+/* Exclusion : une bordure arrondie par cellule casserait la grille des
+   nombreux tableaux de donnees (etat locatif, T12, sensibilite...) --
+   border-collapse:collapse n'empeche pas chaque cellule de dessiner son
+   propre coin rond. Tableaux toujours a angle droit, y compris leur
+   conteneur de defilement le cas echeant. */
+table,thead,tbody,tr,th,td,.sim-table-wrap{border-radius:0;}
 html,body{margin:0;padding:0;}
 
 * {
@@ -103,7 +133,7 @@ header.nav{
 .nav-status.ready{color:var(--green);}
 .nav-status.missing{color:var(--amber);}
 .btn{
-  font-size:.85rem;padding:9px 18px;border-radius:0;
+  font-size:.85rem;padding:9px 18px;border-radius:var(--radius);
   cursor:pointer;transition:all .2s var(--ease);
   font-family:var(--sans);
 }
@@ -171,7 +201,7 @@ main:has(> .main-shell > .main-content > #view-dashboard.active){padding-bottom:
 .panel{
   background:var(--surface);
   border:1px solid var(--border);
-  border-radius:0;
+  border-radius:var(--radius);
 }
 .panel-head{display:flex;justify-content:space-between;align-items:baseline;padding:22px 24px 6px;}
 .panel-head h3{font-family:var(--serif);font-weight:400;font-size:1.3rem;color:var(--text);margin:0;}
@@ -182,7 +212,7 @@ main:has(> .main-shell > .main-content > #view-dashboard.active){padding-bottom:
 }
 .stat-card{
   background:var(--surface);border:1px solid var(--border);
-  border-radius:0;padding:16px 18px 14px;
+  border-radius:var(--radius);padding:16px 18px 14px;
   transition:border-color .22s var(--ease),background .22s var(--ease);
 }
 .stat-card:hover{border-color:var(--border-strong);background:var(--surface-raised);}
@@ -205,7 +235,7 @@ main:has(> .main-shell > .main-content > #view-dashboard.active){padding-bottom:
 .chip{
   display:inline-flex;align-items:center;gap:6px;
   font-family:var(--sans);font-weight:600;font-size:.68rem;letter-spacing:.04em;
-  padding:3px 9px;border-radius:0;border:1px solid var(--border-strong);
+  padding:3px 9px;border-radius:999px;border:1px solid var(--border-strong);
   color:var(--text-muted);white-space:nowrap;
 }
 .chip.conf-high{color:var(--green);border-color:rgba(127,217,154,.35);background:var(--green-dim);}
@@ -314,7 +344,7 @@ th.num{text-align:right;}
 .agent-quick-actions{width:100%;max-width:680px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:10px;animation:agentRise .6s .1s var(--ease-premium) backwards;}
 .agent-quick-btn{
   background:none;border:1px solid var(--border-strong);color:var(--text-muted);font-family:var(--sans);
-  font-size:.78rem;font-weight:600;padding:8px 15px;border-radius:0;cursor:pointer;
+  font-size:.78rem;font-weight:600;padding:8px 15px;border-radius:999px;cursor:pointer;
   transition:all .2s var(--ease),transform .15s var(--ease);
 }
 .agent-quick-btn:hover{color:var(--text);border-color:var(--trace);transform:translateY(-2px);}
@@ -529,7 +559,7 @@ th.num{text-align:right;}
 .ingest-om-row #ingestSubmitBtn{min-width:190px;}
 .ingest-om-row #ingestTestBtn{min-width:76px;}
 .dropzone{
-  border:1.5px dashed var(--border-strong);border-radius:0;
+  border:1.5px dashed var(--border-strong);border-radius:var(--radius);
   padding:56px 40px;text-align:center;background:var(--surface);
   max-width:640px;margin:0 auto;cursor:pointer;
   transition:border-color .25s var(--ease),background .25s var(--ease),transform .25s var(--ease);
@@ -576,7 +606,7 @@ th.num{text-align:right;}
 /* ---- écran plein écran d'import : visuel animé + progression ---- */
 .import-overlay{
   position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;
-  background:rgba(10,10,10,.97);backdrop-filter:blur(10px);
+  background:rgba(251,250,247,.97);backdrop-filter:blur(10px);
   animation:fade .5s var(--ease-premium);
 }
 .import-overlay-inner{max-width:460px;width:100%;padding:0 32px;text-align:center;}
@@ -650,7 +680,7 @@ th.num{text-align:right;}
 .etab{
   background:none;border:1px solid var(--border);color:var(--text-muted);
   font-family:var(--sans);font-size:.74rem;letter-spacing:.03em;
-  padding:8px 14px;border-radius:0;cursor:pointer;transition:all .22s var(--ease);
+  padding:8px 14px;border-radius:999px;cursor:pointer;transition:all .22s var(--ease);
 }
 .etab:hover{color:var(--text-body);border-color:var(--border-strong);}
 .etab.active{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600;}
@@ -663,7 +693,7 @@ th.num{text-align:right;}
   position:relative;
   background:none;border:1px solid var(--border);color:var(--text-muted);
   font-family:var(--sans);font-size:.74rem;letter-spacing:.03em;
-  padding:8px 14px;border-radius:0;cursor:pointer;transition:all .22s var(--ease);
+  padding:8px 14px;border-radius:999px;cursor:pointer;transition:all .22s var(--ease);
 }
 .stab-badge{position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--trace);box-shadow:0 0 0 2px var(--bg);}
 .stab:hover{color:var(--text-body);border-color:var(--border-strong);}
@@ -683,7 +713,7 @@ th.num{text-align:right;}
 
 .avance-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
 [data-pane="identite"] .avance-grid{grid-template-columns:1fr;}
-.avance-group{background:var(--surface);border:1px solid var(--border);border-radius:0;padding:18px 20px;}
+.avance-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
 .avance-group .grouptitle{font-family:var(--sans);font-weight:700;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;}
 .avance-sub{padding-top:12px;margin-top:4px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:14px;}
 
@@ -699,7 +729,7 @@ th.num{text-align:right;}
 .id-note{font-size:.78rem;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(224,185,95,.3);padding:10px 12px;line-height:1.5;}
 .id-note b{color:var(--text);}
 
-.extract-split{display:grid;grid-template-columns:1fr minmax(260px,300px);gap:0;border:1px solid var(--border);border-radius:0;overflow:hidden;}
+.extract-split{display:grid;grid-template-columns:1fr minmax(260px,300px);gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 .extract-grid-side{min-width:0;}
 .extract-toolbar{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);gap:16px;}
 .extract-toolbar-right{display:flex;align-items:center;gap:16px;}
@@ -930,7 +960,7 @@ td.cell-linked{position:relative;}
 .capstack-seg.debt{background:#8a8272;}
 
 /* ================= SIMULATEUR ================= */
-.shell-badge{font-family:var(--sans);font-weight:600;font-size:.68rem;letter-spacing:.06em;color:var(--amber);border:1px solid rgba(224,185,95,.35);background:var(--amber-dim);padding:4px 11px;border-radius:0;}
+.shell-badge{font-family:var(--sans);font-weight:600;font-size:.68rem;letter-spacing:.06em;color:var(--amber);border:1px solid rgba(224,185,95,.35);background:var(--amber-dim);padding:4px 11px;border-radius:999px;}
 
 .sim-scenario-bar{display:flex;align-items:center;gap:12px;padding-top:36px;margin-bottom:28px;}
 .sim-scenario-bar select{background:var(--surface);border:1px solid var(--border-strong);color:var(--text);font-family:var(--sans);font-size:.84rem;font-weight:600;padding:8px 12px;outline:none;cursor:pointer;}
@@ -952,7 +982,7 @@ td.cell-linked{position:relative;}
 .sim-field-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;gap:10px;}
 .sim-field-row .flabel{font-size:.83rem;color:var(--text-body);}
 .sim-field-row .fval{font-family:var(--sans);font-weight:700;letter-spacing:-.01em;font-size:.88rem;color:var(--text);white-space:nowrap;}
-.sim-slider{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:0;background:var(--border-strong);outline:none;cursor:pointer;display:block;}
+.sim-slider{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:999px;background:var(--border-strong);outline:none;cursor:pointer;display:block;}
 .sim-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--trace);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--trace);cursor:pointer;}
 .sim-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--trace);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--trace);cursor:pointer;}
 
@@ -1419,11 +1449,11 @@ td.cell-linked{position:relative;}
    distingue une source officielle. */
 .verification-sources-pill{
   display:inline-flex;align-items:center;gap:9px;margin-top:12px;padding:6px 14px 6px 6px;
-  background:rgba(255,255,255,.05);border:1px solid var(--border-strong);border-radius:999px;
+  background:rgba(35,29,20,.035);border:1px solid var(--border-strong);border-radius:999px;
   cursor:pointer;font-family:var(--sans);font-size:.78rem;color:var(--text);
   transition:background .15s var(--ease),border-color .15s var(--ease);
 }
-.verification-sources-pill:hover{background:rgba(255,255,255,.09);border-color:var(--text-faint);}
+.verification-sources-pill:hover{background:rgba(35,29,20,.07);border-color:var(--text-faint);}
 .vsp-favicons{display:flex;flex-shrink:0;}
 .vsp-favicons img{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--surface);object-fit:cover;display:block;}
 .vsp-favicons img:not(:first-child){margin-left:-8px;}
@@ -1435,7 +1465,7 @@ td.cell-linked{position:relative;}
   color:var(--text);font-family:var(--sans);font-size:.8rem;text-decoration:none;
   transition:background .15s var(--ease);
 }
-.verification-source-link:hover{background:rgba(255,255,255,.06);text-decoration:underline;}
+.verification-source-link:hover{background:rgba(35,29,20,.05);text-decoration:underline;}
 .verification-source-link img{width:16px;height:16px;border-radius:4px;flex-shrink:0;background:#fff;}
 .verification-source-link span:first-of-type{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .verification-reliability{font-size:.68rem;color:var(--text-faint);flex-shrink:0;}
