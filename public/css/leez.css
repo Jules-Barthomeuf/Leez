@@ -259,6 +259,14 @@ tbody tr.selected td{color:var(--text);}
 td.num{font-family:var(--sans);font-weight:700;letter-spacing:-.01em;font-size:.86rem;text-align:right;}
 th.num{text-align:right;}
 
+/* Réconciliation : lignes non cliquables (pas d'action au clic, contrairement
+   au comportement par defaut de tbody tr ci-dessus) -- chip d'ecart alignee
+   a droite en fin de ligne. */
+.reconciliation-table tbody tr{cursor:default;}
+.reconciliation-table tbody tr:hover{background:none;}
+.reconciliation-table td:last-child{text-align:right;}
+.reconciliation-table td{font-size:.84rem;}
+
 /* État locatif : beaucoup de colonnes -- largeur naturelle (pas ecrasee sur
    100% du conteneur) + defilement horizontal plutot que des cellules
    compressees/tronquees. */

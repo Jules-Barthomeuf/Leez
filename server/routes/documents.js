@@ -11,6 +11,7 @@ const { runPipeline, resumePipeline } = require('../services/pipeline');
 const { computeMandateFit, computeAuditCards, computePointsACreuser, computeAuditSummary } = require('../services/interpretation');
 const { computeIndicateurs, computeMix, parseFrenchNumber } = require('../services/indicators');
 const { runConsistencyChecks } = require('../services/consistency');
+const { computeReconciliation } = require('../services/reconciliation');
 const { isValidCategoryType } = require('../services/supportingCatalog');
 const { extractContexteNarratif } = require('../services/extraction');
 const { verifyContexteNarratif, locateQuote, deriveBox } = require('../services/verification');
@@ -200,6 +201,7 @@ router.get('/documents/:id', asyncHandler(async (req, res) => {
       pointsACreuser: computePointsACreuser(shaped),
       mandateFit: computeMandateFit(shaped, criteria),
     };
+    shaped.reconciliation = computeReconciliation(shaped);
   }
 
   res.json(shaped);

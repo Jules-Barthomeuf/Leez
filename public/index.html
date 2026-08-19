@@ -43,6 +43,7 @@
         <button class="drail-item" data-rail="deal" data-go-dossier="deal">Sommaire</button>
         <button class="drail-item" data-rail="extract" data-go-dossier="extract">Données</button>
         <button class="drail-item" data-rail="audit" data-go-dossier="audit">Points d'attention</button>
+        <button class="drail-item" data-rail="reconciliation" data-go-dossier="reconciliation">Réconciliation</button>
         <button class="drail-item" data-rail="verification" data-go-dossier="verification">Vérification</button>
         <button class="drail-item" id="presentationRailBtn">Présentation</button>
         <button class="drail-item" data-rail="analyze" data-go-dossier="analyze">Analyse</button>
@@ -330,6 +331,22 @@
                 <div class="source-modal-quote" id="auditSourceQuote" style="display:none;"></div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- ================= RÉCONCILIATION ================= -->
+        <section class="view" id="view-reconciliation">
+          <div class="view-head"><div><h1>Réconciliation</h1><div class="label">CE QU'AVANCE LE VENDEUR CONFRONTÉ AUX DONNÉES RÉELLES DU DOSSIER</div></div></div>
+          <div class="panel" style="padding:22px 24px;">
+            <p style="font-family:var(--sans);font-size:.82rem;color:var(--text-muted);line-height:1.6;margin:0;">Chaque ligne confronte une valeur avancée dans la fiche d'identité (citation vérifiée) à la même grandeur recalculée à partir de l'état locatif et du compte d'exploitation réels. Un écart n'est affiché que si les deux côtés sont disponibles — sinon la ligne indique explicitement « donnée insuffisante », jamais une estimation.</p>
+          </div>
+          <div class="panel" style="margin-top:20px;overflow:hidden;">
+            <table class="reconciliation-table">
+              <thead>
+                <tr><th>Métrique</th><th>Invoqué (fiche d'identité)</th><th>Constaté sur pièces</th><th>Écart</th></tr>
+              </thead>
+              <tbody id="reconciliationBody"></tbody>
+            </table>
           </div>
         </section>
 

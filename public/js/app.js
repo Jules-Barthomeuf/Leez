@@ -312,7 +312,7 @@
   }).catch(() => {});
 
   // ================= ROUTEUR ================= //
-  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'verification', 'documents', 'notes'];
+  const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes'];
   const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
@@ -585,6 +585,7 @@
     renderExtract(currentDoc);
     renderContexte(currentDoc);
     renderAudit(currentDoc);
+    renderReconciliation(currentDoc);
     renderVerification(currentDoc);
     syncNotesTextareas(currentDoc.notes || '');
     if (window.LeezSimulator) window.LeezSimulator.setDossierDoc(currentDoc);
@@ -2427,6 +2428,31 @@
     document.getElementById('auditQuestions').innerHTML = questions.length === 0
       ? '<p class="label" style="line-height:1.6;">Aucun manque de données identifié sur les critères vérifiés.</p>'
       : `<ul class="audit-questions-list">${questions.map(q => `<li><span class="q-title">${q.titre}</span><span class="q-detail">${q.detail}</span></li>`).join('')}</ul>`;
+  }
+
+  // ================= RÉCONCILIATION (OM déclaré vs constaté sur pièces) ================= //
+  // Reutilise tel quel doc.reconciliation (server/services/reconciliation.js,
+  // deja calcule a partir de champs cites/indicateurs deja verifies) --
+  // aucun calcul cote client, juste la mise en forme du tableau.
+  const RECONCILIATION_SIGNAL_LABEL = { ok: 'Conforme', warning: 'Écart', critical: 'Écart important', indetermine: 'Donnée insuffisante' };
+  function renderReconciliation(doc) {
+    const body = document.getElementById('reconciliationBody');
+    if (!body) return;
+    if (doc.status !== 'complete') {
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--text-faint);font-style:italic;">${STATUS_LABELS[doc.status] || doc.status}</td></tr>`;
+      return;
+    }
+    const rows = doc.reconciliation || [];
+    body.innerHTML = rows.map(r => {
+      const deltaText = r.deltaPct == null ? '—' : `${r.deltaPct > 0 ? '+' : ''}${r.deltaPct} %`;
+      const signalColorVar = r.signal === 'critical' ? '--pink' : r.signal === 'warning' ? '--amber' : r.signal === 'ok' ? '--green' : '--text-faint';
+      return `<tr>
+        <td style="text-align:left;font-weight:600;color:var(--text);">${escapeHtml(r.label)}</td>
+        <td style="text-align:left;">${r.invoqueLabel ? escapeHtml(r.invoqueLabel) : '<span style="color:var(--text-faint);font-style:italic;">Donnée insuffisante</span>'}</td>
+        <td style="text-align:left;">${r.constateLabel ? escapeHtml(r.constateLabel) : '<span style="color:var(--text-faint);font-style:italic;">Donnée insuffisante</span>'}</td>
+        <td><span class="chip" style="color:var(${signalColorVar});border-color:var(${signalColorVar});">${deltaText} · ${RECONCILIATION_SIGNAL_LABEL[r.signal]}</span></td>
+      </tr>`;
+    }).join('');
   }
 
   // ================= VÉRIFICATION (affirmations du vendeur) ================= //
