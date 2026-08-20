@@ -2402,3 +2402,13 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
    defilement est celui de la page, jamais un bloc a ascenseur interne).
    Seul le debordement HORIZONTAL des tables larges reste géré. */
 .extract-scroll{max-height:none;overflow:visible;overflow-x:auto;}
+
+/* Crochet vertical coloré à gauche des lignes écart/cohérence */
+.sb-row{position:relative;padding-left:20px;}
+.sb-row::before{
+  content:'';position:absolute;left:0;top:9px;bottom:9px;width:7px;
+  border-top:3px solid;border-bottom:3px solid;border-left:3px solid;
+  border-right:none;border-radius:8px 0 0 8px;
+}
+.sb-accent-pink::before{border-color:var(--pink);}
+.sb-accent-amber::before{border-color:var(--amber);}

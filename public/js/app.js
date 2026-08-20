@@ -2532,11 +2532,11 @@
       // Le lead ("Ticket hors cible.") remplace le prefixe "Ticket :" de la
       // phrase -- jamais le meme mot deux fois de suite.
       const phrase = String(fit.ecartPrincipal.phrase || '').replace(/^[^:]{2,40}:\s*/, '');
-      bulletsRows.push(`<div class="sb-row"><span class="dot pink"></span><div><b>${LEAD_OF[principal?.id] || 'Écart principal.'}</b> ${escapeHtml(phrase)}</div></div>`);
+      bulletsRows.push(`<div class="sb-row sb-accent-pink"><div><b>${LEAD_OF[principal?.id] || 'Écart principal.'}</b> ${escapeHtml(phrase)}</div></div>`);
     }
     anomalies.forEach(c => {
       const links = (TAB_OF_CHECK[c.check] || []).map(t => `<button class="cite-link" data-goto-tab="${t}">voir ${t === 'rentroll' ? "l'état locatif" : "le compte d'exploitation"} →</button>`).join(' ');
-      bulletsRows.push(`<div class="sb-row"><span class="sb-warn">⚠</span><div><b>Cohérence.</b> ${escapeHtml(c.label)} — attendu ${fmt(Math.round(c.expected))}, constaté ${fmt(Math.round(c.actual))}${c.deltaPct != null ? ` (écart ${fmt2(c.deltaPct)} %)` : ''} ${links}</div></div>`);
+      bulletsRows.push(`<div class="sb-row sb-accent-amber"><div><b>Cohérence.</b> ${escapeHtml(c.label)} — attendu ${fmt(Math.round(c.expected))}, constaté ${fmt(Math.round(c.actual))}${c.deltaPct != null ? ` (écart ${fmt2(c.deltaPct)} %)` : ''} ${links}</div></div>`);
     });
     const bulletsHTML = bulletsRows.length ? `<div class="synthese-bullets">${bulletsRows.join('')}</div>` : '';
 
