@@ -70,11 +70,32 @@ function checkYield(etatLocatif, ficheIdentite) {
   };
 }
 
+// Occupation affichee a 100 % (toutes les surfaces de l'etat locatif
+// occupees) alors que le compte d'exploitation porte une ligne de vacance
+// et pertes de creances non nulle : l'un des deux ne dit pas tout.
+function checkVacancyVsT12(etatLocatif, t12) {
+  const vacanceT12 = t12.find(l => l.lineItem === 'Vacance et pertes de créances')?.montant?.value ?? null;
+  const surfaces = etatLocatif.map(r => r.surfaceSf?.value).filter(v => typeof v === 'number');
+  if (vacanceT12 === null || surfaces.length === 0) {
+    return { check: 'vacance_vs_t12', status: 'indetermine' };
+  }
+  const vacanceNonNulle = Math.abs(vacanceT12) > 0;
+  const tousActifs = etatLocatif.every(r => !r.statut || r.statut === 'actif');
+  return {
+    check: 'vacance_vs_t12',
+    label: "Taux de vacance calculé 0 % vs ligne « Vacance et pertes de créances » du compte d'exploitation",
+    expected: 0,
+    actual: Math.abs(vacanceT12),
+    status: vacanceNonNulle && tousActifs ? 'warning' : 'ok',
+  };
+}
+
 function runConsistencyChecks({ ficheIdentite, etatLocatif, t12 }) {
   return [
     checkRentRollVsT12(etatLocatif || [], t12 || []),
     checkSurfaceSums(etatLocatif || [], ficheIdentite || {}),
     checkYield(etatLocatif || [], ficheIdentite || {}),
+    checkVacancyVsT12(etatLocatif || [], t12 || []),
   ];
 }
 

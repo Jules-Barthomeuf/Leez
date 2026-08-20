@@ -129,9 +129,13 @@ function computeIndicateurs({ ficheIdentite, etatLocatif, t12 }) {
   const tauxVacance = tauxOccupation !== null ? round(100 - tauxOccupation, 1) : null;
 
   const sorted = [...rows].sort((a, b) => b.loyerAnnuel.value - a.loyerAnnuel.value);
-  const concentrationTop1 = sorted[0] && totalLoyer ? round((sorted[0].loyerAnnuel.value / totalLoyer) * 100, 1) : null;
+  // 2 decimales (et non 1) : la meme grandeur apparait aussi dans la
+  // colonne "% total loyer" de l'etat locatif, arrondie a 2 decimales --
+  // deux arrondis differents affichaient 40,40 % ici contre 40,35 % la-bas
+  // pour un seul et meme calcul.
+  const concentrationTop1 = sorted[0] && totalLoyer ? round((sorted[0].loyerAnnuel.value / totalLoyer) * 100, 2) : null;
   const top3Sum = sum(sorted.slice(0, 3), r => r.loyerAnnuel.value);
-  const concentrationTop3 = totalLoyer ? round((top3Sum / totalLoyer) * 100, 1) : null;
+  const concentrationTop3 = totalLoyer ? round((top3Sum / totalLoyer) * 100, 2) : null;
 
   const rowsAvecFranchise = rows.filter(r => r.loyerFacialPsf?.value != null && r.loyerEconomiquePsf?.value != null && r.surfaceSf?.value != null);
   let ecartFacialEconomique = null;

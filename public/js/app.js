@@ -1673,7 +1673,12 @@
   function fieldValHTML(f, key) {
     const has = f && f.value != null;
     let src;
-    if (f?.edited) src = '<span class="chip status-trace">MODIFIÉ</span>';
+    // Une correction manuelle reste visible ET tracable : chip CORRIGÉ,
+    // citation d'origine du document au survol (jamais effacée).
+    if (f?.edited) {
+      const origine = f.quote ? ` — citation d'origine : « ${String(f.quote).replace(/"/g, '')} »` : '';
+      src = `<span class="chip status-trace" title="Corrigé à la main par l'analyste${origine}">CORRIGÉ</span>`;
+    }
     else if (has && FICHE_VENDOR_STATED.includes(key)) src = `<span class="chip conf-mid" title="Chiffre annoncé par le vendeur dans le document — non recalculé ni vérifié indépendamment par Leez">ANNONCÉ PAR LE VENDEUR · p.${f.page}</span>`;
     else src = has ? 'p.' + f.page : '—';
     return `<div class="val ${has ? '' : 'absent'}"><span data-fiche-key="${key}">${has ? formatFicheValue(key, f.value) : 'Non vérifié / absent du document'}</span></div><div class="src">${src}</div>`;
@@ -2439,27 +2444,87 @@
       return;
     }
     const fit = doc.audit?.mandateFit;
-    if (!fit || !fit.configured || fit.criteria.length === 0) {
-      el.innerHTML = `<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l'onglet Critères pour activer la synthèse. <button class="cite-link" data-go-criteria>Ouvrir les Critères →</button></div>`;
-      el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
-      return;
+    const checks = (doc.consistencyChecks || []).filter(c => c.status && c.status !== 'indetermine');
+    const anomalies = checks.filter(c => c.status === 'warning');
+
+    // 1. Verdict global en une phrase -- fonde sur la NATURE des criteres
+    // (eliminatoire vs negociable), jamais un score.
+    let verdictHTML = '';
+    if (fit && fit.configured && fit.criteria.length > 0) {
+      const elim = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'eliminatoire').length;
+      const nego = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'negociable').length;
+      const inconnus = fit.criteria.filter(c => c.status === 'indetermine').length;
+      let phrase, tone;
+      if (elim > 0) { phrase = `${elim} critère${elim > 1 ? 's' : ''} éliminatoire${elim > 1 ? 's' : ''} non conforme${elim > 1 ? 's' : ''}`; tone = 'var(--pink)'; }
+      else if (nego > 0) { phrase = `${nego} critère${nego > 1 ? 's' : ''} négociable${nego > 1 ? 's' : ''} non conforme${nego > 1 ? 's' : ''} — aucun éliminatoire`; tone = 'var(--amber)'; }
+      else if (inconnus > 0) { phrase = `Aucun critère non conforme — ${inconnus} non testable${inconnus > 1 ? 's' : ''} faute de donnée`; tone = 'var(--text-muted)'; }
+      else { phrase = 'Tous les critères du mandat sont conformes'; tone = 'var(--green)'; }
+      verdictHTML = `<div class="synthese-verdict" style="border-color:${tone};"><span style="color:${tone};font-weight:700;">${phrase}</span>${fit.ecartPrincipal ? ` — ${escapeHtml(fit.ecartPrincipal.phrase || '')}` : ''}</div>`;
     }
-    const ICON = { ok: '✓', echec: '✗', indetermine: '⊘' };
-    const rank = { echec: 0, indetermine: 1, ok: 2 };
-    const rows = [...fit.criteria].sort((a, b) => rank[a.status] - rank[b.status]);
-    el.innerHTML = `
-      ${fit.ecartPrincipal ? `<div class="analysis-ecart" style="margin-bottom:12px;"><span class="label">ÉCART PRINCIPAL</span><div>${escapeHtml(fit.ecartPrincipal.phrase || fit.ecartPrincipal.label)}</div></div>` : ''}
-      <table class="analysis-grid">
-        <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th style="text-align:center;">Verdict</th><th>Source</th></tr></thead>
+
+    // 2. Controles de coherence -- croiser les onglets entre eux et
+    // signaler quand les chiffres se contredisent.
+    const TAB_OF_CHECK = { loyers_etat_locatif_vs_t12: ['rentroll', 't12'], surfaces_etat_locatif_vs_fiche: ['rentroll'], rendement_recalcule_vs_affiche: [], vacance_vs_t12: ['t12'] };
+    const coherenceHTML = checks.length === 0 ? '' : `
+      <div class="coherence-block ${anomalies.length ? 'has-anomalies' : ''}">
+        <div class="coherence-head"><span>${anomalies.length ? '⚠ CONTRÔLES DE COHÉRENCE' : '✓ CONTRÔLES DE COHÉRENCE'}</span><span class="label">${anomalies.length ? `${anomalies.length} ANOMALIE${anomalies.length > 1 ? 'S' : ''}` : `${checks.length} CONTRÔLES PASSÉS`}</span></div>
+        ${anomalies.map(c => `<div class="coherence-row">
+          <div class="coherence-text">${escapeHtml(c.label)} — attendu ${fmt(Math.round(c.expected))}, constaté ${fmt(Math.round(c.actual))}${c.deltaPct != null ? ` (écart ${fmt2(c.deltaPct)} %)` : ''}</div>
+          <div class="coherence-actions">${(TAB_OF_CHECK[c.check] || []).map(t => `<button class="cite-link" data-goto-tab="${t}">voir ${t === 'rentroll' ? "l'état locatif" : "le compte d'exploitation"} →</button>`).join('')}</div>
+        </div>`).join('')}
+      </div>`;
+
+    // 3. Grille des criteres enrichie (Ecart + Nature).
+    let gridHTML = '';
+    if (!fit || !fit.configured || fit.criteria.length === 0) {
+      gridHTML = `<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l'onglet Critères. <button class="cite-link" data-go-criteria>Ouvrir les Critères →</button></div>`;
+    } else {
+      const ICON = { ok: '✓', echec: '✗', indetermine: '⊘' };
+      const rank = { echec: 0, indetermine: 1, ok: 2 };
+      const rows = [...fit.criteria].sort((a, b) => rank[a.status] - rank[b.status]);
+      gridHTML = `<table class="analysis-grid">
+        <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th class="num">Écart</th><th style="text-align:center;">Verdict</th><th>Nature</th><th>Source</th></tr></thead>
         <tbody>${rows.map(c => `<tr class="st-${c.status}">
-          <td class="crit-label">${escapeHtml(c.label)}</td>
+          <td class="crit-label">${escapeHtml(c.label)}${c.methode ? ` <span class="crit-methode" title="${escapeHtml(c.methode)}">ⓘ</span>` : ''}</td>
           <td>${escapeHtml(c.attendu || '—')}</td>
           <td>${c.constate != null ? escapeHtml(c.constate) : '<span style="color:var(--text-faint);font-style:italic;">non trouvé</span>'}</td>
+          <td class="num">${c.status === 'echec' && c.gapPct != null ? fmt(Math.round(c.gapPct * 100)) + ' %' : '—'}</td>
           <td style="text-align:center;"><span class="verdict-ico v-${c.status}">${ICON[c.status]}</span></td>
-          <td>${c.page ? `<button class="cite-link" data-syn-page="${c.page}" data-syn-quote="${escapeHtml(c.quote || '')}">voir</button>` : (c.calcule ? '<span class="label">CALCULÉ</span>' : '—')}</td>
+          <td><span class="nature-chip ${c.nature}">${c.nature === 'negociable' ? 'Négociable' : 'Éliminatoire'}</span></td>
+          <td>${c.page ? `<button class="cite-link" data-syn-page="${c.page}" data-syn-quote="${escapeHtml(c.quote || '')}">voir</button>` : (c.calcule ? `<span class="label" title="${escapeHtml(c.methode || '')}">calculé</span>` : '—')}</td>
         </tr>`).join('')}</tbody>
       </table>`;
+    }
+
+    // 4. Trois colonnes : pour / contre / ce qui manque (= les points a
+    // verifier -- c'est ce bloc qui produit le mail au vendeur).
+    // Les cartes "Hors critères" (famille Critères) redisent les échecs de
+    // la grille juste au-dessus -- exclues pour ne pas compter deux fois.
+    const cards = (doc.audit?.cards || []).filter(c => (c.niveau === 'rouge' || c.niveau === 'orange') && c.famille !== 'Critères');
+    const pour = (fit?.criteria || []).filter(c => c.status === 'ok').map(c => `${c.label} : ${c.constate || ''}`);
+    const contre = [
+      ...(fit?.criteria || []).filter(c => c.status === 'echec').map(c => c.ecartPhrase || c.label),
+      ...cards.map(c => c.titre),
+    ];
+    const manque = [
+      ...(fit?.criteria || []).filter(c => c.status === 'indetermine').map(c => `${c.label} — non testable faute de donnée`),
+      ...(doc.audit?.pointsACreuser || []).map(p => p.titre),
+    ];
+    const colHTML = (title, items, dot) => `<div class="synthese-col"><div class="label" style="margin-bottom:8px;">${title} (${items.length})</div>${items.length ? items.map(t => `<div class="synthese-col-item"><span class="dot ${dot}"></span>${escapeHtml(t)}</div>`).join('') : '<div class="synthese-col-item" style="color:var(--text-faint);font-style:italic;">Rien à signaler.</div>'}</div>`;
+    const colsHTML = `<div class="synthese-cols">${colHTML('CE QUI PLAIDE POUR', pour, 'green')}${colHTML('CE QUI PLAIDE CONTRE', contre, 'pink')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'amber')}</div>`;
+
+    el.innerHTML = verdictHTML + coherenceHTML + gridHTML + colsHTML;
+    el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
     el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.synPage), btn.dataset.synQuote)));
+    el.querySelectorAll('[data-goto-tab]').forEach(btn => btn.addEventListener('click', () => document.querySelector(`[data-etab="${btn.dataset.gotoTab}"]`)?.click()));
+
+    // Compteurs d'anomalies sur les onglets concernes.
+    const badge = (name, n) => { const b = document.querySelector(`[data-badge="${name}"]`); if (b) { b.textContent = n; b.style.display = n > 0 ? '' : 'none'; } };
+    const perTab = { rentroll: 0, t12: 0 };
+    anomalies.forEach(c => (TAB_OF_CHECK[c.check] || []).forEach(t => { if (perTab[t] != null) perTab[t]++; }));
+    badge('synthese', anomalies.length + (fit?.criteria || []).filter(c => c.status === 'echec' && c.nature === 'eliminatoire').length);
+    badge('rentroll', perTab.rentroll);
+    badge('t12', perTab.t12);
   }
 
   // Contexte "directement écrit" : generation automatique silencieuse (une
@@ -2484,6 +2549,16 @@
 
   function renderExtract(doc) {
     renderSynthese(doc);
+    // En-tete : on sait quel bien on regarde.
+    const h1 = document.querySelector('#view-extract .view-head h1');
+    if (h1) h1.textContent = `Analyse · ${doc.displayName || doc.ficheIdentite?.adresse?.value || doc.filename}`;
+    // Barre de decision fixe en bas (elements statiques, etats par dossier).
+    const exp = document.getElementById('analysisExportLink');
+    if (exp) exp.href = `/api/documents/${doc.id}/export/xlsx`;
+    const pursue = document.getElementById('analysisPursueBtn');
+    if (pursue) pursue.textContent = (doc.stage === 'underwriting' || doc.stage === 'comite') ? '✓ Poursuivi' : '▶ Poursuivre';
+    const abandon = document.getElementById('analysisAbandonBtn');
+    if (abandon) abandon.disabled = doc.stage === 'rejete';
     const fi = doc.ficheIdentite || {};
     currentIdFields = Object.keys(FICHE_LABELS).map(key => ({ key, label: FICHE_LABELS[key], field: fi[key] }));
     document.getElementById('paneIdentite').innerHTML = `<div class="id-fields" style="padding:20px;">${
@@ -2497,13 +2572,8 @@
       document.querySelectorAll('#paneIdentite .id-field').forEach(e => e.classList.remove('selected'));
       el.classList.add('selected');
       const f = currentIdFields[+el.dataset.idx];
-      // Sur la Synthèse (panneau Commentaire IA masque), le clic ouvre
-      // directement la page source avec la citation surlignee.
-      if (document.getElementById('aiSide')?.style.display === 'none') {
-        if (f?.field?.page != null) openSourceModal(f.field.page, f.field.quote);
-        return;
-      }
       setAiCarousel(currentIdFields, +el.dataset.idx, identiteCommentData, i => document.querySelectorAll('#paneIdentite .id-field')[i]?.click());
+      openInspector(f?.field?.page != null ? { page: f.field.page, quote: f.field.quote } : { sourceLabel: 'Champ absent du document — aucune source.' }, 'source');
     }));
     document.querySelectorAll('#paneIdentite .val > [data-fiche-key]').forEach(span => {
       const key = span.dataset.ficheKey;
@@ -2556,7 +2626,17 @@
       if (!tr) return;
       document.querySelectorAll('#rrBody tr').forEach(t => t.classList.remove('selected'));
       tr.classList.add('selected');
-      runTenantInsight(currentEtatLocatif[+tr.dataset.idx]);
+      const row = currentEtatLocatif[+tr.dataset.idx];
+      const srcField = row.loyerAnnuel?.page != null ? row.loyerAnnuel : row.surfaceSf;
+      // COMMENTAIRE : lanceur explicite de la recherche web locataire --
+      // jamais lancee automatiquement par un simple clic de ligne.
+      setAiComment(`<div class="ai-comment-card">
+        <div class="ai-comment-title">${escapeHtml(row.locataire || row.suite || 'Locataire')}</div>
+        <div class="ai-comment-text">Recherche web sur ce locataire (santé financière, actualité) — résultat affiché avec ses sources.</div>
+        <button type="button" class="btn btn-outline" id="tiLaunchBtn" style="margin-top:10px;">🌐 Lancer la recherche →</button>
+      </div>`);
+      document.getElementById('tiLaunchBtn')?.addEventListener('click', () => runTenantInsight(row));
+      openInspector(srcField?.page != null ? { page: srcField.page, quote: srcField.quote } : { sourceLabel: 'Ligne sans citation de page.' }, 'source');
     };
     document.querySelectorAll('#rrBody [data-rr-field]').forEach(span => {
       const idx = +span.dataset.rrIdx, field = span.dataset.rrField;
@@ -2569,7 +2649,7 @@
 
     currentT12 = doc.t12 || [];
     const t12RowsHTML = currentT12.map((r, i) => `
-      <tr data-idx="${i}" class="${r.montant?.page && !r.montant?.edited ? 'row-cited' : ''}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="mono" style="color:var(--text-faint);font-size:.72rem;">${r.montant?.edited ? 'MODIFIÉ' : (r.montant?.page ? 'p.' + r.montant.page : '—')}</td></tr>`).join('');
+      <tr data-idx="${i}" class="${r.montant?.page && !r.montant?.edited ? 'row-cited' : ''}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="mono" style="color:var(--text-faint);font-size:.72rem;">${r.montant?.edited ? 'corrigé' : (r.montant?.page ? 'p.' + r.montant.page : '—')}</td></tr>`).join('');
     // Lignes de synthese (Total des charges / Loyer net-NOI) : jamais
     // extraites, toujours recalculees a partir des postes ci-dessus
     // (computeT12Totals cote serveur) -- pas de data-idx (non cliquables,
@@ -2609,8 +2689,8 @@
       { label: 'WALB (durée ferme moyenne pondérée)', value: ind.walb != null ? fmt2(ind.walb) + ' ans' : '—', source: 'état locatif' },
       { label: 'WALT (durée résiduelle moyenne pondérée)', value: ind.walt != null ? fmt2(ind.walt) + ' ans' : '—', source: 'état locatif' },
       { label: 'Prix / m²', value: ind.prixM2 != null ? fmt(ind.prixM2) + ' €' : '—', source: 'calculé' },
-      { label: 'Taux de capitalisation recalculé', value: ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—', source: 'calculé' },
-      { label: 'Taux de capitalisation stabilisé (NOI)', value: ind.capRateStabilise != null ? fmt2(ind.capRateStabilise) + ' %' : '—', source: 'calculé' },
+      { label: 'Rendement brut facial', value: ind.capRateRecalcule != null ? fmt2(ind.capRateRecalcule) + ' %' : '—', source: 'loyers faciaux ÷ prix demandé — brut, avant charges' },
+      { label: 'Taux de capitalisation stabilisé (NOI)', value: ind.capRateStabilise != null ? fmt2(ind.capRateStabilise) + ' %' : '—', source: 'NOI du compte d\u2019exploitation ÷ prix demandé' },
       { label: 'Loyer moyen pondéré', value: ind.loyerMoyenM2 != null ? fmt2(ind.loyerMoyenM2) + ' €/m²' : '—', source: 'calculé' },
       // TOP (taux d'occupation physique, calcule sur les surfaces) : a
       // distinguer du taux annonce par le vendeur dans la Fiche d'identite
@@ -2628,9 +2708,17 @@
       { label: 'LTV estimé', value: ind.ltvEstime != null ? fmt2(ind.ltvEstime) + ' %' : '—', source: 'structure de financement' },
     ];
     document.getElementById('metricsBody').innerHTML = currentMetricRows.map((m, i) => {
-      const interp = m.id ? interpret(m.id, m.raw, fmtPct1) : null;
-      const problematic = interp && (interp.niveau === 'orange' || interp.niveau === 'rouge');
-      return `<tr data-idx="${i}"><td>${m.label}</td><td class="num">${m.value}</td><td class="src">${m.source}</td><td style="text-align:center;"><span class="dot ${problematic ? 'pink' : 'green'}" title="${problematic ? 'Problème potentiel — voir le commentaire' : 'Aucun problème détecté'}"></span></td></tr>`;
+      // Concentration top 3 avec ≤ 3 locataires : 100 % par construction --
+      // une tautologie, jamais une alerte.
+      const tautologie = m.id === 'concentration_top3' && currentEtatLocatif.length <= 3;
+      const interp = (m.id && !tautologie) ? interpret(m.id, m.raw, fmtPct1) : null;
+      const alerte = interp && (interp.niveau === 'orange' || interp.niveau === 'rouge');
+      // Colonne Etat : SEULEMENT une alerte metier (⚠ + explication au
+      // survol, seuil inclus). Une donnee extraite sans signal n'affiche
+      // rien -- une pastille verte melangerait "extrait" et "sain".
+      const etat = alerte ? `<span class="metric-alert" title="${escapeHtml(interp.texte)}">⚠</span>` : '';
+      const srcTxt = tautologie ? `${m.source} — ${currentEtatLocatif.length} locataires : 100 % par construction` : m.source;
+      return `<tr data-idx="${i}"><td>${m.label}</td><td class="num">${m.value}</td><td class="src">${srcTxt}</td><td style="text-align:center;">${etat}</td></tr>`;
     }).join('');
     document.getElementById('metricsBody').onclick = e => { const tr = e.target.closest('tr'); if (!tr) return; selectRow('metricsBody', tr, currentMetricRows, metricCommentData); };
 
@@ -2832,13 +2920,43 @@
   // (paragraphes de synthese sans commentaire IA par champ associe) ou l'on
   // arrive directement en mode Notes -- cf. setAiMode appele depuis le
   // gestionnaire de clic des extract-tabs plus bas.
-  function setAiMode(mode) {
-    const isNotes = mode === 'notes';
-    document.querySelectorAll('.ai-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.aiMode === mode));
-    document.getElementById('aiCommentBody').style.display = isNotes ? 'none' : 'flex';
-    document.getElementById('aiNotesBody').style.display = isNotes ? 'flex' : 'none';
+  // ---------- tiroir d'inspection (SOURCE | COMMENTAIRE | NOTES) ----------
+  // Ferme par defaut, superpose a droite : ne reserve JAMAIS de largeur.
+  function switchInspectorTab(tab) {
+    document.querySelectorAll('.inspector-tabs .itab').forEach(t => t.classList.toggle('active', t.dataset.itab === tab));
+    document.querySelectorAll('.inspector-pane').forEach(p => { p.style.display = p.dataset.ipane === tab ? '' : 'none'; });
   }
-  document.querySelectorAll('.ai-mode-tab').forEach(tab => tab.addEventListener('click', () => setAiMode(tab.dataset.aiMode)));
+  // Compat : l'ancien setAiMode ('ia'/'notes') route vers le tiroir.
+  function setAiMode(mode) { switchInspectorTab(mode === 'notes' ? 'notes' : 'commentaire'); }
+  function openInspector(ctx = {}, tab = 'source') {
+    const drawer = document.getElementById('inspectorDrawer');
+    if (!drawer) return;
+    const frame = document.getElementById('inspectorFrame');
+    const text = document.getElementById('inspectorText');
+    const quote = document.getElementById('inspectorQuote');
+    const calc = document.getElementById('inspectorCalc');
+    const srcLabel = document.getElementById('inspectorSourceLabel');
+    calc.style.display = 'none'; frame.style.display = 'none'; text.style.display = 'none'; quote.style.display = 'none';
+    if (ctx.page != null) {
+      srcLabel.textContent = `PAGE ${ctx.page} DU DOCUMENT SOURCE`;
+      frame.style.display = '';
+      loadSourcePage(ctx.page, ctx.quote, { frameEl: frame, textEl: text, quoteEl: quote });
+    } else {
+      srcLabel.textContent = 'VALEUR CALCULÉE — PAS DE PAGE SOURCE UNIQUE';
+      calc.style.display = 'block';
+      calc.textContent = ctx.sourceLabel || 'Calculée par le moteur déterministe à partir des champs vérifiés.';
+    }
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    switchInspectorTab(tab);
+  }
+  function closeInspector() {
+    const drawer = document.getElementById('inspectorDrawer');
+    drawer?.classList.remove('open');
+    drawer?.setAttribute('aria-hidden', 'true');
+  }
+  document.getElementById('inspectorClose')?.addEventListener('click', closeInspector);
+  document.querySelectorAll('.inspector-tabs .itab').forEach(t => t.addEventListener('click', () => switchInspectorTab(t.dataset.itab)));
 
   function selectRow(bodyId, tr, items, dataFn) {
     const body = document.getElementById(bodyId);
@@ -2850,6 +2968,8 @@
       const target = body.querySelector(`tr[data-idx="${i}"]`);
       if (target) selectRow(bodyId, target, items, dataFn);
     });
+    const d = dataFn(items[idx]);
+    openInspector({ page: d.page, quote: d.quote, sourceLabel: d.sourceLabel }, 'source');
   }
 
   const paneLabels = { synthese: 'SYNTHÈSE — CRITÈRES DU FONDS × BIEN', rentroll: 'ÉTAT LOCATIF & RÉPARTITION DES SURFACES', t12: "COMPTE D'EXPLOITATION — 12 MOIS GLISSANTS (T-12)", metrics: 'INDICATEURS CLÉS & CONTEXTE' };
@@ -2864,22 +2984,19 @@
     // Panneau lateral : AI Insight sur l'État locatif, Commentaire IA/Notes
     // sur T12/Surfaces/Indicateurs -- et RIEN sur la Synthèse (grille pleine
     // largeur, l'assistant est un panneau a la demande via le bouton 💬).
-    const isRentroll = tab.dataset.etab === 'rentroll';
-    const isSynthese = tab.dataset.etab === 'synthese';
-    document.getElementById('aiSide').style.display = (isRentroll || isSynthese) ? 'none' : 'flex';
-    document.getElementById('tenantInsightSide').style.display = isRentroll ? 'flex' : 'none';
-    // Synthèse pleine largeur : aucune colonne laterale reservee.
-    document.querySelector('.extract-split')?.classList.toggle('no-side', isSynthese);
-    if (!isRentroll && !isSynthese) {
-      setAiComment(aiPlaceholder());
-      setAiMode('ia');
-    }
+    // Le tiroir se referme au changement d'onglet (il porte le contexte de
+    // la valeur cliquee, plus valable sur un autre ecran).
+    closeInspector();
     // Contexte "directement écrit" : genere automatiquement (une fois) a
-    // l'ouverture de l'onglet Indicateurs & contexte s'il n'existe pas encore.
+    // l'ouverture de l'onglet Indicateurs s'il n'existe pas encore.
     if (tab.dataset.etab === 'metrics') maybeAutoGenerateContexte();
   }));
   document.getElementById('analysisBackBtn')?.addEventListener('click', () => goDossierPage('deal'));
-  document.getElementById('analysisAssistantBtn')?.addEventListener('click', openDataChatPanel);
+  document.getElementById('analysisPursueBtn')?.addEventListener('click', async () => {
+    if (currentDoc.stage === 'underwriting' || currentDoc.stage === 'comite') return;
+    await applyStageChange('underwriting');
+  });
+  document.getElementById('analysisAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
 
   // ================= PAGE SOURCE (PDF ORIGINAL, ZOOME SUR LA CITATION) ================= //
   // Affiche directement le PDF original (iframe, visualiseur natif du
@@ -3453,16 +3570,33 @@
     document.getElementById('settingsTypologies').value = (criteria.typologies || []).join(', ');
     document.getElementById('settingsLocalisation').value = criteria.localisation ?? '';
     document.getElementById('settingsRendement').value = criteria.rendementCibleMin ?? '';
+    document.querySelectorAll('#criteriaNatures [data-nature]').forEach(cb => {
+      cb.checked = criteria.natures?.[cb.dataset.nature] !== 'negociable';
+    });
   }
   document.getElementById('settingsSaveBtn').addEventListener('click', async () => {
+    const natures = {};
+    document.querySelectorAll('#criteriaNatures [data-nature]').forEach(cb => {
+      natures[cb.dataset.nature] = cb.checked ? 'eliminatoire' : 'negociable';
+    });
     const body = {
       tailleMin: parseFloat(document.getElementById('settingsTailleMin').value) || null,
       tailleMax: parseFloat(document.getElementById('settingsTailleMax').value) || null,
       typologies: document.getElementById('settingsTypologies').value.split(',').map(s => s.trim()).filter(Boolean),
       localisation: document.getElementById('settingsLocalisation').value.trim() || null,
       rendementCibleMin: parseFloat(document.getElementById('settingsRendement').value) || null,
+      natures,
     };
-    await fetch('/api/settings/fund-criteria', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const errEl = document.getElementById('settingsError');
+    if (errEl) errEl.style.display = 'none';
+    const res = await fetch('/api/settings/fund-criteria', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) {
+      // Bornes aberrantes rejetees par le serveur : l'erreur s'affiche,
+      // rien n'est enregistre.
+      const d = await res.json().catch(() => ({}));
+      if (errEl) { errEl.textContent = d.error || 'Enregistrement refusé.'; errEl.style.display = 'inline'; }
+      return;
+    }
     const saved = document.getElementById('settingsSaved');
     saved.style.display = 'inline';
     setTimeout(() => { saved.style.display = 'none'; }, 2000);

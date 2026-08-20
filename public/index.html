@@ -258,14 +258,13 @@
               <button class="dossier-back" id="analysisBackBtn" aria-label="Retour au dossier">←</button>
               <h1>Analyse</h1>
             </div>
-            <button class="btn btn-outline" id="analysisAssistantBtn">💬 Assistant</button>
           </div>
 
           <div class="extract-tabs">
-            <button class="etab active" data-etab="synthese">Synthèse</button>
-            <button class="etab" data-etab="metrics">Indicateurs &amp; contexte</button>
-            <button class="etab" data-etab="rentroll">État locatif &amp; surfaces</button>
-            <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
+            <button class="etab active" data-etab="synthese">Synthèse<span class="etab-badge" data-badge="synthese" style="display:none;"></span></button>
+            <button class="etab" data-etab="rentroll">État locatif &amp; surfaces<span class="etab-badge" data-badge="rentroll" style="display:none;"></span></button>
+            <button class="etab" data-etab="t12">Compte d'exploitation<span class="etab-badge" data-badge="t12" style="display:none;"></span></button>
+            <button class="etab" data-etab="metrics">Indicateurs</button>
           </div>
 
           <div class="extract-split no-side">
@@ -320,29 +319,52 @@
               </div>
             </div>
 
-            <div class="ai-side" id="aiSide" style="display:none;">
-              <div class="ai-side-head">
-                <div class="ai-mode-tabs">
-                  <button type="button" class="ai-mode-tab active" data-ai-mode="ia">Commentaire IA</button>
-                  <button type="button" class="ai-mode-tab" data-ai-mode="notes">Notes</button>
+            <div style="display:none;">
+              <div id="tenantInsightBody"></div>
+            </div>
+          </div>
+
+          <!-- Tiroir d'inspection : FERME par defaut, superpose (ne reserve
+               jamais de largeur). Trois onglets : SOURCE (le PDF a la page
+               exacte, phrase surlignee -- l'argument produit), COMMENTAIRE
+               (lecture IA de la valeur cliquee), NOTES (saisie analyste). -->
+          <div class="inspector-drawer" id="inspectorDrawer" aria-hidden="true">
+            <div class="inspector-head">
+              <div class="inspector-tabs">
+                <button class="itab active" data-itab="source">Source</button>
+                <button class="itab" data-itab="commentaire">Commentaire</button>
+                <button class="itab" data-itab="notes">Notes</button>
+              </div>
+              <button class="source-modal-close" id="inspectorClose" aria-label="Fermer">✕</button>
+            </div>
+            <div class="inspector-body">
+              <div class="inspector-pane" data-ipane="source">
+                <div class="label" id="inspectorSourceLabel" style="padding:12px 16px 0;"></div>
+                <iframe id="inspectorFrame" class="source-modal-frame" title="Page source du document" style="display:none;"></iframe>
+                <div class="source-modal-text" id="inspectorText" style="display:none;"></div>
+                <div class="source-modal-quote" id="inspectorQuote" style="display:none;"></div>
+                <div class="inspector-calc" id="inspectorCalc" style="display:none;"></div>
+              </div>
+              <div class="inspector-pane" data-ipane="commentaire" style="display:none;">
+                <div class="ai-comment-body" id="aiCommentBody">
+                  <div class="ai-comment-placeholder"><p>Cliquez sur un élément pour visualiser le commentaire.</p></div>
                 </div>
               </div>
-              <div class="ai-comment-body" id="aiCommentBody">
-                <div class="ai-comment-placeholder"><p>Cliquez sur un élément pour visualiser les commentaires de l'IA.</p></div>
-              </div>
-              <div class="ai-notes-body" id="aiNotesBody" style="display:none;">
-                <textarea id="aiNotesTextarea" class="notes-textarea" placeholder="Notes libres sur ce dossier — commencez une ligne par /tag pour la classer (ex. /question)…"></textarea>
+              <div class="inspector-pane" data-ipane="notes" style="display:none;">
+                <div class="ai-notes-body" id="aiNotesBody">
+                  <textarea id="aiNotesTextarea" class="notes-textarea" placeholder="Notes libres sur ce dossier — commencez une ligne par /tag pour la classer (ex. /question)…"></textarea>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="ai-side" id="tenantInsightSide" style="display:none;">
-              <div class="ai-side-head">
-                <span class="label">AI Insight</span>
-              </div>
-              <div class="ai-comment-body" id="tenantInsightBody">
-                <div class="ai-comment-placeholder"><p>Lancez l'agent en cliquant sur un élément.</p></div>
-              </div>
-            </div>
+          <!-- Barre de decision fixe : la page existe pour aboutir a un
+               GO/NO-GO -- la decision est posable ici, visible au defilement. -->
+          <div class="analysis-decision-bar" id="analysisDecisionBar">
+            <a class="btn btn-outline" id="analysisExportLink" href="#" download>⬇ Exporter (.xlsx)</a>
+            <span style="flex:1;"></span>
+            <button class="btn btn-outline" id="analysisAbandonBtn">✕ Abandonner</button>
+            <button class="btn btn-solid" id="analysisPursueBtn">▶ Poursuivre</button>
           </div>
         </section>
 
@@ -717,7 +739,17 @@
               <label class="label" for="settingsRendement">Rendement cible minimum (%)</label>
               <input type="number" step="0.1" id="settingsRendement" placeholder="ex : 5.5">
             </div>
+            <div class="settings-field" style="margin-top:8px;">
+              <label class="label">Nature de chaque critère — un échec éliminatoire = NO-GO, un échec négociable = point de discussion</label>
+              <div class="criteria-natures" id="criteriaNatures">
+                <label><input type="checkbox" data-nature="taille" checked> Taille du deal éliminatoire</label>
+                <label><input type="checkbox" data-nature="typologie" checked> Typologie éliminatoire</label>
+                <label><input type="checkbox" data-nature="localisation" checked> Localisation éliminatoire</label>
+                <label><input type="checkbox" data-nature="rendement" checked> Rendement éliminatoire</label>
+              </div>
+            </div>
             <button class="btn btn-solid" id="settingsSaveBtn" style="margin-top:20px;">Enregistrer</button>
+            <span class="label" id="settingsError" style="margin-left:14px;display:none;color:var(--pink);"></span>
             <span class="label" id="settingsSaved" style="margin-left:14px;display:none;color:var(--green);">Enregistré.</span>
             <p style="font-size:.78rem;color:var(--text-faint);margin-top:18px;line-height:1.5;">Laissez un champ vide pour ne pas l'appliquer au filtrage. Sans critère renseigné, l'onglet Points d'attention n'affiche aucune alerte de non-conformité.</p>
           </div>

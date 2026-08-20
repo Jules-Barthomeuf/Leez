@@ -38,6 +38,7 @@ function computeMandateFit(doc, criteria) {
   const typeActif = fi.typeActif?.value;
   const capRate = ind.capRateRecalcule;
   const results = [];
+  const natureOf = id => (criteria.natures?.[id] === 'negociable' ? 'negociable' : 'eliminatoire');
 
   // Chaque critere porte aussi ses colonnes structurees pour la grille
   // d'analyse (attendu / constate / page+quote de la citation source), en
@@ -54,7 +55,7 @@ function computeMandateFit(doc, criteria) {
       else if (!okMin) gapPct = (criteria.tailleMin - prix) / criteria.tailleMin;
     }
     results.push({
-      id: 'taille', label: 'Taille du deal', status, gapPct,
+      id: 'taille', nature: natureOf('taille'), label: 'Taille du deal', status, gapPct,
       attendu: fmtRange(criteria.tailleMin, criteria.tailleMax),
       constate: prix != null ? fmtEur(prix) : null,
       page: fi.prixDemande?.page ?? null, quote: fi.prixDemande?.quote ?? null,
@@ -66,7 +67,7 @@ function computeMandateFit(doc, criteria) {
     let status = 'indetermine';
     if (typeActif) status = criteria.typologies.some(t => typeActif.toLowerCase().includes(t.toLowerCase())) ? 'ok' : 'echec';
     results.push({
-      id: 'typologie', label: 'Typologie', status, gapPct: null,
+      id: 'typologie', nature: natureOf('typologie'), label: 'Typologie', status, gapPct: null,
       attendu: criteria.typologies.join(', '),
       constate: typeActif || null,
       page: fi.typeActif?.page ?? null, quote: fi.typeActif?.quote ?? null,
@@ -80,7 +81,7 @@ function computeMandateFit(doc, criteria) {
     if (texteLoc) status = texteLoc.includes(criteria.localisation.toLowerCase()) ? 'ok' : 'echec';
     const constate = [fi.adresse?.value, fi.codePostalVille?.value].filter(Boolean).join(', ') || null;
     results.push({
-      id: 'localisation', label: 'Localisation (correspondance textuelle approximative)', status, gapPct: null,
+      id: 'localisation', nature: natureOf('localisation'), label: 'Localisation', status, gapPct: null,
       attendu: criteria.localisation,
       constate,
       page: fi.adresse?.page ?? fi.codePostalVille?.page ?? null, quote: fi.adresse?.quote ?? fi.codePostalVille?.quote ?? null,
@@ -95,11 +96,11 @@ function computeMandateFit(doc, criteria) {
       if (status === 'echec') gapPct = (criteria.rendementCibleMin - capRate) / criteria.rendementCibleMin;
     }
     results.push({
-      id: 'rendement', label: 'Rendement net recalculé', status, gapPct,
+      id: 'rendement', nature: natureOf('rendement'), label: 'Rendement brut facial (recalculé)', methode: "Loyers faciaux de l'état locatif ÷ prix demandé — brut, avant charges ; ce n'est ni un rendement net ni un taux de capitalisation stabilisé", status, gapPct,
       attendu: `≥ ${fmt2pct(criteria.rendementCibleMin)}`,
       constate: capRate != null ? fmt2pct(capRate) : null,
       page: null, quote: null, calcule: true,
-      ecartPhrase: status === 'echec' ? `Rendement : ${fmt2pct(capRate)} constaté pour un minimum de ${fmt2pct(criteria.rendementCibleMin)}` : null,
+      ecartPhrase: status === 'echec' ? `Rendement brut facial : ${fmt2pct(capRate)} constaté pour un minimum de ${fmt2pct(criteria.rendementCibleMin)}` : null,
       detail: capRate != null ? `${fmt2pct(capRate)} · cible ≥ ${fmt2pct(criteria.rendementCibleMin)}` : 'Rendement recalculé non disponible',
     });
   }
