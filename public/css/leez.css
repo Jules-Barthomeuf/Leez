@@ -2450,3 +2450,8 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 /* T12 : citation exacte dans la colonne Source */
 .t12-src{font-size:.78rem;color:var(--text-body);}
 .t12-quote{font-family:var(--serif);font-style:italic;color:var(--text);margin-right:8px;}
+
+/* Alignement uniforme À GAUCHE dans toute l'Analyse (plus de mélange
+   gauche/centre/droite — !important assumé : il doit aussi couvrir les
+   text-align posés en style inline sur certaines cellules). */
+#view-extract th, #view-extract td{text-align:left !important;}
