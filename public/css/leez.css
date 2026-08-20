@@ -2352,12 +2352,12 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 /* ---------- Synthèse : design maquette (bandeau noir, liste plate, grille plate, cartes) ---------- */
 .fund-verdict{
   display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  background:var(--text);color:var(--bg);border-radius:var(--radius);
+  background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);
   padding:14px 20px;margin-bottom:6px;font-family:var(--sans);
 }
-.fv-label{font-size:.62rem;letter-spacing:.12em;color:rgba(255,255,255,.55);}
+.fv-label{font-size:.62rem;letter-spacing:.12em;color:var(--text-faint);}
 .fv-status{font-size:1.05rem;font-weight:700;}
-.fv-detail{font-size:.8rem;color:rgba(255,255,255,.75);}
+.fv-detail{font-size:.8rem;color:var(--text-muted);}
 .fv-chip{
   font-size:.66rem;letter-spacing:.08em;font-weight:700;color:var(--pink);
   border:1px solid var(--pink);border-radius:999px;padding:4px 12px;
