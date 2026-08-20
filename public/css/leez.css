@@ -2427,3 +2427,7 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 /* Note libre sous le nom d'un fichier */
 .file-note{font-family:var(--sans);font-size:.72rem;font-weight:400;color:var(--text-muted);margin-top:3px;line-height:1.45;white-space:normal;}
 .deal-files-table .file-name{white-space:normal;}
+
+/* Note de fichier : flèche + retrait + texte légèrement plus grand */
+.file-note{font-size:.8rem;padding-left:22px;margin-top:4px;display:flex;gap:7px;align-items:baseline;}
+.file-note-arrow{color:var(--text-faint);flex-shrink:0;}

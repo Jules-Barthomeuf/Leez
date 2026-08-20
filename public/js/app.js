@@ -981,7 +981,7 @@
   // Note libre par fichier (affichee sous le nom, plus petite).
   function fileNoteHTML(doc, fileId) {
     const note = doc.fileNotes?.[fileId];
-    return note ? `<div class="file-note">${escapeHtml(note)}</div>` : '';
+    return note ? `<div class="file-note"><span class="file-note-arrow">↳</span>${escapeHtml(note)}</div>` : '';
   }
   let fileNoteTarget = null;
   function openFileNoteModal(fileId, fileName) {
