@@ -895,14 +895,15 @@
         </div>
         <div style="overflow-x:auto;">
           <table class="deal-files-table">
-            <thead><tr><th>Nom</th><th>Cat\u00e9gorie</th><th>Type</th><th>Import\u00e9 le</th><th class="num">Taille</th></tr></thead>
+            <thead><tr><th>Nom</th><th>Cat\u00e9gorie</th><th>Type</th><th>Import\u00e9 le</th><th class="num">Taille</th><th></th></tr></thead>
             <tbody id="dealFilesBody">
               <tr data-open-file="/api/documents/${doc.id}/file">
-                <td class="file-name">\ud83d\udcc4 ${escapeHtml(doc.filename)}</td>
+                <td class="file-name">\ud83d\udcc4 ${escapeHtml(doc.filename)}${fileNoteHTML(doc, 'om')}</td>
                 <td>${categoryBadge('om', 'Offering Memorandum')}</td>
                 <td>Fichier</td>
                 <td>${doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('fr-FR') : '\u2014'}</td>
                 <td class="num">${fmtBytes(doc.fileSizeBytes)}</td>
+                <td><button class="deal-card-menu" data-file-note="om" data-file-name="${escapeHtml(doc.filename)}" title="Note sur ce document">\u00b7\u00b7\u00b7</button></td>
               </tr>
             </tbody>
           </table>
@@ -977,6 +978,35 @@
       input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
+  // Note libre par fichier (affichee sous le nom, plus petite).
+  function fileNoteHTML(doc, fileId) {
+    const note = doc.fileNotes?.[fileId];
+    return note ? `<div class="file-note">${escapeHtml(note)}</div>` : '';
+  }
+  let fileNoteTarget = null;
+  function openFileNoteModal(fileId, fileName) {
+    fileNoteTarget = fileId;
+    document.getElementById('fileNoteModalName').textContent = fileName || '';
+    document.getElementById('fileNoteInput').value = currentDoc?.fileNotes?.[fileId] || '';
+    document.getElementById('fileNoteModal').classList.add('open');
+    document.getElementById('fileNoteInput').focus();
+  }
+  function closeFileNoteModal() { document.getElementById('fileNoteModal').classList.remove('open'); }
+  document.getElementById('fileNoteModalClose')?.addEventListener('click', closeFileNoteModal);
+  document.getElementById('fileNoteCancelBtn')?.addEventListener('click', closeFileNoteModal);
+  document.getElementById('fileNoteModalBackdrop')?.addEventListener('click', closeFileNoteModal);
+  document.getElementById('fileNoteSaveBtn')?.addEventListener('click', async () => {
+    if (!fileNoteTarget || !currentDoc) return;
+    const res = await fetch(`/api/documents/${currentDoc.id}/file-note`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId: fileNoteTarget, note: document.getElementById('fileNoteInput').value }),
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Enregistrement impossible.'); return; }
+    currentDoc.fileNotes = (await res.json()).fileNotes;
+    closeFileNoteModal();
+    renderDeal(currentDoc);
+  });
+
   function renderDealQueries(doc) {
     const rows = document.getElementById('dealQueriesRows');
     if (!rows) return;
@@ -1053,15 +1083,20 @@
       body.insertAdjacentHTML('beforeend', supporting.map(s => {
         const cat = SUPPORTING_CATALOG.find(c => c.id === s.category);
         return `<tr data-open-file="/api/documents/${doc.id}/supporting/${s.id}/file">
-          <td class="file-name">${s.isImage ? '\ud83d\uddbc' : '\ud83d\udcc4'} ${escapeHtml(s.filename)}</td>
+          <td class="file-name">${s.isImage ? '\ud83d\uddbc' : '\ud83d\udcc4'} ${escapeHtml(s.filename)}${fileNoteHTML(doc, s.id)}</td>
           <td>${categoryBadge(s.category, s.type || cat?.label || s.category)}</td>
           <td>Fichier</td>
           <td>${s.uploadedAt ? new Date(s.uploadedAt).toLocaleDateString('fr-FR') : '\u2014'}</td>
           <td class="num">${fmtBytes(s.sizeBytes)}</td>
+          <td><button class="deal-card-menu" data-file-note="${s.id}" data-file-name="${escapeHtml(s.filename)}" title="Note sur ce document">\u00b7\u00b7\u00b7</button></td>
         </tr>`;
       }).join(''));
     }
     body.querySelectorAll('[data-open-file]').forEach(tr => tr.addEventListener('click', () => window.open(tr.dataset.openFile, '_blank', 'noopener')));
+    body.querySelectorAll('[data-file-note]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openFileNoteModal(btn.dataset.fileNote, btn.dataset.fileName);
+    }));
   }
 
   // ---------- chat du dossier : modes deterministes + question libre ----------

@@ -54,6 +54,7 @@ function shapeDocument(doc) {
     stage: doc.stage || 'triage',
     displayName: doc.display_name ?? null,
     queries: doc.queries_json ?? [],
+    fileNotes: doc.file_notes_json ?? {},
     decisionMotif: doc.decision_motif ?? null,
     decidedAt: doc.decided_at ?? null,
     decidedBy: doc.decided_by ?? null,
@@ -289,6 +290,22 @@ router.post('/documents/:id/queries', asyncHandler(async (req, res) => {
   const queries = [entry, ...(doc.queries_json || [])].slice(0, 20);
   await updateDocument(doc.id, { queries_json: queries }, req.workspaceId);
   res.json({ ok: true, queries });
+}));
+
+// Note libre de l'analyste sur UN FICHIER du dossier ('om' pour le
+// memorandum, l'id de l'annexe sinon) -- affichee sous le nom du fichier
+// dans la table Documents du dossier. Note vide = suppression.
+router.patch('/documents/:id/file-note', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  const fileId = typeof req.body?.fileId === 'string' ? req.body.fileId.trim().slice(0, 64) : '';
+  if (!fileId) return res.status(400).json({ error: 'Identifiant de fichier manquant.' });
+  const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 2000) : '';
+  const notes = { ...(doc.file_notes_json || {}) };
+  if (note) notes[fileId] = note;
+  else delete notes[fileId];
+  await updateDocument(doc.id, { file_notes_json: notes }, req.workspaceId);
+  res.json({ ok: true, fileNotes: notes });
 }));
 
 // Suppression d'une entree du journal (identifiee par son horodatage,

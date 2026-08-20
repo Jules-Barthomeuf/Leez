@@ -855,6 +855,23 @@
   </div>
 </div>
 
+<!-- Note libre sur un fichier du dossier (bouton ··· de la table
+     Documents du dossier) -- affichée sous le nom du fichier. -->
+<div class="source-modal" id="fileNoteModal" aria-hidden="true">
+  <div class="source-modal-backdrop" id="fileNoteModalBackdrop"></div>
+  <div class="source-modal-panel formula-modal-panel">
+    <button class="source-modal-close" id="fileNoteModalClose" aria-label="Fermer">✕</button>
+    <div class="source-modal-head"><span class="label">NOTE SUR CE DOCUMENT</span><div id="fileNoteModalName" style="font-family:var(--sans);font-weight:600;font-size:.9rem;color:var(--text);margin-top:6px;"></div></div>
+    <div class="formula-modal-body">
+      <textarea id="fileNoteInput" class="notes-textarea" style="min-height:120px;" placeholder="Vos commentaires sur ce document — ex. « Rent roll à recouper avec le bail de la cellule B »…"></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button class="btn btn-outline" id="fileNoteCancelBtn">Annuler</button>
+        <button class="btn btn-solid" id="fileNoteSaveBtn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="source-modal" id="mandateModal" aria-hidden="true">
   <div class="source-modal-backdrop" id="mandateModalBackdrop"></div>
   <div class="source-modal-panel formula-modal-panel mandate-modal-panel">

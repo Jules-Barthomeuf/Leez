@@ -2423,3 +2423,7 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .sb-accent-pink{border-left-color:var(--pink);}
 .sb-accent-amber{border-left-color:var(--amber);}
 .synthese-bullets{margin:10px 0 12px;}
+
+/* Note libre sous le nom d'un fichier */
+.file-note{font-family:var(--sans);font-size:.72rem;font-weight:400;color:var(--text-muted);margin-top:3px;line-height:1.45;white-space:normal;}
+.deal-files-table .file-name{white-space:normal;}
