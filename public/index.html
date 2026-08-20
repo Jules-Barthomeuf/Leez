@@ -262,9 +262,9 @@
 
           <div class="extract-tabs">
             <button class="etab active" data-etab="synthese">Synthèse<span class="etab-badge" data-badge="synthese" style="display:none;"></span></button>
+            <button class="etab" data-etab="metrics">Indicateurs</button>
             <button class="etab" data-etab="rentroll">État locatif &amp; surfaces<span class="etab-badge" data-badge="rentroll" style="display:none;"></span></button>
             <button class="etab" data-etab="t12">Compte d'exploitation<span class="etab-badge" data-badge="t12" style="display:none;"></span></button>
-            <button class="etab" data-etab="metrics">Indicateurs</button>
           </div>
 
           <div class="extract-split no-side">
@@ -309,13 +309,14 @@
               </div>
 
               <div class="extract-scroll" data-pane="metrics" style="display:none;">
+                <div class="label" style="padding:18px 20px 0;">CONTEXTE DE LA VENTE — SYNTHÈSE RÉDIGÉE, CITATIONS VÉRIFIÉES</div>
+                <div id="contexteBody" style="display:none;padding:20px;"></div>
+                <div class="label" id="contexteInlineStatus" style="display:none;padding:14px 20px;">RÉDACTION DU CONTEXTE EN COURS…</div>
+                <div class="label" style="padding:18px 20px 10px;">INDICATEURS CLÉS</div>
                 <table class="metric-table">
                   <thead><tr><th>Indicateur</th><th class="num">Valeur</th><th>Source</th><th style="text-align:center;">État</th></tr></thead>
                   <tbody id="metricsBody"></tbody>
                 </table>
-                <div class="label" style="padding:22px 20px 0;">CONTEXTE DE LA VENTE — SYNTHÈSE RÉDIGÉE, CITATIONS VÉRIFIÉES</div>
-                <div id="contexteBody" style="display:none;padding:20px;"></div>
-                <div class="label" id="contexteInlineStatus" style="display:none;padding:14px 20px;">RÉDACTION DU CONTEXTE EN COURS…</div>
               </div>
             </div>
 
