@@ -2431,3 +2431,18 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 /* Note de fichier : flèche + retrait + texte légèrement plus grand */
 .file-note{font-size:.8rem;padding-left:22px;margin-top:4px;display:flex;gap:7px;align-items:baseline;}
 .file-note-arrow{color:var(--text-faint);flex-shrink:0;}
+
+/* ---------- Contraste renforcé dans les onglets de l'Analyse ---------- */
+#view-extract th{color:var(--text-body);}
+#view-extract td{color:var(--text);}
+#view-extract .label{color:var(--text-body);}
+#view-extract .id-field .label{color:var(--text-body);}
+#view-extract .id-field .src{color:var(--text-muted);}
+#view-extract .sb-row{color:var(--text);}
+#view-extract .sc-item{color:var(--text);}
+#view-extract .sc-count{color:var(--text-muted);}
+#view-extract .fv-detail{color:var(--text);}
+#view-extract .metric-table .src{color:var(--text-muted);}
+#view-extract .file-note{color:var(--text-body);}
+#view-extract .dossier-open-sub, #view-extract #analysisSub{color:var(--text-body);}
+#view-extract .analysis-grid.synthese-flat th{color:var(--text-body);}
