@@ -2397,3 +2397,8 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .sc-lead.ok{color:var(--green);}
 .sc-lead.echec{color:var(--pink);}
 .sc-lead.manque{color:var(--amber);}
+
+/* Les onglets de l'Analyse s'affichent dans le flux de la page (le
+   defilement est celui de la page, jamais un bloc a ascenseur interne).
+   Seul le debordement HORIZONTAL des tables larges reste géré. */
+.extract-scroll{max-height:none;overflow:visible;overflow-x:auto;}
