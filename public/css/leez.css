@@ -2446,3 +2446,7 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 #view-extract .file-note{color:var(--text-body);}
 #view-extract .dossier-open-sub, #view-extract #analysisSub{color:var(--text-body);}
 #view-extract .analysis-grid.synthese-flat th{color:var(--text-body);}
+
+/* T12 : citation exacte dans la colonne Source */
+.t12-src{font-size:.78rem;color:var(--text-body);}
+.t12-quote{font-family:var(--serif);font-style:italic;color:var(--text);margin-right:8px;}

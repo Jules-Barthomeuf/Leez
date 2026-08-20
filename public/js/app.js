@@ -2776,8 +2776,18 @@
     document.querySelectorAll('#rrBody [data-open-page]').forEach(b => b.addEventListener('click', () => openSourceModal(b.dataset.openPage, b.dataset.openQuote)));
 
     currentT12 = doc.t12 || [];
+    // Colonne Source : la CITATION EXACTE du document (pas un simple numero
+    // de page) + le lien "Voir dans le document" -- comme dans l'onglet
+    // Commentaire du tiroir.
+    const t12SourceCell = r => {
+      if (r.montant?.edited) return '<span title="Corrigé à la main par l\u2019analyste">corrigé</span>';
+      if (r.montant?.page == null) return '—';
+      const q = String(r.montant.quote || '').trim();
+      const shortQ = q.length > 90 ? q.slice(0, 90) + '…' : q;
+      return `${q ? `<span class="t12-quote" title="${escapeHtml(q)}">« ${escapeHtml(shortQ)} »</span> ` : ''}<button type="button" class="cite-link" data-open-page="${r.montant.page}" data-open-quote="${escapeHtml(q)}">Voir dans le document →</button>`;
+    };
     const t12RowsHTML = currentT12.map((r, i) => `
-      <tr data-idx="${i}" class="${r.montant?.page && !r.montant?.edited ? 'row-cited' : ''}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="mono" style="color:var(--text-faint);font-size:.72rem;">${r.montant?.edited ? 'corrigé' : (r.montant?.page ? 'p.' + r.montant.page : '—')}</td></tr>`).join('');
+      <tr data-idx="${i}" class="${r.montant?.page && !r.montant?.edited ? 'row-cited' : ''}"><td>${t12Label(r.lineItem)}</td><td class="num"><span data-t12-idx="${i}">${r.montant?.value != null ? (r.montant.value < 0 ? '- ' : '') + fmt(Math.abs(r.montant.value)) + ' €' : '—'}</span></td><td class="t12-src">${t12SourceCell(r)}</td></tr>`).join('');
     // Lignes de synthese (Total des charges / Loyer net-NOI) : jamais
     // extraites, toujours recalculees a partir des postes ci-dessus
     // (computeT12Totals cote serveur) -- pas de data-idx (non cliquables,
@@ -2788,10 +2798,12 @@
       <tr class="t12-summary-row t12-noi-row"><td>Loyer net (NOI)</td><td class="num">${indT12.resultatNetExploitation != null ? fmt(indT12.resultatNetExploitation) + ' €' : '—'}</td><td></td></tr>` : '';
     document.getElementById('t12Body').innerHTML = t12RowsHTML + t12SummaryHTML;
     document.getElementById('t12Body').onclick = e => {
+      if (e.target.closest('[data-open-page]')) return;
       const tr = e.target.closest('tr');
       if (!tr || tr.dataset.idx === undefined) return;
       selectRow('t12Body', tr, currentT12, t12CommentData);
     };
+    document.querySelectorAll('#t12Body [data-open-page]').forEach(b => b.addEventListener('click', () => openSourceModal(b.dataset.openPage, b.dataset.openQuote)));
     document.querySelectorAll('#t12Body [data-t12-idx]').forEach(span => {
       const idx = +span.dataset.t12Idx;
       attachEditableValue(span, {
