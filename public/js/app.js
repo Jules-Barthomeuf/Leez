@@ -881,6 +881,7 @@
         </div>
         <div class="deal-ask-chips">
           <button class="deal-ask-chip" id="dealOpenGridBtn">\u25a6 Grille d'extraction</button>
+        </div>
         <div class="deal-ask-chips">
           <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/docx" download>\u2b07 Note de comit\u00e9</a>
           <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/xlsx" download>\u2b07 Excel (formules actives)</a>

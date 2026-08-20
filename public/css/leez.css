@@ -202,7 +202,7 @@ button{font-family:inherit;}
 }
 .btn-ghost:hover{color:var(--text-body);}
 
-main{padding:0 40px 80px;max-width:1420px;margin:0 auto;}
+main{padding:0 40px 80px;}
 /* L'ecran AI Agent occupe exactement la hauteur restante (hauteur fixee en
    JS, voir updateAgentShellHeight) : le rembourrage bas global de <main>
    ferait deborder la page de 80px, ce qui la rendrait defilante -- et comme
