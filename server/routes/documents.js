@@ -688,12 +688,10 @@ router.get('/documents/:id/page/:n', asyncHandler(async (req, res) => {
     if (located) {
       const box = deriveBox(page, located.start, located.end); // [xPct, yPct, wPct, hPct], yPct depuis le haut
       if (box && page.pageWidth && page.pageHeight) {
-        // Zoom serré (140 %) : la citation doit être lisible immédiatement,
-        // pas une vue d'ensemble de la page. Légère marge à gauche et
-        // au-dessus pour ne pas coller la cible au bord du cadre.
-        const left = Math.max(0, Math.round((((box[0] / 100) * page.pageWidth) - 20) * 100) / 100);
-        const topFromBottom = Math.min(page.pageHeight, Math.round((page.pageHeight - (box[1] / 100) * page.pageHeight + 30) * 100) / 100);
-        zoomFragment = `zoom=140,${left},${topFromBottom}`;
+        // Zoom 90 %, page centrée (pas de scroll aux coordonnées de la
+        // citation) : la bonne page s'affiche entière et lisible, comme
+        // dans le visualiseur natif ouvert à la main.
+        zoomFragment = 'zoom=90';
       }
     }
   }

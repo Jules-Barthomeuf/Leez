@@ -3022,11 +3022,11 @@
       return;
     }
     frameEl.style.display = 'block'; textEl.style.display = 'none';
-    const base = `/api/documents/${currentDoc.id}/file#page=${page}`;
-    if (!quote) { frameEl.src = base; return; }
-    fetch(`/api/documents/${currentDoc.id}/page/${page}?quote=${encodeURIComponent(quote)}`).then(r => r.json())
-      .then(d => { frameEl.src = d.zoomFragment ? `${base}&${d.zoomFragment}` : base; })
-      .catch(() => { frameEl.src = base; });
+    // navpanes=0 : jamais la colonne de vignettes du visualiseur ; zoom=90 :
+    // la bonne page s'affiche entiere, centree et lisible -- plus aucun
+    // scroll aux coordonnees de la citation (parametres fixes, plus besoin
+    // d'interroger le serveur pour un fragment).
+    frameEl.src = `/api/documents/${currentDoc.id}/file#page=${page}&navpanes=0&zoom=90`;
   }
 
   // ================= AUDIT ================= //
