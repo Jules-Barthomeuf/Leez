@@ -2578,10 +2578,6 @@
       ...(fit?.criteria || []).filter(c => c.status === 'echec').map(c => c.ecartPhrase || c.label),
       ...cards.map(c => c.titre),
     ];
-    const manque = [
-      ...(fit?.criteria || []).filter(c => c.status === 'indetermine').map(c => `${c.label} — non testable faute de donnée`),
-      ...(doc.audit?.pointsACreuser || []).map(p => p.titre),
-    ];
     const itemHTML = (t, tone) => {
       const i = t.indexOf(' : ');
       const lead = i > 0 ? t.slice(0, i + 3) : null;
@@ -2592,25 +2588,13 @@
       ${items.length ? items.map(t => itemHTML(t, tone)).join('') : '<div class="sc-item" style="color:var(--text-faint);font-style:italic;">Rien à signaler.</div>'}
       ${extra}
     </div>`;
-    const askBtn = manque.length ? '<button class="btn btn-outline" id="askPiecesBtn" style="margin-top:12px;">Demander les pièces</button>' : '';
-    const colsHTML = `<div class="synthese-cols">${colHTML('POUR', pour, 'ok')}${colHTML('CONTRE', contre, 'echec')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'manque', askBtn)}</div>`;
+    const colsHTML = `<div class="synthese-cols">${colHTML('POUR', pour, 'ok')}${colHTML('CONTRE', contre, 'echec')}</div>`;
 
     el.innerHTML = verdictHTML + bulletsHTML + gridHTML + colsHTML;
     el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
     el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.synPage), btn.dataset.synQuote)));
     el.querySelectorAll('[data-goto-tab]').forEach(btn => btn.addEventListener('click', () => document.querySelector(`[data-etab="${btn.dataset.gotoTab}"]`)?.click()));
     document.getElementById('syntheseUndoProxy')?.addEventListener('click', () => document.getElementById('editUndoBtn')?.click());
-    // "Demander les pièces" : le mail au vendeur, pré-rédigé depuis la liste
-    // réelle des manques -- copié dans le presse-papier.
-    document.getElementById('askPiecesBtn')?.addEventListener('click', async () => {
-      const nom = doc.displayName || doc.ficheIdentite?.adresse?.value || doc.filename;
-      const texte = `Bonjour,\n\nDans le cadre de notre analyse du dossier « ${nom} », pourriez-vous nous transmettre les éléments suivants :\n${manque.map(m => `- ${m}`).join('\n')}\n\nBien cordialement`;
-      try {
-        await navigator.clipboard.writeText(texte);
-        const b = document.getElementById('askPiecesBtn');
-        b.textContent = '✓ Mail copié'; setTimeout(() => { b.textContent = 'Demander les pièces'; }, 2000);
-      } catch { alert(texte); }
-    });
 
     // Compteurs d'anomalies sur les onglets.
     const badge = (name, n) => { const b = document.querySelector(`[data-badge="${name}"]`); if (b) { b.textContent = n; b.style.display = n > 0 ? '' : 'none'; } };
