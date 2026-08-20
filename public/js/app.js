@@ -2938,10 +2938,13 @@
     const srcLabel = document.getElementById('inspectorSourceLabel');
     calc.style.display = 'none'; frame.style.display = 'none'; text.style.display = 'none'; quote.style.display = 'none';
     if (ctx.page != null) {
-      srcLabel.textContent = `PAGE ${ctx.page} DU DOCUMENT SOURCE`;
+      // Pas de bandeau "PAGE N" ni de rappel de citation : le PDF zoome
+      // directement sur la phrase, il EST l'information.
+      srcLabel.style.display = 'none';
       frame.style.display = '';
-      loadSourcePage(ctx.page, ctx.quote, { frameEl: frame, textEl: text, quoteEl: quote });
+      loadSourcePage(ctx.page, ctx.quote, { frameEl: frame, textEl: text, quoteEl: null });
     } else {
+      srcLabel.style.display = 'block';
       srcLabel.textContent = 'VALEUR CALCULÉE — PAS DE PAGE SOURCE UNIQUE';
       calc.style.display = 'block';
       calc.textContent = ctx.sourceLabel || 'Calculée par le moteur déterministe à partir des champs vérifiés.';

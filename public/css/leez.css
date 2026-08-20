@@ -2231,7 +2231,7 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 
 /* ---------- Tiroir d'inspection (SOURCE | COMMENTAIRE | NOTES) ---------- */
 .inspector-drawer{
-  position:fixed;top:70px;right:18px;bottom:18px;width:440px;max-width:92vw;z-index:850;
+  position:fixed;top:70px;right:18px;bottom:18px;width:680px;max-width:94vw;z-index:850;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   box-shadow:0 16px 48px rgba(35,29,20,.18);display:none;flex-direction:column;overflow:hidden;
 }
