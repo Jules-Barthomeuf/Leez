@@ -291,6 +291,18 @@ router.post('/documents/:id/queries', asyncHandler(async (req, res) => {
   res.json({ ok: true, queries });
 }));
 
+// Suppression d'une entree du journal (identifiee par son horodatage,
+// unique par dossier a la milliseconde pres).
+router.delete('/documents/:id/queries', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  const at = typeof req.body?.at === 'string' ? req.body.at : '';
+  if (!at) return res.status(400).json({ error: 'Horodatage de la requête manquant.' });
+  const queries = (doc.queries_json || []).filter(q => q.at !== at);
+  await updateDocument(doc.id, { queries_json: queries }, req.workspaceId);
+  res.json({ ok: true, queries });
+}));
+
 // Relance le pipeline a partir de l'etape en echec (doc.failedStage),
 // jamais depuis le debut -- les etapes deja reussies restent en base
 // (pages_json, fiche_identite_json, etc. selon jusqu'ou le run precedent

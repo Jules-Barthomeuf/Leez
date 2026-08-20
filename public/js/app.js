@@ -962,18 +962,45 @@
     loadDealDocuments(doc);
   }
 
+  // Rejoue la sortie d'une requete sur le dossier DEJA ouvert : la grille
+  // pour une Analyse, la liste (deterministe) pour Points a verifier, la
+  // question pre-remplie pour une Question libre (relancer le modele reste
+  // un geste explicite).
+  function replayDealQuery(q) {
+    if (q.kind === 'analyse') { goDossierPage('extract'); return; }
+    if (q.kind === 'points') { if (currentDoc?.status === 'complete') appendDealChatPoints(); return; }
+    const input = document.getElementById('dealChatInput');
+    if (input) {
+      document.querySelector('.deal-ask')?.classList.remove('collapsed');
+      input.value = q.label;
+      input.focus();
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
   function renderDealQueries(doc) {
     const rows = document.getElementById('dealQueriesRows');
     if (!rows) return;
     const queries = (doc.queries || []).slice(0, 5);
     document.getElementById('dealQueriesSection').style.display = queries.length ? '' : 'none';
-    rows.innerHTML = queries.map(q => `
-      <div class="deal-query-row">
+    rows.innerHTML = queries.map((q, i) => `
+      <div class="deal-query-row" data-dq-idx="${i}" title="Rouvrir cette requête">
         <span class="deal-query-label">${escapeHtml(q.label)}</span>
         <span class="deal-query-kind">${QUERY_KIND_LABELS[q.kind] || 'Question'}</span>
         <span class="deal-query-by">${escapeHtml(q.by || '')}</span>
         <span class="deal-query-when">${timeAgo(q.at)}</span>
+        <button class="deal-query-delete" data-dq-del="${escapeHtml(q.at)}" title="Supprimer cette requête" aria-label="Supprimer cette requête">✕</button>
       </div>`).join('');
+    rows.querySelectorAll('[data-dq-idx]').forEach(row => row.addEventListener('click', () => replayDealQuery(queries[+row.dataset.dqIdx])));
+    rows.querySelectorAll('[data-dq-del]').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const res = await fetch(`/api/documents/${doc.id}/queries`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ at: btn.dataset.dqDel }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Suppression impossible.'); return; }
+      currentDoc.queries = (await res.json()).queries;
+      renderDealQueries(currentDoc);
+      loadSidebarQueries();
+    }));
   }
 
   // Enregistre la requete dans le journal du dossier (best effort -- un
@@ -994,14 +1021,7 @@
   // chat -- relancer un appel au modele reste un geste explicite.
   async function runRecentQuery(q) {
     await openDossier(q.docId);
-    if (q.kind === 'analyse') { goDossierPage('extract'); return; }
-    if (q.kind === 'points') { if (currentDoc?.status === 'complete') appendDealChatPoints(); return; }
-    const input = document.getElementById('dealChatInput');
-    if (input) {
-      document.querySelector('.deal-ask')?.classList.remove('collapsed');
-      input.value = q.label;
-      input.focus();
-    }
+    replayDealQuery(q);
   }
   function loadSidebarQueries() {
     fetch('/api/documents-queries/recent').then(r => r.ok ? r.json() : []).then(queries => {

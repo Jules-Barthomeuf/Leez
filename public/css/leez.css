@@ -2338,3 +2338,13 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   color:var(--text-faint);padding:0 8px;margin:18px 0 6px;
 }
 @media (max-width:900px){.sidebar-section-label{display:none;}.sidebar-queries{display:none;}}
+
+/* Requêtes récentes du dossier : rouvrables au clic, supprimables */
+.deal-query-row{grid-template-columns:1fr 140px 220px 110px 28px;cursor:pointer;}
+.deal-query-row:hover{background:var(--surface-raised);}
+.deal-query-delete{
+  all:unset;width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  color:var(--text-faint);cursor:pointer;border-radius:999px;font-size:.75rem;justify-self:end;
+}
+.deal-query-delete:hover{color:var(--pink);background:var(--pink-dim);}
+@media (max-width:900px){.deal-query-row{grid-template-columns:1fr 100px 28px;}}
