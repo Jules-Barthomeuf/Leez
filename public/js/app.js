@@ -2852,8 +2852,8 @@
     });
   }
 
-  const paneLabels = { synthese: 'SYNTHÈSE — CRITÈRES DU FONDS × BIEN', rentroll: 'ÉTAT LOCATIF', t12: "COMPTE D'EXPLOITATION — 12 MOIS GLISSANTS (T-12)", mix: 'RÉPARTITION DES SURFACES', metrics: 'INDICATEURS CLÉS & CONTEXTE' };
-  const paneHints = { synthese: '', rentroll: '', t12: '', mix: '', metrics: '' };
+  const paneLabels = { synthese: 'SYNTHÈSE — CRITÈRES DU FONDS × BIEN', rentroll: 'ÉTAT LOCATIF & RÉPARTITION DES SURFACES', t12: "COMPTE D'EXPLOITATION — 12 MOIS GLISSANTS (T-12)", metrics: 'INDICATEURS CLÉS & CONTEXTE' };
+  const paneHints = { synthese: '', rentroll: '', t12: '', metrics: '' };
   document.querySelectorAll('.extract-tabs .etab').forEach(tab => tab.addEventListener('click', () => {
     document.querySelectorAll('.extract-tabs .etab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
@@ -2868,6 +2868,8 @@
     const isSynthese = tab.dataset.etab === 'synthese';
     document.getElementById('aiSide').style.display = (isRentroll || isSynthese) ? 'none' : 'flex';
     document.getElementById('tenantInsightSide').style.display = isRentroll ? 'flex' : 'none';
+    // Synthèse pleine largeur : aucune colonne laterale reservee.
+    document.querySelector('.extract-split')?.classList.toggle('no-side', isSynthese);
     if (!isRentroll && !isSynthese) {
       setAiComment(aiPlaceholder());
       setAiMode('ia');

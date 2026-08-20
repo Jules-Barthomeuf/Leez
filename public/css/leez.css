@@ -2225,3 +2225,6 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   font-family:var(--serif);font-size:.88rem;color:var(--text);line-height:1.6;font-style:italic;
 }
 .ai-quote-page{font-family:var(--sans);font-size:.7rem;color:var(--text-muted);font-style:normal;}
+
+/* Synthèse pleine largeur : pas de colonne latérale réservée */
+.extract-split.no-side{grid-template-columns:1fr;}

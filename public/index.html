@@ -263,13 +263,12 @@
 
           <div class="extract-tabs">
             <button class="etab active" data-etab="synthese">Synthèse</button>
-            <button class="etab" data-etab="rentroll">État locatif</button>
-            <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
-            <button class="etab" data-etab="mix">Répartition des surfaces</button>
             <button class="etab" data-etab="metrics">Indicateurs &amp; contexte</button>
+            <button class="etab" data-etab="rentroll">État locatif &amp; surfaces</button>
+            <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
           </div>
 
-          <div class="extract-split">
+          <div class="extract-split no-side">
             <div class="extract-grid-side">
               <div class="extract-toolbar">
                 <span class="label" id="etabLabel">SYNTHÈSE — CRITÈRES DU FONDS × BIEN</span>
@@ -297,6 +296,11 @@
                   </tr></thead>
                   <tbody id="rrBody"></tbody>
                 </table>
+                <div class="label" style="padding:22px 20px 10px;">RÉPARTITION DES SURFACES</div>
+                <table>
+                  <thead><tr><th>Tranche de surface</th><th class="num">Lots</th><th class="num">Surface totale</th><th class="num">Loyer moyen/m²</th></tr></thead>
+                  <tbody id="mixBody"></tbody>
+                </table>
               </div>
               <div class="extract-scroll" data-pane="t12" style="display:none;">
                 <table>
@@ -304,12 +308,7 @@
                   <tbody id="t12Body"></tbody>
                 </table>
               </div>
-              <div class="extract-scroll" data-pane="mix" style="display:none;">
-                <table>
-                  <thead><tr><th>Tranche de surface</th><th class="num">Lots</th><th class="num">Surface totale</th><th class="num">Loyer moyen/m²</th></tr></thead>
-                  <tbody id="mixBody"></tbody>
-                </table>
-              </div>
+
               <div class="extract-scroll" data-pane="metrics" style="display:none;">
                 <table class="metric-table">
                   <thead><tr><th>Indicateur</th><th class="num">Valeur</th><th>Source</th><th style="text-align:center;">État</th></tr></thead>
