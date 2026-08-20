@@ -2412,3 +2412,14 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 }
 .sb-accent-pink::before{border-color:var(--pink);}
 .sb-accent-amber::before{border-color:var(--amber);}
+
+/* Lignes écart/cohérence : cartes bordées à liseré gauche coloré */
+.sb-row{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid var(--border);border-radius:var(--radius);
+  padding:14px 18px;margin-bottom:10px;
+}
+.sb-row::before{display:none;}
+.sb-accent-pink{border-left-color:var(--pink);}
+.sb-accent-amber{border-left-color:var(--amber);}
+.synthese-bullets{margin:10px 0 12px;}
