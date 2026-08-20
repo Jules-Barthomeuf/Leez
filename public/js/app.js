@@ -1597,10 +1597,16 @@
   }
   function aiCardHTML(data) {
     const color = niveauColor(data.niveau);
+    // La CITATION EXACTE d'abord (c'est elle qui fait la valeur du
+    // commentaire), puis l'eventuel texte d'analyse, puis le lien source.
+    const quoteHTML = data.quote
+      ? `<blockquote class="ai-comment-quote">« ${escapeHtml(data.quote)} »<span class="ai-quote-page"> — p.${data.page}</span></blockquote>`
+      : '';
     return `<div class="ai-comment-card">
       <div class="ai-comment-dot" style="background:${color};"></div>
       <div class="ai-comment-title">${data.title}</div>
-      <div class="ai-comment-text">${data.texte}</div>
+      ${quoteHTML}
+      ${data.texte ? `<div class="ai-comment-text">${data.texte}</div>` : ''}
       ${data.formule ? `<div class="ai-comment-formula">${data.formule}</div>` : ''}
       ${aiSourceLinkHTML(data)}
     </div>`;
@@ -1626,8 +1632,10 @@
 
   function identiteCommentData(f) {
     const has = f.field && f.field.value != null;
+    // Champ present : la citation exacte EST le commentaire (affichee par
+    // aiCardHTML), pas de phrase generique par-dessus.
     return { title: f.label, niveau: 'trace',
-      texte: has ? 'Donnée extraite du document et vérifiée automatiquement contre le texte réel de la page citée.' : "Donnée absente du document ou dont la citation n'a pas pu être vérifiée : non affichée comme un fait établi.",
+      texte: has ? '' : "Donnée absente du document ou dont la citation n'a pas pu être vérifiée : non affichée comme un fait établi.",
       page: has ? f.field.page : null, quote: has ? f.field.quote : null, sourceLabel: has ? null : 'Non vérifié' };
   }
   function t12CommentData(row) {
@@ -2419,7 +2427,63 @@
     return next.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
+  // Synthèse (premier onglet) : la grille criteres du fonds × bien --
+  // Attendu / Constaté / Verdict / Source, sans commentaire, pour voir en
+  // un coup d'oeil si ca passe ou pas. Donnees de computeMandateFit (deja
+  // calculees serveur), jamais recalculees ici.
+  function renderSynthese(doc) {
+    const el = document.getElementById('paneSynthese');
+    if (!el) return;
+    if (doc.status !== 'complete') {
+      el.innerHTML = `<div class="deal-chat-empty">${STATUS_LABELS[doc.status] || doc.status}</div>`;
+      return;
+    }
+    const fit = doc.audit?.mandateFit;
+    if (!fit || !fit.configured || fit.criteria.length === 0) {
+      el.innerHTML = `<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l'onglet Critères pour activer la synthèse. <button class="cite-link" data-go-criteria>Ouvrir les Critères →</button></div>`;
+      el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
+      return;
+    }
+    const ICON = { ok: '✓', echec: '✗', indetermine: '⊘' };
+    const rank = { echec: 0, indetermine: 1, ok: 2 };
+    const rows = [...fit.criteria].sort((a, b) => rank[a.status] - rank[b.status]);
+    el.innerHTML = `
+      ${fit.ecartPrincipal ? `<div class="analysis-ecart" style="margin-bottom:12px;"><span class="label">ÉCART PRINCIPAL</span><div>${escapeHtml(fit.ecartPrincipal.phrase || fit.ecartPrincipal.label)}</div></div>` : ''}
+      <table class="analysis-grid">
+        <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th style="text-align:center;">Verdict</th><th>Source</th></tr></thead>
+        <tbody>${rows.map(c => `<tr class="st-${c.status}">
+          <td class="crit-label">${escapeHtml(c.label)}</td>
+          <td>${escapeHtml(c.attendu || '—')}</td>
+          <td>${c.constate != null ? escapeHtml(c.constate) : '<span style="color:var(--text-faint);font-style:italic;">non trouvé</span>'}</td>
+          <td style="text-align:center;"><span class="verdict-ico v-${c.status}">${ICON[c.status]}</span></td>
+          <td>${c.page ? `<button class="cite-link" data-syn-page="${c.page}" data-syn-quote="${escapeHtml(c.quote || '')}">voir</button>` : (c.calcule ? '<span class="label">CALCULÉ</span>' : '—')}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.synPage), btn.dataset.synQuote)));
+  }
+
+  // Contexte "directement écrit" : generation automatique silencieuse (une
+  // seule tentative par dossier et par session) a l'ouverture de l'onglet
+  // Indicateurs & contexte, si la synthese n'existe pas encore.
+  const contexteAutoTried = new Set();
+  async function maybeAutoGenerateContexte() {
+    const doc = currentDoc;
+    if (!doc || doc.status !== 'complete' || doc.contexteNarratif || contexteAutoTried.has(doc.id)) return;
+    contexteAutoTried.add(doc.id);
+    const status = document.getElementById('contexteInlineStatus');
+    if (status) { status.textContent = 'RÉDACTION DU CONTEXTE EN COURS…'; status.style.display = 'block'; }
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/contexte-narratif`, { method: 'POST' });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Échec de la génération.'); }
+      await refreshCurrentDoc();
+      if (status) status.style.display = 'none';
+    } catch (err) {
+      if (status) status.textContent = `CONTEXTE INDISPONIBLE : ${escapeHtml(err.message)}`;
+    }
+  }
+
   function renderExtract(doc) {
+    renderSynthese(doc);
     const fi = doc.ficheIdentite || {};
     currentIdFields = Object.keys(FICHE_LABELS).map(key => ({ key, label: FICHE_LABELS[key], field: fi[key] }));
     document.getElementById('paneIdentite').innerHTML = `<div class="id-fields" style="padding:20px;">${
@@ -2432,6 +2496,13 @@
     document.querySelectorAll('#paneIdentite .id-field').forEach(el => el.addEventListener('click', () => {
       document.querySelectorAll('#paneIdentite .id-field').forEach(e => e.classList.remove('selected'));
       el.classList.add('selected');
+      const f = currentIdFields[+el.dataset.idx];
+      // Sur la Synthèse (panneau Commentaire IA masque), le clic ouvre
+      // directement la page source avec la citation surlignee.
+      if (document.getElementById('aiSide')?.style.display === 'none') {
+        if (f?.field?.page != null) openSourceModal(f.field.page, f.field.quote);
+        return;
+      }
       setAiCarousel(currentIdFields, +el.dataset.idx, identiteCommentData, i => document.querySelectorAll('#paneIdentite .id-field')[i]?.click());
     }));
     document.querySelectorAll('#paneIdentite .val > [data-fiche-key]').forEach(span => {
@@ -2781,8 +2852,8 @@
     });
   }
 
-  const paneLabels = { identite: 'FICHE SIGNALÉTIQUE DU BIEN', rentroll: 'ÉTAT LOCATIF', t12: "COMPTE D'EXPLOITATION — 12 MOIS GLISSANTS (T-12)", mix: 'RÉPARTITION DES SURFACES', metrics: 'INDICATEURS CLÉS', contexte: 'CONTEXTE DE LA VENTE — SYNTHÈSE IA' };
-  const paneHints = { identite: '', rentroll: '', t12: '', mix: '', metrics: '', contexte: '' };
+  const paneLabels = { synthese: 'SYNTHÈSE — CRITÈRES DU FONDS × BIEN', rentroll: 'ÉTAT LOCATIF', t12: "COMPTE D'EXPLOITATION — 12 MOIS GLISSANTS (T-12)", mix: 'RÉPARTITION DES SURFACES', metrics: 'INDICATEURS CLÉS & CONTEXTE' };
+  const paneHints = { synthese: '', rentroll: '', t12: '', mix: '', metrics: '' };
   document.querySelectorAll('.extract-tabs .etab').forEach(tab => tab.addEventListener('click', () => {
     document.querySelectorAll('.extract-tabs .etab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
@@ -2790,18 +2861,23 @@
     document.querySelector(`[data-pane="${tab.dataset.etab}"]`).style.display = 'block';
     document.getElementById('etabLabel').textContent = paneLabels[tab.dataset.etab];
     document.getElementById('etabHint').textContent = paneHints[tab.dataset.etab];
-    // État locatif : le panneau Commentaire IA/Notes partage est remplace
-    // par "AI Insight" (recherche web sur le locataire de la ligne cliquee,
-    // voir wireTenantInsight) -- jamais les deux a la fois, mais toujours
-    // exactement un des deux visible pour garder la grille a 2 colonnes.
+    // Panneau lateral : AI Insight sur l'État locatif, Commentaire IA/Notes
+    // sur T12/Surfaces/Indicateurs -- et RIEN sur la Synthèse (grille pleine
+    // largeur, l'assistant est un panneau a la demande via le bouton 💬).
     const isRentroll = tab.dataset.etab === 'rentroll';
-    document.getElementById('aiSide').style.display = isRentroll ? 'none' : 'flex';
+    const isSynthese = tab.dataset.etab === 'synthese';
+    document.getElementById('aiSide').style.display = (isRentroll || isSynthese) ? 'none' : 'flex';
     document.getElementById('tenantInsightSide').style.display = isRentroll ? 'flex' : 'none';
-    if (!isRentroll) {
+    if (!isRentroll && !isSynthese) {
       setAiComment(aiPlaceholder());
-      setAiMode(tab.dataset.etab === 'contexte' ? 'notes' : 'ia');
+      setAiMode('ia');
     }
+    // Contexte "directement écrit" : genere automatiquement (une fois) a
+    // l'ouverture de l'onglet Indicateurs & contexte s'il n'existe pas encore.
+    if (tab.dataset.etab === 'metrics') maybeAutoGenerateContexte();
   }));
+  document.getElementById('analysisBackBtn')?.addEventListener('click', () => goDossierPage('deal'));
+  document.getElementById('analysisAssistantBtn')?.addEventListener('click', openDataChatPanel);
 
   // ================= PAGE SOURCE (PDF ORIGINAL, ZOOME SUR LA CITATION) ================= //
   // Affiche directement le PDF original (iframe, visualiseur natif du

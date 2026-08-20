@@ -253,34 +253,42 @@
 
         <!-- ================= EXTRAIRE ================= -->
         <section class="view" id="view-extract">
-          <div class="view-head"><div><h1>Données extraites</h1></div></div>
+          <div class="view-head">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button class="dossier-back" id="analysisBackBtn" aria-label="Retour au dossier">←</button>
+              <h1>Analyse</h1>
+            </div>
+            <button class="btn btn-outline" id="analysisAssistantBtn">💬 Assistant</button>
+          </div>
 
           <div class="extract-tabs">
-            <button class="etab active" data-etab="identite">Fiche signalétique</button>
-            <button class="etab" data-etab="contexte">Contexte</button>
+            <button class="etab active" data-etab="synthese">Synthèse</button>
             <button class="etab" data-etab="rentroll">État locatif</button>
             <button class="etab" data-etab="t12">Compte d'exploitation — 12 mois glissants</button>
             <button class="etab" data-etab="mix">Répartition des surfaces</button>
-            <button class="etab" data-etab="metrics">Indicateurs clés</button>
+            <button class="etab" data-etab="metrics">Indicateurs &amp; contexte</button>
           </div>
 
           <div class="extract-split">
             <div class="extract-grid-side">
               <div class="extract-toolbar">
-                <span class="label" id="etabLabel">FICHE SIGNALÉTIQUE DU BIEN</span>
+                <span class="label" id="etabLabel">SYNTHÈSE — CRITÈRES DU FONDS × BIEN</span>
                 <div class="extract-toolbar-right">
                   <button class="btn btn-ghost" id="editUndoBtn" disabled>↺ Annuler la dernière modification</button>
                   <span class="label" id="etabHint">DONNÉES ISSUES DE LA DESCRIPTION DU BIEN</span>
                 </div>
               </div>
 
-              <div class="extract-scroll" data-pane="identite"><div id="paneIdentite"></div></div>
-              <div class="extract-scroll" data-pane="contexte" style="display:none;">
+              <div class="extract-scroll" data-pane="synthese">
+                <div id="paneSynthese" style="padding:20px 20px 4px;"></div>
+                <div class="label" style="padding:18px 20px 0;">FICHE DU BIEN</div>
+                <div id="paneIdentite"></div>
+              </div>
+              <div style="display:none;">
                 <div class="memo-generate-prompt" id="contexteGeneratePrompt">
                   <p style="line-height:1.75;max-width:520px;font-size:.82rem;color:var(--text-muted);text-transform:none;letter-spacing:normal;">Leez peut rédiger une synthèse en plusieurs paragraphes du contexte de la vente (motif, processus, historique de détention, profil d'acquéreur recherché), à partir du texte réel du document. Chaque paragraphe est appuyé par des citations vérifiées individuellement — cette synthèse est une lecture rédigée, pas une donnée extraite au même titre que la fiche d'identité.</p>
                   <button class="btn btn-solid" id="contexteGenerateBtn">Générer l'analyse du contexte</button>
                 </div>
-                <div id="contexteBody" style="display:none;padding:20px;"></div>
               </div>
               <div class="extract-scroll" data-pane="rentroll" style="display:none;">
                 <table class="rr-table">
@@ -307,10 +315,13 @@
                   <thead><tr><th>Indicateur</th><th class="num">Valeur</th><th>Source</th><th style="text-align:center;">État</th></tr></thead>
                   <tbody id="metricsBody"></tbody>
                 </table>
+                <div class="label" style="padding:22px 20px 0;">CONTEXTE DE LA VENTE — SYNTHÈSE RÉDIGÉE, CITATIONS VÉRIFIÉES</div>
+                <div id="contexteBody" style="display:none;padding:20px;"></div>
+                <div class="label" id="contexteInlineStatus" style="display:none;padding:14px 20px;">RÉDACTION DU CONTEXTE EN COURS…</div>
               </div>
             </div>
 
-            <div class="ai-side" id="aiSide">
+            <div class="ai-side" id="aiSide" style="display:none;">
               <div class="ai-side-head">
                 <div class="ai-mode-tabs">
                   <button type="button" class="ai-mode-tab active" data-ai-mode="ia">Commentaire IA</button>

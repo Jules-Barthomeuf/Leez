@@ -2217,3 +2217,11 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 
 /* Chip de mode actif (le menu déroulant Mode a été retiré) */
 .deal-ask-chip.active{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600;}
+
+/* Citation exacte dans le Commentaire IA */
+.ai-comment-quote{
+  margin:10px 0;padding:10px 14px;border-left:3px solid var(--trace);
+  background:var(--trace-dim);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  font-family:var(--serif);font-size:.88rem;color:var(--text);line-height:1.6;font-style:italic;
+}
+.ai-quote-page{font-family:var(--sans);font-size:.7rem;color:var(--text-muted);font-style:normal;}
