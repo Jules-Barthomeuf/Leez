@@ -1767,9 +1767,15 @@
     if (f?.edited) {
       const origine = f.quote ? ` — citation d'origine : « ${String(f.quote).replace(/"/g, '')} »` : '';
       src = `<span class="chip status-trace" title="Corrigé à la main par l'analyste${origine}">CORRIGÉ</span>`;
-    }
-    else if (has && FICHE_VENDOR_STATED.includes(key)) src = `<span class="chip conf-mid" title="Chiffre annoncé par le vendeur dans le document — non recalculé ni vérifié indépendamment par Leez">ANNONCÉ PAR LE VENDEUR · p.${f.page}</span>`;
-    else src = has ? 'p.' + f.page : '—';
+    } else if (has && f.page != null) {
+      // Comme le T12 : la CITATION EXACTE + le lien vers le document,
+      // jamais un simple numero de page.
+      const q = String(f.quote || '').trim();
+      const shortQ = q.length > 90 ? q.slice(0, 90) + '…' : q;
+      const vendor = FICHE_VENDOR_STATED.includes(key)
+        ? `<span class="chip conf-mid" title="Chiffre annoncé par le vendeur dans le document — non recalculé ni vérifié indépendamment par Leez">ANNONCÉ PAR LE VENDEUR</span> ` : '';
+      src = `${vendor}${q ? `<span class="t12-quote" title="${escapeHtml(q)}">« ${escapeHtml(shortQ)} »</span> ` : ''}<button type="button" class="cite-link" data-open-page="${f.page}" data-open-quote="${escapeHtml(q)}">Voir dans le document →</button>`;
+    } else src = '—';
     return `<div class="val ${has ? '' : 'absent'}"><span data-fiche-key="${key}">${has ? formatFicheValue(key, f.value) : 'Non vérifié / absent du document'}</span></div><div class="src">${src}</div>`;
   }
   // Source citee pour CETTE ligne d'etat locatif : champ representatif
@@ -2696,6 +2702,10 @@
         return sectionLabel + `<div class="id-field" data-idx="${i}"><span class="label">${f.label}</span>${fieldValHTML(f.field, f.key)}</div>`;
       }).join('')
     }</div>`;
+    document.querySelectorAll('#paneIdentite [data-open-page]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      openSourceModal(b.dataset.openPage, b.dataset.openQuote);
+    }));
     document.querySelectorAll('#paneIdentite .id-field').forEach(el => el.addEventListener('click', () => {
       document.querySelectorAll('#paneIdentite .id-field').forEach(e => e.classList.remove('selected'));
       el.classList.add('selected');
@@ -2857,10 +2867,16 @@
       // survol, seuil inclus). Une donnee extraite sans signal n'affiche
       // rien -- une pastille verte melangerait "extrait" et "sain".
       const etat = alerte ? `<span class="metric-alert" title="${escapeHtml(interp.texte)}">⚠</span>` : '';
-      const srcTxt = tautologie ? `${m.source} — ${currentEtatLocatif.length} locataires : 100 % par construction` : m.source;
+      let srcTxt = tautologie ? `${m.source} — ${currentEtatLocatif.length} locataires : 100 % par construction` : m.source;
+      if (m.source.includes('état locatif')) srcTxt += ' <button type="button" class="cite-link" data-goto-etab="rentroll">Voir l\u2019état locatif →</button>';
+      else if (m.source.includes("compte d'exploitation")) srcTxt += ' <button type="button" class="cite-link" data-goto-etab="t12">Voir le compte d\u2019exploitation →</button>';
       return `<tr data-idx="${i}"><td>${m.label}</td><td class="num">${m.value}</td><td class="src">${srcTxt}</td><td style="text-align:center;">${etat}</td></tr>`;
     }).join('');
-    document.getElementById('metricsBody').onclick = e => { const tr = e.target.closest('tr'); if (!tr) return; selectRow('metricsBody', tr, currentMetricRows, metricCommentData); };
+    document.getElementById('metricsBody').onclick = e => {
+      const nav = e.target.closest('[data-goto-etab]');
+      if (nav) { document.querySelector(`[data-etab="${nav.dataset.gotoEtab}"]`)?.click(); return; }
+      const tr = e.target.closest('tr'); if (!tr) return; selectRow('metricsBody', tr, currentMetricRows, metricCommentData);
+    };
 
     // Chrome de la feuille (design "sheet") : titre, lien d'export, compteurs
     // de groupes -- tous derives des donnees deja rendues ci-dessus.
