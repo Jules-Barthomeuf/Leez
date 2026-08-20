@@ -920,7 +920,16 @@
     });
     document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
     wireDealChatControls();
-    document.querySelectorAll('#dealBody [data-chip-mode]').forEach(chip => chip.addEventListener('click', () => setDealChatMode(chip.dataset.chipMode)));
+    document.querySelectorAll('#dealBody [data-chip-mode]').forEach(chip => chip.addEventListener('click', () => {
+      // Analyse = la grille des donnees extraites (onglets Fiche/Contexte/
+      // Etat locatif/T12/Surfaces/Indicateurs) -- navigation directe.
+      if (chip.dataset.chipMode === 'analyse') {
+        logDealQuery('Analyse — grille des données extraites', 'analyse');
+        goDossierPage('extract');
+        return;
+      }
+      setDealChatMode(chip.dataset.chipMode);
+    }));
     document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
     document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDealChatQuestion(); }
@@ -1285,7 +1294,7 @@
     // Le MODE selectionne dicte la forme de sortie -- jamais une detection
     // de texte. Analyse -> grille progressive ; Points -> liste priorisee ;
     // Question -> prose citee.
-    if (dealChatMode === 'analyse') { if (input) input.value = ''; setDealChatModeSilent('question'); runDealAnalysis(); return; }
+    if (dealChatMode === 'analyse') { if (input) input.value = ''; setDealChatModeSilent('question'); goDossierPage('extract'); return; }
     if (dealChatMode === 'points') {
       if (input) input.value = '';
       setDealChatModeSilent('question');
