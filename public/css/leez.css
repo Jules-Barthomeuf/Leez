@@ -2303,3 +2303,26 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .criteria-natures{display:flex;flex-direction:column;gap:8px;}
 .criteria-natures label{display:flex;gap:8px;align-items:center;font-family:var(--sans);font-size:.8rem;color:var(--text-body);cursor:pointer;}
 .criteria-natures input{accent-color:var(--text);}
+
+/* ---------- Unification du langage visuel (aligné sur le chat du dossier et le Vault) ---------- */
+/* Titres de pages : sans-serif gras, comme Vault / dossier ouvert / Analyse */
+.view-head h1{font-family:var(--sans);font-weight:700;font-size:1.45rem;}
+.ingest-hero h1{font-family:var(--sans);font-weight:700;font-size:1.5rem;}
+/* Titres de panneaux : sans semi-gras (plus de serif décoratif) */
+.panel-head h3{font-family:var(--sans);font-weight:600;font-size:.95rem;}
+.export-card h3{font-family:var(--sans);font-weight:600;font-size:.95rem;}
+/* Assistant : même carte de saisie grise et mêmes chips que le chat du dossier */
+.agent-hero-title{font-family:var(--sans);font-weight:700;font-size:1.6rem;}
+.agent-input-card{
+  background:var(--bg-soft);border:1px solid var(--border-soft);border-radius:14px;
+  transition:border-color .15s var(--ease);
+}
+.agent-input-card:focus-within{border-color:var(--border-strong);}
+.agent-input-card::before{display:none;} /* plus de liseré animé */
+.agent-quick-btn{
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);
+  color:var(--text-body);font-size:.78rem;padding:7px 14px;
+}
+.agent-quick-btn:hover{border-color:var(--text-muted);color:var(--text);transform:none;box-shadow:0 1px 4px rgba(35,29,20,.05);}
+.agent-quick-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);box-shadow:none;animation:none;}
+.agent-shell::before{display:none;} /* halo bleu décoratif retiré — hors palette */
