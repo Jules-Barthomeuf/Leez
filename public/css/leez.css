@@ -2348,3 +2348,52 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 }
 .deal-query-delete:hover{color:var(--pink);background:var(--pink-dim);}
 @media (max-width:900px){.deal-query-row{grid-template-columns:1fr 100px 28px;}}
+
+/* ---------- Synthèse : design maquette (bandeau noir, liste plate, grille plate, cartes) ---------- */
+.fund-verdict{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  background:var(--text);color:var(--bg);border-radius:var(--radius);
+  padding:14px 20px;margin-bottom:6px;font-family:var(--sans);
+}
+.fv-label{font-size:.62rem;letter-spacing:.12em;color:rgba(255,255,255,.55);}
+.fv-status{font-size:1.05rem;font-weight:700;}
+.fv-detail{font-size:.8rem;color:rgba(255,255,255,.75);}
+.fv-chip{
+  font-size:.66rem;letter-spacing:.08em;font-weight:700;color:var(--pink);
+  border:1px solid var(--pink);border-radius:999px;padding:4px 12px;
+}
+.synthese-bullets{margin:4px 0 8px;}
+.sb-row{
+  display:flex;gap:10px;align-items:baseline;
+  padding:12px 4px;border-bottom:1px solid var(--border-soft);
+  font-family:var(--sans);font-size:.84rem;color:var(--text-body);line-height:1.6;
+}
+.sb-row b{color:var(--text);}
+.sb-row .dot{flex-shrink:0;position:relative;top:-1px;}
+.sb-warn{color:var(--amber);flex-shrink:0;}
+.synthese-grid-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin:22px 0 6px;
+}
+.synthese-grid-head h2{font-family:var(--sans);font-weight:700;font-size:1.05rem;color:var(--text);margin:0;}
+.sgh-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.analysis-grid.synthese-flat{border:none;}
+.analysis-grid.synthese-flat th{
+  font-size:.66rem;letter-spacing:.09em;color:var(--text-faint);background:none;
+  border-bottom:1px solid var(--border-soft);padding:10px 10px;
+}
+.analysis-grid.synthese-flat td{border-bottom:1px solid var(--border-soft);padding:13px 10px;background:none;}
+.analysis-grid.synthese-flat tr.st-echec td{background:none;}
+.gap-bad{color:var(--pink);font-weight:700;}
+.nature-chip.eliminatoire{background:var(--pink-dim);border-color:transparent;color:var(--pink);}
+.nature-chip.negociable{background:var(--surface-raised);border-color:transparent;}
+.sc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;}
+.sc-title{font-family:var(--sans);font-size:.68rem;letter-spacing:.09em;font-weight:700;}
+.sc-title.ok{color:var(--green);}
+.sc-title.echec{color:var(--pink);}
+.sc-title.manque{color:var(--amber);}
+.sc-count{font-family:var(--sans);font-size:.72rem;color:var(--text-faint);}
+.sc-item{font-family:var(--sans);font-size:.8rem;color:var(--text-body);line-height:1.55;padding:5px 0;}
+.sc-lead.ok{color:var(--green);}
+.sc-lead.echec{color:var(--pink);}
+.sc-lead.manque{color:var(--amber);}

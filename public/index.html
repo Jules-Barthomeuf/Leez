@@ -256,9 +256,17 @@
         <!-- ================= EXTRAIRE ================= -->
         <section class="view" id="view-extract">
           <div class="view-head">
-            <div style="display:flex;align-items:center;gap:12px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
               <button class="dossier-back" id="analysisBackBtn" aria-label="Retour au dossier">←</button>
-              <h1>Analyse</h1>
+              <div>
+                <h1 id="analysisTitle">Analyse</h1>
+                <div class="dossier-open-sub" id="analysisSub"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <a class="btn btn-ghost" id="analysisExportLink" href="#" download>⬇ Exporter</a>
+              <button class="btn btn-solid" id="analysisPursueBtn">▶ Poursuivre</button>
+              <button class="btn btn-outline" id="analysisAbandonBtn">✕ Abandonner</button>
             </div>
           </div>
 
@@ -361,14 +369,7 @@
             </div>
           </div>
 
-          <!-- Barre de decision fixe : la page existe pour aboutir a un
-               GO/NO-GO -- la decision est posable ici, visible au defilement. -->
-          <div class="analysis-decision-bar" id="analysisDecisionBar">
-            <a class="btn btn-outline" id="analysisExportLink" href="#" download>⬇ Exporter (.xlsx)</a>
-            <span style="flex:1;"></span>
-            <button class="btn btn-outline" id="analysisAbandonBtn">✕ Abandonner</button>
-            <button class="btn btn-solid" id="analysisPursueBtn">▶ Poursuivre</button>
-          </div>
+
         </section>
 
         <!-- ================= AUDIT ================= -->

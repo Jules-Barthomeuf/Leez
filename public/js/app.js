@@ -2500,35 +2500,48 @@
     const fit = doc.audit?.mandateFit;
     const checks = (doc.consistencyChecks || []).filter(c => c.status && c.status !== 'indetermine');
     const anomalies = checks.filter(c => c.status === 'warning');
+    const TAB_OF_CHECK = { loyers_etat_locatif_vs_t12: ['rentroll', 't12'], surfaces_etat_locatif_vs_fiche: ['rentroll'], rendement_recalcule_vs_affiche: [], vacance_vs_t12: ['t12'] };
 
-    // 1. Verdict global en une phrase -- fonde sur la NATURE des criteres
-    // (eliminatoire vs negociable), jamais un score.
+    // 1. Bandeau noir "Verdict du fonds".
     let verdictHTML = '';
+    let elim = 0, nego = 0, inconnus = 0;
     if (fit && fit.configured && fit.criteria.length > 0) {
-      const elim = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'eliminatoire').length;
-      const nego = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'negociable').length;
-      const inconnus = fit.criteria.filter(c => c.status === 'indetermine').length;
-      let phrase, tone;
-      if (elim > 0) { phrase = `${elim} critère${elim > 1 ? 's' : ''} éliminatoire${elim > 1 ? 's' : ''} non conforme${elim > 1 ? 's' : ''}`; tone = 'var(--pink)'; }
-      else if (nego > 0) { phrase = `${nego} critère${nego > 1 ? 's' : ''} négociable${nego > 1 ? 's' : ''} non conforme${nego > 1 ? 's' : ''} — aucun éliminatoire`; tone = 'var(--amber)'; }
-      else if (inconnus > 0) { phrase = `Aucun critère non conforme — ${inconnus} non testable${inconnus > 1 ? 's' : ''} faute de donnée`; tone = 'var(--text-muted)'; }
-      else { phrase = 'Tous les critères du mandat sont conformes'; tone = 'var(--green)'; }
-      verdictHTML = `<div class="synthese-verdict" style="border-color:${tone};"><span style="color:${tone};font-weight:700;">${phrase}</span>${fit.ecartPrincipal ? ` — ${escapeHtml(fit.ecartPrincipal.phrase || '')}` : ''}</div>`;
+      elim = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'eliminatoire').length;
+      nego = fit.criteria.filter(c => c.status === 'echec' && c.nature === 'negociable').length;
+      inconnus = fit.criteria.filter(c => c.status === 'indetermine').length;
+      const total = fit.criteria.length;
+      let status, tone, detail;
+      if (elim > 0) { status = 'Non conforme'; tone = 'var(--pink)'; detail = `${elim} critère${elim > 1 ? 's' : ''} éliminatoire${elim > 1 ? 's' : ''} en échec sur ${total}`; }
+      else if (nego > 0) { status = 'À discuter'; tone = 'var(--amber)'; detail = `${nego} critère${nego > 1 ? 's' : ''} négociable${nego > 1 ? 's' : ''} en échec sur ${total} — aucun éliminatoire`; }
+      else if (inconnus > 0) { status = 'Incomplet'; tone = 'var(--amber)'; detail = `${inconnus} critère${inconnus > 1 ? 's' : ''} non testable${inconnus > 1 ? 's' : ''} faute de donnée`; }
+      else { status = 'Conforme'; tone = 'var(--green)'; detail = `${total} critère${total > 1 ? 's' : ''} conforme${total > 1 ? 's' : ''} sur ${total}`; }
+      verdictHTML = `<div class="fund-verdict">
+        <span class="fv-label">VERDICT DU FONDS</span>
+        <span class="fv-status" style="color:${tone};">${status}</span>
+        <span class="fv-detail">${detail}</span>
+        <span style="flex:1;"></span>
+        ${elim > 0 ? `<span class="fv-chip">${elim} ÉLIMINATOIRE${elim > 1 ? 'S' : ''}</span>` : ''}
+      </div>`;
     }
 
-    // 2. Controles de coherence -- croiser les onglets entre eux et
-    // signaler quand les chiffres se contredisent.
-    const TAB_OF_CHECK = { loyers_etat_locatif_vs_t12: ['rentroll', 't12'], surfaces_etat_locatif_vs_fiche: ['rentroll'], rendement_recalcule_vs_affiche: [], vacance_vs_t12: ['t12'] };
-    const coherenceHTML = checks.length === 0 ? '' : `
-      <div class="coherence-block ${anomalies.length ? 'has-anomalies' : ''}">
-        <div class="coherence-head"><span>${anomalies.length ? '⚠ CONTRÔLES DE COHÉRENCE' : '✓ CONTRÔLES DE COHÉRENCE'}</span><span class="label">${anomalies.length ? `${anomalies.length} ANOMALIE${anomalies.length > 1 ? 'S' : ''}` : `${checks.length} CONTRÔLES PASSÉS`}</span></div>
-        ${anomalies.map(c => `<div class="coherence-row">
-          <div class="coherence-text">${escapeHtml(c.label)} — attendu ${fmt(Math.round(c.expected))}, constaté ${fmt(Math.round(c.actual))}${c.deltaPct != null ? ` (écart ${fmt2(c.deltaPct)} %)` : ''}</div>
-          <div class="coherence-actions">${(TAB_OF_CHECK[c.check] || []).map(t => `<button class="cite-link" data-goto-tab="${t}">voir ${t === 'rentroll' ? "l'état locatif" : "le compte d'exploitation"} →</button>`).join('')}</div>
-        </div>`).join('')}
-      </div>`;
+    // 2. Liste plate : écart principal + anomalies de cohérence.
+    const LEAD_OF = { taille: 'Ticket hors cible.', rendement: 'Rendement sous le seuil.', typologie: 'Typologie hors mandat.', localisation: 'Hors zone cible.' };
+    const principal = fit?.ecartPrincipal ? fit.criteria.find(c => c.label === fit.ecartPrincipal.label) : null;
+    const bulletsRows = [];
+    if (fit?.ecartPrincipal) {
+      // Le lead ("Ticket hors cible.") remplace le prefixe "Ticket :" de la
+      // phrase -- jamais le meme mot deux fois de suite.
+      const phrase = String(fit.ecartPrincipal.phrase || '').replace(/^[^:]{2,40}:\s*/, '');
+      bulletsRows.push(`<div class="sb-row"><span class="dot pink"></span><div><b>${LEAD_OF[principal?.id] || 'Écart principal.'}</b> ${escapeHtml(phrase)}</div></div>`);
+    }
+    anomalies.forEach(c => {
+      const links = (TAB_OF_CHECK[c.check] || []).map(t => `<button class="cite-link" data-goto-tab="${t}">voir ${t === 'rentroll' ? "l'état locatif" : "le compte d'exploitation"} →</button>`).join(' ');
+      bulletsRows.push(`<div class="sb-row"><span class="sb-warn">⚠</span><div><b>Cohérence.</b> ${escapeHtml(c.label)} — attendu ${fmt(Math.round(c.expected))}, constaté ${fmt(Math.round(c.actual))}${c.deltaPct != null ? ` (écart ${fmt2(c.deltaPct)} %)` : ''} ${links}</div></div>`);
+    });
+    const bulletsHTML = bulletsRows.length ? `<div class="synthese-bullets">${bulletsRows.join('')}</div>` : '';
 
-    // 3. Grille des criteres enrichie (Ecart + Nature).
+    // 3. Critères du fonds × bien (grille plate) avec Annuler + provenance.
+    const undoDisabled = document.getElementById('editUndoBtn')?.disabled !== false;
     let gridHTML = '';
     if (!fit || !fit.configured || fit.criteria.length === 0) {
       gridHTML = `<div class="deal-chat-empty">Aucun critère configuré — définissez le mandat du fonds dans l'onglet Critères. <button class="cite-link" data-go-criteria>Ouvrir les Critères →</button></div>`;
@@ -2536,24 +2549,29 @@
       const ICON = { ok: '✓', echec: '✗', indetermine: '⊘' };
       const rank = { echec: 0, indetermine: 1, ok: 2 };
       const rows = [...fit.criteria].sort((a, b) => rank[a.status] - rank[b.status]);
-      gridHTML = `<table class="analysis-grid">
-        <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th class="num">Écart</th><th style="text-align:center;">Verdict</th><th>Nature</th><th>Source</th></tr></thead>
+      gridHTML = `
+      <div class="synthese-grid-head">
+        <h2>Critères du fonds × bien</h2>
+        <div class="sgh-right">
+          <button class="btn btn-ghost" id="syntheseUndoProxy" ${undoDisabled ? 'disabled' : ''}>↺ Annuler la dernière modification</button>
+          <span class="label">DONNÉES ISSUES DE LA DESCRIPTION DU BIEN</span>
+        </div>
+      </div>
+      <table class="analysis-grid synthese-flat">
+        <thead><tr><th>Critère</th><th>Attendu</th><th>Constaté</th><th class="num">Écart</th><th style="text-align:center;">Verdict</th><th>Nature</th><th style="text-align:right;">Source</th></tr></thead>
         <tbody>${rows.map(c => `<tr class="st-${c.status}">
           <td class="crit-label">${escapeHtml(c.label)}${c.methode ? ` <span class="crit-methode" title="${escapeHtml(c.methode)}">ⓘ</span>` : ''}</td>
           <td>${escapeHtml(c.attendu || '—')}</td>
           <td>${c.constate != null ? escapeHtml(c.constate) : '<span style="color:var(--text-faint);font-style:italic;">non trouvé</span>'}</td>
-          <td class="num">${c.status === 'echec' && c.gapPct != null ? fmt(Math.round(c.gapPct * 100)) + ' %' : '—'}</td>
+          <td class="num">${c.status === 'echec' && c.gapPct != null ? `<span class="gap-bad">${fmt(Math.round(c.gapPct * 100))} %</span>` : '—'}</td>
           <td style="text-align:center;"><span class="verdict-ico v-${c.status}">${ICON[c.status]}</span></td>
           <td><span class="nature-chip ${c.nature}">${c.nature === 'negociable' ? 'Négociable' : 'Éliminatoire'}</span></td>
-          <td>${c.page ? `<button class="cite-link" data-syn-page="${c.page}" data-syn-quote="${escapeHtml(c.quote || '')}">voir</button>` : (c.calcule ? `<span class="label" title="${escapeHtml(c.methode || '')}">calculé</span>` : '—')}</td>
+          <td style="text-align:right;">${c.page ? `<button class="cite-link" data-syn-page="${c.page}" data-syn-quote="${escapeHtml(c.quote || '')}">voir</button>` : (c.calcule ? `<span class="label" title="${escapeHtml(c.methode || '')}">calculé</span>` : '—')}</td>
         </tr>`).join('')}</tbody>
       </table>`;
     }
 
-    // 4. Trois colonnes : pour / contre / ce qui manque (= les points a
-    // verifier -- c'est ce bloc qui produit le mail au vendeur).
-    // Les cartes "Hors critères" (famille Critères) redisent les échecs de
-    // la grille juste au-dessus -- exclues pour ne pas compter deux fois.
+    // 4. Trois cartes : pour / contre / ce qui manque (+ Demander les pièces).
     const cards = (doc.audit?.cards || []).filter(c => (c.niveau === 'rouge' || c.niveau === 'orange') && c.famille !== 'Critères');
     const pour = (fit?.criteria || []).filter(c => c.status === 'ok').map(c => `${c.label} : ${c.constate || ''}`);
     const contre = [
@@ -2564,19 +2582,41 @@
       ...(fit?.criteria || []).filter(c => c.status === 'indetermine').map(c => `${c.label} — non testable faute de donnée`),
       ...(doc.audit?.pointsACreuser || []).map(p => p.titre),
     ];
-    const colHTML = (title, items, dot) => `<div class="synthese-col"><div class="label" style="margin-bottom:8px;">${title} (${items.length})</div>${items.length ? items.map(t => `<div class="synthese-col-item"><span class="dot ${dot}"></span>${escapeHtml(t)}</div>`).join('') : '<div class="synthese-col-item" style="color:var(--text-faint);font-style:italic;">Rien à signaler.</div>'}</div>`;
-    const colsHTML = `<div class="synthese-cols">${colHTML('CE QUI PLAIDE POUR', pour, 'green')}${colHTML('CE QUI PLAIDE CONTRE', contre, 'pink')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'amber')}</div>`;
+    const itemHTML = (t, tone) => {
+      const i = t.indexOf(' : ');
+      const lead = i > 0 ? t.slice(0, i + 3) : null;
+      return `<div class="sc-item">${lead ? `<span class="sc-lead ${tone}">${escapeHtml(lead)}</span>${escapeHtml(t.slice(i + 3))}` : escapeHtml(t)}</div>`;
+    };
+    const colHTML = (title, items, tone, extra = '') => `<div class="synthese-col">
+      <div class="sc-head"><span class="sc-title ${tone}">${title}</span><span class="sc-count">${items.length}</span></div>
+      ${items.length ? items.map(t => itemHTML(t, tone)).join('') : '<div class="sc-item" style="color:var(--text-faint);font-style:italic;">Rien à signaler.</div>'}
+      ${extra}
+    </div>`;
+    const askBtn = manque.length ? '<button class="btn btn-outline" id="askPiecesBtn" style="margin-top:12px;">Demander les pièces</button>' : '';
+    const colsHTML = `<div class="synthese-cols">${colHTML('CE QUI PLAIDE POUR', pour, 'ok')}${colHTML('CE QUI PLAIDE CONTRE', contre, 'echec')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'manque', askBtn)}</div>`;
 
-    el.innerHTML = verdictHTML + coherenceHTML + gridHTML + colsHTML;
+    el.innerHTML = verdictHTML + bulletsHTML + gridHTML + colsHTML;
     el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
     el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.synPage), btn.dataset.synQuote)));
     el.querySelectorAll('[data-goto-tab]').forEach(btn => btn.addEventListener('click', () => document.querySelector(`[data-etab="${btn.dataset.gotoTab}"]`)?.click()));
+    document.getElementById('syntheseUndoProxy')?.addEventListener('click', () => document.getElementById('editUndoBtn')?.click());
+    // "Demander les pièces" : le mail au vendeur, pré-rédigé depuis la liste
+    // réelle des manques -- copié dans le presse-papier.
+    document.getElementById('askPiecesBtn')?.addEventListener('click', async () => {
+      const nom = doc.displayName || doc.ficheIdentite?.adresse?.value || doc.filename;
+      const texte = `Bonjour,\n\nDans le cadre de notre analyse du dossier « ${nom} », pourriez-vous nous transmettre les éléments suivants :\n${manque.map(m => `- ${m}`).join('\n')}\n\nBien cordialement`;
+      try {
+        await navigator.clipboard.writeText(texte);
+        const b = document.getElementById('askPiecesBtn');
+        b.textContent = '✓ Mail copié'; setTimeout(() => { b.textContent = 'Demander les pièces'; }, 2000);
+      } catch { alert(texte); }
+    });
 
-    // Compteurs d'anomalies sur les onglets concernes.
+    // Compteurs d'anomalies sur les onglets.
     const badge = (name, n) => { const b = document.querySelector(`[data-badge="${name}"]`); if (b) { b.textContent = n; b.style.display = n > 0 ? '' : 'none'; } };
     const perTab = { rentroll: 0, t12: 0 };
     anomalies.forEach(c => (TAB_OF_CHECK[c.check] || []).forEach(t => { if (perTab[t] != null) perTab[t]++; }));
-    badge('synthese', anomalies.length + (fit?.criteria || []).filter(c => c.status === 'echec' && c.nature === 'eliminatoire').length);
+    badge('synthese', anomalies.length + elim);
     badge('rentroll', perTab.rentroll);
     badge('t12', perTab.t12);
   }
@@ -2603,9 +2643,24 @@
 
   function renderExtract(doc) {
     renderSynthese(doc);
-    // En-tete : on sait quel bien on regarde.
-    const h1 = document.querySelector('#view-extract .view-head h1');
-    if (h1) h1.textContent = `Analyse · ${doc.displayName || doc.ficheIdentite?.adresse?.value || doc.filename}`;
+    // En-tete projet : nom du bien + meta (comme la page du dossier).
+    const h1 = document.getElementById('analysisTitle');
+    if (h1) h1.textContent = doc.displayName || doc.ficheIdentite?.adresse?.value || doc.filename;
+    const sub = document.getElementById('analysisSub');
+    if (sub) {
+      const nbDocs = 1 + (doc.supportingCountCache ?? 0);
+      sub.textContent = [
+        `${nbDocs} document${nbDocs > 1 ? 's' : ''}`,
+        doc.status === 'complete' ? 'Analysé' : (STATUS_LABELS[doc.status] || doc.status),
+        doc.ficheIdentite?.typeActif?.value,
+        doc.ficheIdentite?.prixDemande?.value,
+        (doc.queries || []).length ? `${doc.queries.length} requête${doc.queries.length > 1 ? 's' : ''}` : null,
+      ].filter(Boolean).join(' · ');
+    }
+    // Barre d'outils partagee masquee sur la Synthèse (la section "Critères
+    // du fonds × bien" porte ses propres controles, cf. renderSynthese).
+    const tb = document.querySelector('.extract-toolbar');
+    if (tb) tb.style.display = document.querySelector('.extract-tabs .etab.active')?.dataset.etab === 'synthese' ? 'none' : 'flex';
     // Barre de decision fixe en bas (elements statiques, etats par dossier).
     const exp = document.getElementById('analysisExportLink');
     if (exp) exp.href = `/api/documents/${doc.id}/export/xlsx`;
@@ -3044,6 +3099,9 @@
     // Le tiroir se referme au changement d'onglet (il porte le contexte de
     // la valeur cliquee, plus valable sur un autre ecran).
     closeInspector();
+    // Barre d'outils partagee : masquee sur la Synthèse (controles propres).
+    const tbEl = document.querySelector('.extract-toolbar');
+    if (tbEl) tbEl.style.display = tab.dataset.etab === 'synthese' ? 'none' : 'flex';
     // Contexte "directement écrit" : genere automatiquement (une fois) a
     // l'ouverture de l'onglet Indicateurs s'il n'existe pas encore.
     if (tab.dataset.etab === 'metrics') maybeAutoGenerateContexte();
