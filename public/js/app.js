@@ -880,12 +880,9 @@
           </div>
         </div>
         <div class="deal-ask-chips">
-          <button class="deal-ask-chip" id="dealOpenGridBtn">\u25a6 Grille d'extraction</button>
-        </div>
-        <div class="deal-ask-chips">
-          <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/docx" download>\u2b07 Note de comit\u00e9</a>
-          <a class="deal-ask-chip" href="/api/documents/${doc.id}/export/xlsx" download>\u2b07 Excel (formules actives)</a>
-          <button class="deal-ask-chip" id="dealPresentationBtn">Pr\u00e9sentation \u2192</button>
+          <button class="deal-ask-chip" data-chip-mode="analyse">\ud83d\udccb Analyse (crit\u00e8res du fonds)</button>
+          <button class="deal-ask-chip" data-chip-mode="points">\u26a0 Points \u00e0 v\u00e9rifier</button>
+          <button class="deal-ask-chip" data-chip-mode="question">\ud83d\udcac Question libre</button>
         </div>
       </div>
 
@@ -930,9 +927,8 @@
       await applyStageChange('underwriting');
     });
     document.getElementById('dealAbandonBtn')?.addEventListener('click', () => { if (currentDoc.stage !== 'rejete') openRejectModal(); });
-    document.getElementById('dealPresentationBtn')?.addEventListener('click', () => openPresentationDeck(currentDoc));
-    document.getElementById('dealOpenGridBtn')?.addEventListener('click', () => goDossierPage('extract'));
     wireDealChatControls();
+    document.querySelectorAll('#dealBody [data-chip-mode]').forEach(chip => chip.addEventListener('click', () => setDealChatMode(chip.dataset.chipMode)));
     document.getElementById('dealChatSendBtn')?.addEventListener('click', sendDealChatQuestion);
     document.getElementById('dealChatInput')?.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendDealChatQuestion(); }
