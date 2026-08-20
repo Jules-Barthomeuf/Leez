@@ -899,7 +899,7 @@
             <tbody id="dealFilesBody">
               <tr data-open-file="/api/documents/${doc.id}/file">
                 <td class="file-name">\ud83d\udcc4 ${escapeHtml(doc.filename)}${fileNoteHTML(doc, 'om')}</td>
-                <td>${categoryBadge('om', 'Offering Memorandum')}</td>
+                <td>${categoryBadge('om', 'Dossier de commercialisation')}</td>
                 <td>Fichier</td>
                 <td>${doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('fr-FR') : '\u2014'}</td>
                 <td class="num">${fmtBytes(doc.fileSizeBytes)}</td>
@@ -987,6 +987,7 @@
   function openFileNoteModal(fileId, fileName) {
     fileNoteTarget = fileId;
     document.getElementById('fileNoteModalName').textContent = fileName || '';
+    document.getElementById('fileNameInput').value = fileName || '';
     document.getElementById('fileNoteInput').value = currentDoc?.fileNotes?.[fileId] || '';
     document.getElementById('fileNoteModal').classList.add('open');
     document.getElementById('fileNoteInput').focus();
@@ -999,12 +1000,17 @@
     if (!fileNoteTarget || !currentDoc) return;
     const res = await fetch(`/api/documents/${currentDoc.id}/file-note`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId: fileNoteTarget, note: document.getElementById('fileNoteInput').value }),
+      body: JSON.stringify({
+        fileId: fileNoteTarget,
+        note: document.getElementById('fileNoteInput').value,
+        name: document.getElementById('fileNameInput').value,
+      }),
     });
     if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Enregistrement impossible.'); return; }
-    currentDoc.fileNotes = (await res.json()).fileNotes;
     closeFileNoteModal();
-    renderDeal(currentDoc);
+    // Recharge depuis la base : le nom (OM ou annexe) et la note affiches
+    // repartent toujours de ce qui est reellement enregistre.
+    await refreshCurrentDoc();
   });
 
   function renderDealQueries(doc) {
@@ -4828,7 +4834,7 @@
     const nameInput = document.getElementById('ingestNameInput');
     if (nameInput) nameInput.value = '';
     dropzone.classList.remove('staged');
-    dropzone.querySelector('.primary').textContent = 'Offering Memorandum (OM) — glissez un PDF, ou cliquez pour parcourir';
+    dropzone.querySelector('.primary').textContent = 'Dossier de commercialisation (OM) — glissez un PDF, ou cliquez pour parcourir';
     dropzone.querySelector('.secondary').textContent = "PDF texte natif · jusqu'à 32 Mo · déclenche l'analyse automatique";
     renderSupportingCategories();
     updateIngestSubmitState();

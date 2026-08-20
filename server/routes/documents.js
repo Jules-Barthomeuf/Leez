@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const {
   createDocument, getDocument, updateDocument, deleteDocument, listDocuments, getSetting,
   createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument,
+  renameSupportingDocument,
 } = require('../db');
 const { runPipeline, resumePipeline } = require('../services/pipeline');
 const { computeMandateFit, computeAuditCards, computePointsACreuser, computeAuditSummary } = require('../services/interpretation');
@@ -109,7 +110,7 @@ const storage = multer.diskStorage({
 // metadonnees de ces fichiers.
 const uploadFilter = (req, file, cb) => {
   if (file.fieldname === 'file') {
-    if (file.mimetype !== 'application/pdf') return cb(new Error("Seuls les fichiers PDF sont acceptés pour l'Offering Memorandum."));
+    if (file.mimetype !== 'application/pdf') return cb(new Error("Seuls les fichiers PDF sont acceptés pour le dossier de commercialisation."));
     return cb(null, true);
   }
   if (!ALLOWED_SUPPORTING_MIMES.includes(file.mimetype)) return cb(new Error('Type de fichier non accepté (PDF, JPG, PNG ou WEBP).'));
@@ -305,6 +306,19 @@ router.patch('/documents/:id/file-note', asyncHandler(async (req, res) => {
   if (note) notes[fileId] = note;
   else delete notes[fileId];
   await updateDocument(doc.id, { file_notes_json: notes }, req.workspaceId);
+  // Renommage d'affichage du fichier (optionnel) : documents.filename pour
+  // l'OM, supporting_documents.filename pour une annexe -- le fichier sur
+  // disque garde son id, seul le nom montre a l'analyste change.
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim().slice(0, 200) : '';
+  if (name) {
+    if (fileId === 'om') {
+      await updateDocument(doc.id, { filename: name }, req.workspaceId);
+    } else {
+      const s = await getSupportingDocument(fileId);
+      if (!s || s.document_id !== doc.id) return res.status(404).json({ error: 'Document annexe introuvable dans ce dossier.' });
+      await renameSupportingDocument(fileId, doc.id, name);
+    }
+  }
   res.json({ ok: true, fileNotes: notes });
 }));
 

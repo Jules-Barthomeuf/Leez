@@ -67,7 +67,7 @@ const SUPPORTING_CATALOG = [
 // d'extraction. Il n'est donc PAS dans le catalogue des annexes (stockage
 // seul) mais reste affiche comme premiere case a cocher sous
 // "Commercialisation" cote frontend, avec sa propre logique.
-const OM_LABEL = 'Offering Memorandum (OM) / dossier de présentation complet';
+const OM_LABEL = 'Dossier de commercialisation (OM) / dossier de présentation complet';
 
 function isValidCategoryType(category, type) {
   const cat = SUPPORTING_CATALOG.find(c => c.id === category);

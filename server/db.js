@@ -286,6 +286,10 @@ async function getSupportingDocument(id) {
   const { rows } = await pool.query('SELECT * FROM supporting_documents WHERE id = $1', [id]);
   return rows[0] || null;
 }
+// Renommage d'affichage d'une annexe (le fichier sur disque garde son id).
+async function renameSupportingDocument(id, documentId, filename) {
+  await pool.query('UPDATE supporting_documents SET filename = $1 WHERE id = $2 AND document_id = $3', [filename, id, documentId]);
+}
 async function deleteSupportingDocument(id) {
   await pool.query('DELETE FROM supporting_documents WHERE id = $1', [id]);
 }
@@ -332,6 +336,6 @@ module.exports = {
   createAgentRun, getAgentRun, updateAgentRun, listAgentRunsForDossier, failStaleAgentRuns,
   createAgentFinding, listAgentFindingsForRun, listAgentFindingsForDossier, getAgentFinding, setFindingValidationStatus,
   getSetting, setSetting,
-  createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument,
+  createSupportingDocument, listSupportingDocuments, getSupportingDocument, deleteSupportingDocument, renameSupportingDocument,
   insertKbChunk, listKbChunks, clearKbChunks, countKbChunks, listKbSources,
 };

@@ -207,7 +207,7 @@
             <div class="ingest-section-label">Commercialisation</div>
             <div class="ingest-om-row">
               <div class="dropzone" id="dropzone">
-                <div class="primary">Offering Memorandum (OM) — glissez un PDF, ou cliquez pour parcourir</div>
+                <div class="primary">Dossier de commercialisation (OM) — glissez un PDF, ou cliquez pour parcourir</div>
                 <div class="secondary">PDF texte natif · jusqu'à 32 Mo · déclenche l'analyse automatique</div>
                 <input type="file" id="fileInput" accept="application/pdf">
               </div>
@@ -863,6 +863,9 @@
     <button class="source-modal-close" id="fileNoteModalClose" aria-label="Fermer">✕</button>
     <div class="source-modal-head"><span class="label">NOTE SUR CE DOCUMENT</span><div id="fileNoteModalName" style="font-family:var(--sans);font-weight:600;font-size:.9rem;color:var(--text);margin-top:6px;"></div></div>
     <div class="formula-modal-body">
+      <label class="label" for="fileNameInput" style="display:block;margin-bottom:6px;">NOM DU DOCUMENT</label>
+      <input type="text" id="fileNameInput" class="vault-search" style="border-radius:var(--radius);margin:0 0 14px;" maxlength="200">
+      <label class="label" for="fileNoteInput" style="display:block;margin-bottom:6px;">NOTE</label>
       <textarea id="fileNoteInput" class="notes-textarea" style="min-height:120px;" placeholder="Vos commentaires sur ce document — ex. « Rent roll à recouper avec le bail de la cellule B »…"></textarea>
       <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
         <button class="btn btn-outline" id="fileNoteCancelBtn">Annuler</button>
