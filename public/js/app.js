@@ -2593,7 +2593,7 @@
       ${extra}
     </div>`;
     const askBtn = manque.length ? '<button class="btn btn-outline" id="askPiecesBtn" style="margin-top:12px;">Demander les pièces</button>' : '';
-    const colsHTML = `<div class="synthese-cols">${colHTML('CE QUI PLAIDE POUR', pour, 'ok')}${colHTML('CE QUI PLAIDE CONTRE', contre, 'echec')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'manque', askBtn)}</div>`;
+    const colsHTML = `<div class="synthese-cols">${colHTML('POUR', pour, 'ok')}${colHTML('CONTRE', contre, 'echec')}${colHTML('CE QUI MANQUE — À DEMANDER', manque, 'manque', askBtn)}</div>`;
 
     el.innerHTML = verdictHTML + bulletsHTML + gridHTML + colsHTML;
     el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
