@@ -207,6 +207,22 @@ function countCitedFields(node, acc) {
   return acc;
 }
 
+// Les 5 requetes les plus recentes de TOUT l'espace de travail (tous
+// dossiers confondus) -- alimente la section "Requetes recentes" de la
+// sidebar. Monte AVANT /documents/:id pour ne pas etre capture par lui.
+router.get('/documents-queries/recent', asyncHandler(async (req, res) => {
+  const docs = await listDocuments(req.workspaceId);
+  const all = [];
+  for (const d of docs) {
+    const name = d.display_name || d.fiche_identite_json?.adresse?.value || d.filename;
+    for (const q of (d.queries_json || [])) {
+      all.push({ docId: d.id, docName: name, label: q.label, kind: q.kind, at: q.at, by: q.by });
+    }
+  }
+  all.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  res.json(all.slice(0, 5));
+}));
+
 router.get('/documents', asyncHandler(async (req, res) => {
   const docs = await listDocuments(req.workspaceId);
   res.json(docs.map(doc => {

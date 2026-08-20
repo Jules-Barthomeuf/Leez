@@ -982,9 +982,43 @@
     fetch(`/api/documents/${currentDoc.id}/queries`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label, kind }),
     }).then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.queries) { currentDoc.queries = d.queries; renderDealQueries(currentDoc); }
+      if (d?.queries) { currentDoc.queries = d.queries; renderDealQueries(currentDoc); loadSidebarQueries(); }
     }).catch(() => {});
   }
+
+  // ---------- Requetes recentes de la sidebar (transverses a TOUT Leez) ----------
+  // Les 5 dernieres requetes de l'espace de travail, tous dossiers
+  // confondus. Cliquer re-ouvre le dossier et remet la sortie : la grille
+  // pour une Analyse, la liste pour Points a verifier (deterministes,
+  // regenerees a l'identique) ; une Question libre est pre-remplie dans le
+  // chat -- relancer un appel au modele reste un geste explicite.
+  async function runRecentQuery(q) {
+    await openDossier(q.docId);
+    if (q.kind === 'analyse') { goDossierPage('extract'); return; }
+    if (q.kind === 'points') { if (currentDoc?.status === 'complete') appendDealChatPoints(); return; }
+    const input = document.getElementById('dealChatInput');
+    if (input) {
+      document.querySelector('.deal-ask')?.classList.remove('collapsed');
+      input.value = q.label;
+      input.focus();
+    }
+  }
+  function loadSidebarQueries() {
+    fetch('/api/documents-queries/recent').then(r => r.ok ? r.json() : []).then(queries => {
+      const el = document.getElementById('sidebarQueries');
+      if (!el) return;
+      if (!Array.isArray(queries) || queries.length === 0) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = queries.map((q, i) => `<button data-sq-idx="${i}" title="${escapeHtml(q.label)}">
+          <span class="sq-label">${escapeHtml(q.label)}</span>
+          <span class="sq-meta">${escapeHtml(q.docName || '')} · ${QUERY_KIND_LABELS[q.kind] || 'Question'} · ${timeAgo(q.at)}</span>
+        </button>`).join('');
+      el.querySelectorAll('[data-sq-idx]').forEach(btn => btn.addEventListener('click', () => runRecentQuery(queries[+btn.dataset.sqIdx])));
+    }).catch(() => {});
+  }
+  loadSidebarQueries();
 
   // Lignes annexes de la table des documents -- categorie (badge colore),
   // date et taille reelles ; clic = fichier complet dans un nouvel onglet.

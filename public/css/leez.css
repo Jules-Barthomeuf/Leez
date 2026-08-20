@@ -2326,3 +2326,15 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
 .agent-quick-btn:hover{border-color:var(--text-muted);color:var(--text);transform:none;box-shadow:0 1px 4px rgba(35,29,20,.05);}
 .agent-quick-btn.active{background:var(--text);color:var(--bg);border-color:var(--text);box-shadow:none;animation:none;}
 .agent-shell::before{display:none;} /* halo bleu décoratif retiré — hors palette */
+
+/* Icônes SVG abstraites de la sidebar */
+.sidebar-ico svg{width:15px;height:15px;display:block;}
+/* Requêtes récentes (sidebar, transverses à tous les dossiers) */
+.sidebar-queries button{padding-left:8px;}
+.sidebar-queries .sq-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);font-size:.78rem;}
+.sidebar-queries .sq-meta{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-faint);font-size:.66rem;margin-top:1px;}
+.sidebar-section-label{
+  font-family:var(--sans);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-faint);padding:0 8px;margin:18px 0 6px;
+}
+@media (max-width:900px){.sidebar-section-label{display:none;}.sidebar-queries{display:none;}}
