@@ -2214,3 +2214,6 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   color:var(--amber);background:var(--amber-dim);border:1px solid var(--amber);
   border-radius:999px;padding:2px 10px;margin-bottom:8px;
 }
+
+/* Chip de mode actif (le menu déroulant Mode a été retiré) */
+.deal-ask-chip.active{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600;}

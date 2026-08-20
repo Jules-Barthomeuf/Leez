@@ -860,14 +860,6 @@
           <div class="deal-ask-bar">
             <div class="deal-ask-controls">
               <div class="ask-select-wrap">
-                <button type="button" class="ask-select" id="dealModeBtn">Mode : Question \u2304</button>
-                <div class="ask-menu" id="dealModeMenu" style="display:none;">
-                  <button type="button" data-mode="analyse"><b>Analyse</b><span>La grille crit\u00e8res \u00d7 constat\u00e9 \u00d7 verdict</span></button>
-                  <button type="button" data-mode="points"><b>Points \u00e0 v\u00e9rifier</b><span>Bloquants, \u00e0 creuser, manquants</span></button>
-                  <button type="button" data-mode="question"><b>Question</b><span>Une r\u00e9ponse en prose, cit\u00e9e</span></button>
-                </div>
-              </div>
-              <div class="ask-select-wrap">
                 <button type="button" class="ask-select" id="dealSourcesBtn">Sources : Documents \u2304</button>
                 <div class="ask-menu ask-menu-sources" id="dealSourcesMenu" style="display:none;">
                   <label><input type="checkbox" data-source="docs" checked> Documents du dossier</label>
@@ -1041,10 +1033,15 @@
   let dealChatMode = 'question';
   let dealChatSources = { docs: true, web: false, memoire: false };
 
+  // Le mode courant se lit sur les chips eux-memes (chip actif surligne) --
+  // plus de menu deroulant Mode.
+  function syncModeChips() {
+    document.querySelectorAll('#dealBody [data-chip-mode]').forEach(chip =>
+      chip.classList.toggle('active', chip.dataset.chipMode === dealChatMode));
+  }
   function setDealChatMode(mode) {
     dealChatMode = mode;
-    const btn = document.getElementById('dealModeBtn');
-    if (btn) btn.textContent = `Mode : ${DEAL_MODE_LABELS[mode]} \u2304`;
+    syncModeChips();
     const input = document.getElementById('dealChatInput');
     if (!input) return;
     // Le texte APPARAIT en entier, d'un coup -- jamais une animation de frappe.
@@ -1058,8 +1055,7 @@
   // devient une question libre, jamais silencieusement remplace).
   function setDealChatModeSilent(mode) {
     dealChatMode = mode;
-    const btn = document.getElementById('dealModeBtn');
-    if (btn) btn.textContent = `Mode : ${DEAL_MODE_LABELS[mode]} ⌄`;
+    syncModeChips();
   }
   document.addEventListener('input', e => {
     if (e.target?.id === 'dealChatInput' && e.isTrusted && dealChatMode !== 'question') setDealChatModeSilent('question');
@@ -1075,24 +1071,19 @@
     btn.textContent = `Sources : ${parts.length ? parts.join(' + ') : 'aucune'} \u2304`;
   }
   function wireDealChatControls() {
-    const modeBtn = document.getElementById('dealModeBtn');
-    const modeMenu = document.getElementById('dealModeMenu');
     const srcBtn = document.getElementById('dealSourcesBtn');
     const srcMenu = document.getElementById('dealSourcesMenu');
-    if (!modeBtn) return;
-    const closeMenus = () => { modeMenu.style.display = 'none'; srcMenu.style.display = 'none'; };
-    modeBtn.addEventListener('click', e => { e.stopPropagation(); srcMenu.style.display = 'none'; modeMenu.style.display = modeMenu.style.display === 'none' ? '' : 'none'; });
-    srcBtn.addEventListener('click', e => { e.stopPropagation(); modeMenu.style.display = 'none'; srcMenu.style.display = srcMenu.style.display === 'none' ? '' : 'none'; });
+    if (!srcBtn) return;
+    const closeMenus = () => { srcMenu.style.display = 'none'; };
+    srcBtn.addEventListener('click', e => { e.stopPropagation(); srcMenu.style.display = srcMenu.style.display === 'none' ? '' : 'none'; });
     document.addEventListener('click', closeMenus);
-    modeMenu.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { setDealChatMode(b.dataset.mode); closeMenus(); }));
     srcMenu.addEventListener('click', e => e.stopPropagation());
     srcMenu.querySelectorAll('[data-source]').forEach(cb => {
       cb.checked = dealChatSources[cb.dataset.source];
       cb.addEventListener('change', () => { dealChatSources[cb.dataset.source] = cb.checked; updateDealSourcesLabel(); });
     });
     // Restaure l'etat courant (mode/sources) apres un re-rendu du dossier.
-    const btnLabel = document.getElementById('dealModeBtn');
-    if (btnLabel) btnLabel.textContent = `Mode : ${DEAL_MODE_LABELS[dealChatMode]} \u2304`;
+    syncModeChips();
     updateDealSourcesLabel();
   }
 
