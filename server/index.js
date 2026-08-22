@@ -38,6 +38,11 @@ async function main() {
     await ensureLocalPostgres();
   }
 
+  // Migrations appliquees avant tout acces a la base : couvre le cas d'un
+  // service sans commande de pre-deploiement configuree (voir
+  // runMigrations.js). No-op si tout est deja a jour.
+  await require('./runMigrations').runPendingMigrations();
+
   const sessionMiddleware = require('./auth/session');
   const { requireAuth, requireWorkspace } = require('./auth/middleware');
   const authRouter = require('./routes/auth');

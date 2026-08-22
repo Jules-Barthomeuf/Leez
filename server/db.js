@@ -327,7 +327,7 @@ async function countKbChunks() {
 }
 
 module.exports = {
-  pool,
+  pool, needsSsl,
   findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
   getUserByGoogleId, linkGoogleId,
   listAllWorkspaces, listAllUsers, assignUserWorkspace,
