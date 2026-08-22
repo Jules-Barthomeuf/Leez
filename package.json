@@ -16,7 +16,8 @@
     "kb:ingest": "node server/scripts/ingest-knowledge-base.js",
     "migrate": "node-pg-migrate --migrations-dir server/migrations",
     "db:info": "node server/scripts/db-info.js",
-    "set:password": "node server/scripts/set-password.js"
+    "set:password": "node server/scripts/set-password.js",
+    "doctor": "node server/scripts/doctor.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
