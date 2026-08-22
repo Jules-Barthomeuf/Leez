@@ -625,7 +625,7 @@
     document.querySelectorAll('#vaultTabs .vault-tab').forEach(t => t.classList.toggle('active', t === tab));
     applyPipelineFilter();
   }));
-  // Tuile "Mémoire du fonds" du Vault -- navigation simple.
+  // Tuile "Mémoire du fond" du Vault -- navigation simple.
   document.querySelectorAll('[data-go-view]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.goView)));
 
 
