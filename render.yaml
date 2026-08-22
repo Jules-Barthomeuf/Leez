@@ -47,6 +47,13 @@ services:
       # auto-inscrits). Changez la valeur ici si necessaire.
       - key: SUPER_ADMIN_EMAIL
         value: jules.btmf@gmail.com
+      # Mot de passe initial du compte SUPER_ADMIN_EMAIL : le serveur cree ce
+      # compte au demarrage s'il n'existe pas encore (plus besoin de passer
+      # par le Shell apres un deploiement). Si le compte existe deja, cette
+      # variable est ignoree -- un mot de passe change depuis l'app n'est
+      # JAMAIS ecrase. A saisir manuellement dans le dashboard.
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
       - key: UPLOAD_DIR
         value: /var/data/uploads
       # Secrets saisis manuellement dans le dashboard Render après la

@@ -107,6 +107,12 @@ async function main() {
     res.status(500).json({ error: err.message || 'Erreur serveur.' });
   });
 
+  // Compte administrateur cree automatiquement s'il n'existe pas encore
+  // (voir bootstrapAdmin.js) -- evite d'avoir a repasser par le Shell apres
+  // chaque deploiement. No-op si le compte existe deja ou si
+  // BOOTSTRAP_ADMIN_PASSWORD n'est pas definie.
+  await require('./bootstrapAdmin').bootstrapAdmin();
+
   app.listen(PORT, () => {
     console.log(`Leez — serveur local sur http://localhost:${PORT}`);
   });
