@@ -293,6 +293,16 @@ router.post('/documents/:id/queries', asyncHandler(async (req, res) => {
   res.json({ ok: true, queries });
 }));
 
+// Renommage du PROJET (nom d'affichage choisi par l'analyste, cf. import).
+router.patch('/documents/:id/display-name', asyncHandler(async (req, res) => {
+  const doc = await getDocument(req.params.id, req.workspaceId);
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim().slice(0, 120) : '';
+  if (!displayName) return res.status(400).json({ error: 'Le nom du projet ne peut pas être vide.' });
+  await updateDocument(doc.id, { display_name: displayName }, req.workspaceId);
+  res.json({ ok: true, displayName });
+}));
+
 // Note libre de l'analyste sur UN FICHIER du dossier ('om' pour le
 // memorandum, l'id de l'annexe sinon) -- affichee sous le nom du fichier
 // dans la table Documents du dossier. Note vide = suppression.

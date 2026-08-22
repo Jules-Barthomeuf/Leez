@@ -831,7 +831,7 @@
       <div class="dossier-open-head">
         <button class="dossier-back" id="dealBackBtn" aria-label="Retour au Vault">\u2190</button>
         <div class="dossier-open-title">
-          <h1>${escapeHtml(name)}</h1>
+          <h1 id="dealTitle">${escapeHtml(name)} <button class="title-edit" id="dealRenameBtn" title="Renommer le projet" aria-label="Renommer le projet">\u270e</button></h1>
           <div class="dossier-open-sub">${subParts.map(escapeHtml).join(' \u00b7 ')}</div>
         </div>
         <div class="dossier-open-actions">
@@ -914,6 +914,33 @@
 
     // ---------- listeners ----------
     document.getElementById('dealBackBtn')?.addEventListener('click', () => showView('dossiers'));
+    // Renommage du projet : le titre devient un champ, Entree enregistre,
+    // Echap annule -- l'affichage repart toujours de la base.
+    document.getElementById('dealRenameBtn')?.addEventListener('click', () => {
+      const h1 = document.getElementById('dealTitle');
+      const current = doc.displayName || name;
+      h1.innerHTML = `<input type="text" id="dealRenameInput" class="title-edit-input" maxlength="120" value="${escapeHtml(current)}">`;
+      const input = document.getElementById('dealRenameInput');
+      input.focus(); input.select();
+      let done = false;
+      const finish = async (save) => {
+        if (done) return; done = true;
+        const value = input.value.trim();
+        if (save && value && value !== current) {
+          const res = await fetch(`/api/documents/${doc.id}/display-name`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: value }),
+          });
+          if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error || 'Renommage impossible.'); }
+          await refreshCurrentDoc();
+          fetchDocuments().then(docs => renderSidebarRecents(docs.filter(d => d.stage !== 'rejete'))).catch(() => {});
+          loadSidebarQueries();
+        } else {
+          renderDeal(currentDoc);
+        }
+      };
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
+      input.addEventListener('blur', () => finish(true));
+    });
     document.querySelectorAll('#dealBody [data-go]').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.go)));
     document.getElementById('dealPursueBtn')?.addEventListener('click', async () => {
       if (doc.stage === 'underwriting' || doc.stage === 'comite') return;
