@@ -45,7 +45,25 @@
           </div>
         </div>
         <select data-user-id="${u.id}">${workspaceOptions(workspaces, u.workspaceId)}</select>
+        <button type="button" class="btn btn-ghost" data-reset-id="${u.id}" data-reset-email="${escapeHtml(u.email)}">Réinitialiser le mot de passe</button>
       </div>`).join('');
+    // Reinitialisation d'un mot de passe oublie, sans passer par un shell.
+    list.querySelectorAll('[data-reset-id]').forEach(btn => btn.addEventListener('click', async () => {
+      const pwd = prompt(`Nouveau mot de passe pour ${btn.dataset.resetEmail} (8 caractères minimum) :`);
+      if (pwd === null) return;
+      if (pwd.length < 8) { showFeedback(feedback, 'Le mot de passe doit faire au moins 8 caractères.', false); return; }
+      btn.disabled = true;
+      try {
+        await fetchJson(`/api/admin/users/${btn.dataset.resetId}/password`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd }),
+        });
+        showFeedback(feedback, `Mot de passe réinitialisé pour ${btn.dataset.resetEmail}.`, true);
+      } catch (err) {
+        showFeedback(feedback, err.message, false);
+      }
+      btn.disabled = false;
+    }));
     list.querySelectorAll('select[data-user-id]').forEach(sel => {
       sel.addEventListener('change', async () => {
         const workspaceId = sel.value;

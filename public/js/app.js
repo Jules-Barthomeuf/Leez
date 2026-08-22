@@ -34,12 +34,35 @@
       location.href = '/login.html';
     });
     if (me.isSuperAdmin) {
+      // L'administrateur ne peut pas s'assigner lui-meme par la voie
+      // normale (personne au-dessus de lui) : un clic suffit ici.
+      const selfBtn = document.createElement('button');
+      selfBtn.type = 'button';
+      selfBtn.className = 'btn btn-solid login-submit';
+      selfBtn.textContent = 'Créer mon espace de travail et continuer';
+      selfBtn.style.marginBottom = '10px';
+      selfBtn.addEventListener('click', async () => {
+        selfBtn.disabled = true; selfBtn.textContent = 'Création…';
+        const res = await fetch('/api/admin/self-workspace', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          alert(d.error || 'Création impossible.');
+          selfBtn.disabled = false; selfBtn.textContent = 'Créer mon espace de travail et continuer';
+          return;
+        }
+        location.reload();
+      });
       const adminLink = document.createElement('a');
       adminLink.href = '/admin.html';
-      adminLink.className = 'btn btn-solid login-submit';
+      adminLink.className = 'btn btn-outline login-submit';
       adminLink.textContent = 'Aller au panneau d\'administration';
       adminLink.style.marginBottom = '10px';
-      screen.querySelector('.login-card').insertBefore(adminLink, document.getElementById('pendingLogoutBtn'));
+      const card = screen.querySelector('.login-card');
+      const logoutBtn = document.getElementById('pendingLogoutBtn');
+      card.insertBefore(selfBtn, logoutBtn);
+      card.insertBefore(adminLink, logoutBtn);
     }
     // /auth/me resynchronise workspaceId depuis la base a chaque appel (voir
     // routes/auth.js) -- un simple sondage suffit donc a detecter qu'un
@@ -508,9 +531,17 @@
   applyRouteFromHash();
 
   // ================= DONNÉES ================= //
+  // Toujours un TABLEAU : une reponse d'erreur (403 compte sans espace de
+  // travail, 500...) est un objet -- la renvoyer telle quelle faisait
+  // planter tous les appelants sur .filter/.map au chargement de la page.
   async function fetchDocuments() {
-    const r = await fetch('/api/documents');
-    return r.json();
+    try {
+      const r = await fetch('/api/documents');
+      const d = await r.json();
+      return Array.isArray(d) ? d : [];
+    } catch {
+      return [];
+    }
   }
   async function fetchDocument(id) {
     const r = await fetch(`/api/documents/${id}`);

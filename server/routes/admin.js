@@ -5,7 +5,9 @@
 // workspace, contrairement a tout le reste de l'API -- c'est le seul
 // endroit ou une vue transverse a tous les fonds est legitime.
 const express = require('express');
-const { listAllWorkspaces, listAllUsers, createWorkspace, assignUserWorkspace } = require('../db');
+const { listAllWorkspaces, listAllUsers, createWorkspace, assignUserWorkspace,
+  findOrCreateWorkspace, getUserById, updateUserPassword } = require('../db');
+const { hashPassword } = require('../auth/passwords');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { requireSuperAdmin } = require('../auth/middleware');
 
@@ -40,6 +42,30 @@ router.get('/admin/users', asyncHandler(async (req, res) => {
     createdAt: u.created_at,
     lastLoginAt: u.last_login_at,
   })));
+}));
+
+// Reinitialisation du mot de passe d'un compte par l'administrateur --
+// evite d'avoir a passer par un shell serveur quand quelqu'un a oublie le
+// sien. Le nouveau mot de passe n'est jamais journalise.
+router.patch('/admin/users/:id/password', asyncHandler(async (req, res) => {
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (password.length < 8) return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+  const user = await getUserById(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Compte introuvable.' });
+  await updateUserPassword(user.id, await hashPassword(password));
+  res.json({ ok: true, email: user.email });
+}));
+
+// L'administrateur de la plateforme se rattache lui-meme a un espace de
+// travail en un clic (ecran "En attente d'assignation") : personne d'autre
+// ne peut le faire pour lui, c'est le seul cas ou l'attente serait sans
+// issue. Reutilise un espace existant du meme nom plutot que d'en empiler.
+router.post('/admin/self-workspace', asyncHandler(async (req, res) => {
+  const name = typeof req.body?.name === 'string' && req.body.name.trim() ? req.body.name.trim() : 'Espace par défaut';
+  const workspaceId = await findOrCreateWorkspace(name);
+  await assignUserWorkspace(req.userId, workspaceId);
+  req.session.workspaceId = workspaceId;
+  res.json({ ok: true, workspaceId, name });
 }));
 
 router.patch('/admin/users/:id/workspace', asyncHandler(async (req, res) => {
