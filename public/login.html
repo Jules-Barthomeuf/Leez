@@ -12,8 +12,15 @@
 <div class="login-shell">
   <div class="login-card">
     <a class="login-logo" href="/">Leez</a>
-    <h1>Connexion</h1>
-    <p class="login-sub">Accédez à l'espace de travail de votre fonds.</p>
+    <h1 id="loginTitle">Connexion</h1>
+    <p class="login-sub" id="loginSub">Accédez à l'espace de travail de votre fonds.</p>
+
+    <!-- Première installation : affiché uniquement quand la base ne
+         contient encore aucun compte (voir /api/auth/setup-status). -->
+    <div class="login-setup" id="loginSetupBanner" style="display:none;">
+      Cette instance ne contient encore aucun compte. Choisissez un mot de passe
+      pour créer le compte administrateur et accéder à Leez.
+    </div>
 
     <form id="loginForm" novalidate>
       <label for="loginEmail">Email</label>

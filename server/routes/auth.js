@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser } = require('../db');
+const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser, listAllUsers, findOrCreateWorkspace } = require('../db');
 const { verifyPassword, hashPassword } = require('../auth/passwords');
 const google = require('../auth/google');
 const { asyncHandler } = require('../utils/asyncHandler');
@@ -25,6 +25,52 @@ function establishSession(req, res, user, method, onDone) {
     onDone(null);
   });
 }
+
+// ---------- première installation ----------
+// Une base fraîchement branchée n'a aucun compte : sans ce chemin, personne
+// ne peut entrer sans passer par un shell serveur. La page de connexion
+// interroge cet état et propose alors de créer le compte administrateur.
+// Route publique (montée avant requireAuth) mais SANS risque d'ouverture :
+// elle ne repond `available: true` que si la table users est VIDE, et la
+// creation n'accepte que l'email SUPER_ADMIN_EMAIL quand il est configure.
+router.get('/auth/setup-status', asyncHandler(async (req, res) => {
+  const users = await listAllUsers();
+  res.json({
+    available: users.length === 0,
+    // Pre-remplit le formulaire cote client -- ce n'est pas un secret
+    // (deja present dans render.yaml et l'ecran d'administration).
+    expectedEmail: users.length === 0 ? (process.env.SUPER_ADMIN_EMAIL || '').trim() || null : null,
+  });
+}));
+
+router.post('/auth/first-run', asyncHandler(async (req, res) => {
+  const existing = await listAllUsers();
+  // Verrou principal : des qu'un compte existe, cette route est fermee
+  // definitivement -- elle ne peut jamais servir a en creer un second.
+  if (existing.length > 0) return res.status(409).json({ error: 'Un compte existe déjà — utilisez la connexion normale.' });
+
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
+
+  // Second verrou : si un administrateur est designe par configuration,
+  // lui seul peut revendiquer ce premier compte -- une base vide exposee
+  // publiquement ne peut donc pas etre prise par un inconnu.
+  const admin = (process.env.SUPER_ADMIN_EMAIL || '').trim();
+  if (admin && email.toLowerCase() !== admin.toLowerCase()) {
+    return res.status(403).json({ error: `Seul ${admin} peut créer le premier compte de cette instance.` });
+  }
+
+  const id = uuidv4();
+  const workspaceId = await findOrCreateWorkspace(process.env.BOOTSTRAP_WORKSPACE || 'Espace par défaut');
+  await createUser({ id, workspaceId, email, passwordHash: await hashPassword(password) });
+  const user = await getUserById(id);
+  establishSession(req, res, user, 'first-run', (err) => {
+    if (err) return res.status(500).json({ error: 'Session non créée.' });
+    res.status(201).json({ email: user.email, workspaceId });
+  });
+}));
 
 router.post('/auth/login', asyncHandler(async (req, res) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';

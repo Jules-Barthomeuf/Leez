@@ -53,3 +53,12 @@
   margin:24px 0 0;font-size:.78rem;color:var(--text-faint);text-align:center;
 }
 .login-footnote a{color:var(--trace);text-decoration:underline;text-underline-offset:2px;}
+
+/* Bandeau de première installation (base sans aucun compte) */
+.login-setup{
+  background:var(--amber-dim, rgba(176,129,42,.12));
+  border:1px solid var(--amber, #b0812a);
+  border-radius:var(--radius, 10px);
+  padding:12px 16px;margin-bottom:18px;
+  font-family:var(--sans);font-size:.82rem;line-height:1.55;color:var(--text, #211e19);
+}

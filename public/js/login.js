@@ -34,6 +34,23 @@
   const errorEl = document.getElementById('loginError');
   const submitBtn = document.getElementById('loginSubmit');
 
+  // Base sans aucun compte (premiere installation, ou base fraichement
+  // branchee) : plutot qu'un "mot de passe incorrect" incomprehensible,
+  // la page propose de creer le compte administrateur. Le serveur ferme
+  // cette voie des qu'un compte existe.
+  let setupMode = false;
+  fetch('/api/auth/setup-status').then(r => r.json()).then(s => {
+    if (!s.available) return;
+    setupMode = true;
+    document.getElementById('loginTitle').textContent = 'Première installation';
+    document.getElementById('loginSub').style.display = 'none';
+    document.getElementById('loginSetupBanner').style.display = 'block';
+    submitBtn.textContent = 'Créer le compte et continuer';
+    const emailInput = document.getElementById('loginEmail');
+    if (s.expectedEmail) { emailInput.value = s.expectedEmail; emailInput.readOnly = true; }
+    document.getElementById('loginPassword').setAttribute('autocomplete', 'new-password');
+  }).catch(() => {});
+
   document.querySelectorAll('.password-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const input = document.getElementById(btn.dataset.togglePassword);
@@ -52,7 +69,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Connexion…';
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(setupMode ? '/api/auth/first-run' : '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
