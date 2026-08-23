@@ -67,6 +67,21 @@ const IN = s => console.log('  [info]     ' + s);
     else IN(`${key} absente (optionnelle) — ${role}`);
   }
 
+  // --- 2 bis. Fournisseur d'extraction ---
+  console.log('\n2 bis. EXTRACTION DES DOCUMENTS');
+  const provider = (process.env.EXTRACTION_PROVIDER || 'anthropic').trim().toLowerCase();
+  IN('Fournisseur : ' + provider + (process.env.EXTRACTION_PROVIDER ? '' : ' (par défaut)'));
+  if (provider === 'gemini') {
+    if (process.env.GEMINI_API_KEY) OK('GEMINI_API_KEY définie — les imports n\'utilisent PAS les crédits Anthropic');
+    else { KO('GEMINI_API_KEY absente — tous les imports échoueront'); problemes++; }
+    IN('Modèle : ' + (process.env.GEMINI_MODEL || 'gemini-3.6-flash (défaut)'));
+    IN('Palier gratuit Google : ~20 requêtes/jour, un import en consomme 3.');
+  } else {
+    if (process.env.ANTHROPIC_API_KEY) OK('Extraction via Anthropic (consomme des crédits)');
+    else { KO('ANTHROPIC_API_KEY absente — tous les imports échoueront'); problemes++; }
+    IN("Pour ne pas consommer de crédits : EXTRACTION_PROVIDER=gemini + GEMINI_API_KEY.");
+  }
+
   // --- 3. Stockage des fichiers ---
   console.log('\n3. STOCKAGE DES FICHIERS IMPORTÉS');
   const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads');

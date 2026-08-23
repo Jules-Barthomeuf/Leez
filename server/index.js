@@ -112,6 +112,12 @@ async function main() {
     res.status(500).json({ error: err.message || 'Erreur serveur.' });
   });
 
+  // Extraction Gemini demandee sans cle : le dire au demarrage plutot que
+  // de laisser chaque import echouer un par un avec une erreur obscure.
+  if ((process.env.EXTRACTION_PROVIDER || '').trim().toLowerCase() === 'gemini' && !process.env.GEMINI_API_KEY) {
+    console.warn('[extraction] EXTRACTION_PROVIDER=gemini mais GEMINI_API_KEY est absente — les imports échoueront.');
+  }
+
   // Compte administrateur cree automatiquement s'il n'existe pas encore
   // (voir bootstrapAdmin.js) -- evite d'avoir a repasser par le Shell apres
   // chaque deploiement. No-op si le compte existe deja ou si
