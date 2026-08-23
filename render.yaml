@@ -73,6 +73,17 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL_WEB
         sync: false
+      # Fournisseur d'extraction : 'anthropic' (defaut) ou 'gemini'.
+      # 'gemini' utilise l'API Google (palier gratuit) au lieu des credits
+      # Anthropic pour l'extraction des documents -- le reste (verification
+      # par citation, calculs deterministes) est inchange. Necessite
+      # GEMINI_API_KEY, et GEMINI_MODEL (defaut gemini-3.6-flash).
+      - key: EXTRACTION_PROVIDER
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
       - key: VOYAGE_API_KEY
         sync: false
       # PostHog est optionnel -- server/services/analytics.js et le

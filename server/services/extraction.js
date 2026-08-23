@@ -266,7 +266,16 @@ function pdfDocumentBlock(pdfBase64) {
 // point de passage unique de toutes les extractions (extractFicheEtLocatif,
 // extractT12, extractSignaux, extractContexteNarratif, extractVendorClaims),
 // donc ce seul wrapper couvre l'ensemble du pipeline.
+// Fournisseur d'extraction : 'anthropic' (defaut) ou 'gemini'. Le reste du
+// pipeline (verification par citation, calculs deterministes) est identique
+// dans les deux cas -- seul l'appel au modele change.
+const EXTRACTION_PROVIDER = (process.env.EXTRACTION_PROVIDER || 'anthropic').trim().toLowerCase();
+
 async function runExtraction({ pdfBase64, schema, systemPrompt, userText, maxTokens }) {
+  if (EXTRACTION_PROVIDER === 'gemini') {
+    const { runExtractionGemini } = require('./geminiExtraction');
+    return withRetry(() => runExtractionGemini({ pdfBase64, schema, systemPrompt, userText, maxTokens }));
+  }
   const message = await withRetry(async () => {
     const stream = client.messages.stream({
       model: MODEL,
