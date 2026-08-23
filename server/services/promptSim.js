@@ -16,7 +16,8 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { CHAT_MODEL } = require('./models');
+const MODEL = CHAT_MODEL;
 
 // Memes cles que FIELD dans public/js/simulator.js -- tenues manuellement en
 // synchronisation (pas de partage de module cote client/serveur dans ce

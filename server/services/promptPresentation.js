@@ -16,7 +16,8 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { CHAT_MODEL } = require('./models');
+const MODEL = CHAT_MODEL;
 
 // Memes 9 diapositives, dans le meme ordre, que buildDeckHTML cote client
 // (public/js/app.js) -- tenues manuellement en synchronisation.

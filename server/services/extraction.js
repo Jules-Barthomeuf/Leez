@@ -28,7 +28,8 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { withRetry } = require('./apiRetry');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { EXTRACTION_MODEL } = require('./models');
+const MODEL = EXTRACTION_MODEL;
 
 const citedField = {
   type: 'object',

@@ -60,6 +60,19 @@ services:
       # création du service (jamais commités) :
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Choix des modeles (voir server/services/models.js). Non definies =
+      # claude-opus-5 partout, comportement historique. Pour reduire la
+      # facture : claude-haiku-4-5 (5x moins cher en entree que Opus) sur
+      # l'extraction, qui envoie le PDF a chaque appel et represente
+      # l'essentiel du cout. Le moteur de verification par citation reste
+      # actif : un modele moins performant produit des champs "non verifie",
+      # jamais des valeurs fausses affichees comme des faits.
+      - key: ANTHROPIC_MODEL_EXTRACTION
+        sync: false
+      - key: ANTHROPIC_MODEL_CHAT
+        sync: false
+      - key: ANTHROPIC_MODEL_WEB
+        sync: false
       - key: VOYAGE_API_KEY
         sync: false
       # PostHog est optionnel -- server/services/analytics.js et le

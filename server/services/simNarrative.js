@@ -6,7 +6,8 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { CHAT_MODEL } = require('./models');
+const MODEL = CHAT_MODEL;
 
 const narrativeSchema = {
   type: 'object',

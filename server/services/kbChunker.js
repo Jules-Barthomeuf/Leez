@@ -15,7 +15,8 @@ const { extractPages } = require('./pdfText');
 const { locateQuote } = require('./verification');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { EXTRACTION_MODEL } = require('./models');
+const MODEL = EXTRACTION_MODEL;
 
 const MIN_CHUNK_CHARS = 30;   // en dessous : ancrage quasi certainement aberrant
 const MAX_CHUNK_CHARS = 6000; // au dessus : les deux ancres se sont probablement mal localisees

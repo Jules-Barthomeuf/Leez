@@ -16,7 +16,8 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { classifySourceReliability } = require('./sourceReliability');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { WEB_MODEL } = require('./models');
+const MODEL = WEB_MODEL;
 
 const MAX_SOURCES = 5;
 

@@ -17,7 +17,8 @@ const { search } = require('./kbSearch');
 const { computeMandateFit } = require('./interpretation');
 
 const client = new Anthropic();
-const MODEL = 'claude-opus-5';
+const { CHAT_MODEL } = require('./models');
+const MODEL = CHAT_MODEL;
 
 const answerSchema = {
   type: 'object',
