@@ -2697,7 +2697,7 @@
 
     el.innerHTML = verdictHTML + bulletsHTML + gridHTML + colsHTML;
     el.querySelector('[data-go-criteria]')?.addEventListener('click', () => showView('settings'));
-    el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openSourceModal(Number(btn.dataset.synPage), btn.dataset.synQuote)));
+    el.querySelectorAll('[data-syn-page]').forEach(btn => btn.addEventListener('click', () => openInspector({ page: Number(btn.dataset.synPage), quote: btn.dataset.synQuote }, 'source')));
     el.querySelectorAll('[data-goto-tab]').forEach(btn => btn.addEventListener('click', () => document.querySelector(`[data-etab="${btn.dataset.gotoTab}"]`)?.click()));
     document.getElementById('syntheseUndoProxy')?.addEventListener('click', () => document.getElementById('editUndoBtn')?.click());
 
@@ -2768,7 +2768,7 @@
     }</div>`;
     document.querySelectorAll('#paneIdentite [data-open-page]').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
-      openSourceModal(b.dataset.openPage, b.dataset.openQuote);
+      openInspector({ page: Number(b.dataset.openPage), quote: b.dataset.openQuote }, 'source');
     }));
     document.querySelectorAll('#paneIdentite .id-field').forEach(el => el.addEventListener('click', () => {
       document.querySelectorAll('#paneIdentite .id-field').forEach(e => e.classList.remove('selected'));
@@ -2847,7 +2847,7 @@
         onCommit: val => patchField({ section: 'etatLocatif', index: idx, field, value: val }),
       });
     });
-    document.querySelectorAll('#rrBody [data-open-page]').forEach(b => b.addEventListener('click', () => openSourceModal(b.dataset.openPage, b.dataset.openQuote)));
+    document.querySelectorAll('#rrBody [data-open-page]').forEach(b => b.addEventListener('click', () => openInspector({ page: Number(b.dataset.openPage), quote: b.dataset.openQuote }, 'source')));
 
     currentT12 = doc.t12 || [];
     // Colonne Source : la CITATION EXACTE du document (pas un simple numero
@@ -2877,7 +2877,7 @@
       if (!tr || tr.dataset.idx === undefined) return;
       selectRow('t12Body', tr, currentT12, t12CommentData);
     };
-    document.querySelectorAll('#t12Body [data-open-page]').forEach(b => b.addEventListener('click', () => openSourceModal(b.dataset.openPage, b.dataset.openQuote)));
+    document.querySelectorAll('#t12Body [data-open-page]').forEach(b => b.addEventListener('click', () => openInspector({ page: Number(b.dataset.openPage), quote: b.dataset.openQuote }, 'source')));
     document.querySelectorAll('#t12Body [data-t12-idx]').forEach(span => {
       const idx = +span.dataset.t12Idx;
       attachEditableValue(span, {
