@@ -13,3 +13,6 @@ data/pgdata/
 *.db
 *.log
 .DS_Store
+
+# Sauvegardes locales de .env (contiennent des secrets)
+.env.bak-*
