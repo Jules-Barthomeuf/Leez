@@ -14,6 +14,7 @@
 //    (ex: "clause plancher non mentionnee", jamais "clause plancher absente").
 //    Ce qui manque va dans les "points a creuser", pas dans une carte a tort.
 const { parseFrenchNumber, parseDateFr, moisAvant } = require('./indicators');
+const { evaluerLocalisation } = require('./geography');
 
 function round(n, decimals) {
   const f = Math.pow(10, decimals);
@@ -76,17 +77,22 @@ function computeMandateFit(doc, criteria) {
     });
   }
   if (criteria.localisation) {
-    let status = 'indetermine';
-    const texteLoc = [fi.adresse?.value, fi.codePostalVille?.value, fi.sousMarche?.value].filter(Boolean).join(' ').toLowerCase();
-    if (texteLoc) status = texteLoc.includes(criteria.localisation.toLowerCase()) ? 'ok' : 'echec';
+    // Resolution geographique (geography.js) plutot qu'une recherche de
+    // sous-chaine : "Europe" doit reconnaitre "Coslada, Communaute de
+    // Madrid". Et surtout, une non-correspondance textuelle ne vaut plus
+    // echec -- seule une non-appartenance ETABLIE le fait, sinon
+    // 'indetermine' (un doute honnete plutot qu'un rejet a tort).
+    const texteLoc = [fi.adresse?.value, fi.codePostalVille?.value, fi.sousMarche?.value].filter(Boolean).join(' ');
+    const verdict = evaluerLocalisation(criteria.localisation, texteLoc);
     const constate = [fi.adresse?.value, fi.codePostalVille?.value].filter(Boolean).join(', ') || null;
     results.push({
-      id: 'localisation', nature: natureOf('localisation'), label: 'Localisation', status, gapPct: null,
+      id: 'localisation', nature: natureOf('localisation'), label: 'Localisation', status: verdict.status, gapPct: null,
       attendu: criteria.localisation,
       constate,
+      methode: verdict.motif,
       page: fi.adresse?.page ?? fi.codePostalVille?.page ?? null, quote: fi.adresse?.quote ?? fi.codePostalVille?.quote ?? null,
-      ecartPhrase: status === 'echec' ? `Localisation : « ${constate} » ne correspond pas à « ${criteria.localisation} »` : null,
-      detail: `Cible : ${criteria.localisation}`,
+      ecartPhrase: verdict.status === 'echec' ? `Localisation : ${verdict.motif}` : null,
+      detail: verdict.motif,
     });
   }
   if (criteria.rendementCibleMin != null) {
