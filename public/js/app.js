@@ -334,6 +334,16 @@
     else { el.textContent = 'Aucune clé ANTHROPIC_API_KEY — voir le README'; el.classList.add('missing'); }
   }).catch(() => {});
 
+  // Entree "Clients" (administration) : visible uniquement pour
+  // l'administrateur de la plateforme. La vraie protection reste cote
+  // serveur (requireSuperAdmin) -- ceci ne fait que masquer un lien.
+  fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(me => {
+    if (me?.isSuperAdmin) {
+      const el = document.getElementById('sidebarAdminLink');
+      if (el) el.style.display = '';
+    }
+  }).catch(() => {});
+
   // ---------- parcours d'accueil (rendez-vous puis acculturation) ----------
   // Deux etapes, aucune bloquante : tant qu'aucun rendez-vous n'est constate
   // par l'outil de reservation, on propose de le prendre ; une fois qu'il

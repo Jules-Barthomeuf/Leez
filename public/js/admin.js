@@ -89,6 +89,39 @@
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Creation d'un client : fonds + invitation du contact en une action.
+  document.getElementById('clientCreateBtn')?.addEventListener('click', async () => {
+    const feedback = document.getElementById('clientFeedback');
+    const workspaceName = document.getElementById('clientName').value.trim();
+    const email = document.getElementById('clientEmail').value.trim();
+    if (!workspaceName || !email) { showFeedback(feedback, 'Renseignez le nom du client et l\'email du contact.', false); return; }
+    const btn = document.getElementById('clientCreateBtn');
+    btn.disabled = true;
+    try {
+      const d = await fetchJson('/api/admin/clients', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceName, email }),
+      });
+      document.getElementById('clientInviteUrl').value = d.inviteUrl;
+      document.getElementById('clientResult').style.display = 'block';
+      showFeedback(feedback, `Client « ${d.workspaceName} » créé, invitation prête pour ${d.email}.`, true);
+      document.getElementById('clientName').value = '';
+      document.getElementById('clientEmail').value = '';
+      await loadAll();
+    } catch (err) {
+      showFeedback(feedback, err.message, false);
+    }
+    btn.disabled = false;
+  });
+  document.getElementById('clientCopyBtn')?.addEventListener('click', async () => {
+    const input = document.getElementById('clientInviteUrl');
+    try {
+      await navigator.clipboard.writeText(input.value);
+      const b = document.getElementById('clientCopyBtn');
+      b.textContent = '✓ Copié'; setTimeout(() => { b.textContent = 'Copier'; }, 1800);
+    } catch { input.select(); }
+  });
+
   // Invitation : cree le compte et renvoie un lien a transmettre.
   function wireInvite(workspaces) {
     const sel = document.getElementById('adminInviteWorkspace');

@@ -15,6 +15,8 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { requireSuperAdmin } = require('../auth/middleware');
 
 const router = express.Router();
+
+const INVITE_VALIDITE_JOURS = 14;
 // Path explicite obligatoire : router.use(fn) SANS path s'appliquerait a
 // TOUTES les requetes qui traversent ce router une fois monte sur /api
 // (pas seulement /admin/*) puisque index.js le monte avant requireWorkspace
@@ -47,11 +49,49 @@ router.get('/admin/users', asyncHandler(async (req, res) => {
   })));
 }));
 
+// Creer un client en une action : le fonds (espace de travail) ET
+// l'invitation de son premier contact. Evite l'enchainement en deux temps
+// (creer le fonds, puis inviter en le choisissant dans une liste).
+router.post('/admin/clients', asyncHandler(async (req, res) => {
+  const workspaceName = typeof req.body?.workspaceName === 'string' ? req.body.workspaceName.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+  if (!workspaceName) return res.status(400).json({ error: 'Nom du client requis.' });
+  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email du contact invalide.' });
+
+  const existing = await getUserByEmail(email);
+  if (existing && existing.password_hash) {
+    return res.status(409).json({ error: 'Ce contact a déjà un compte actif — invitez-le depuis la liste des comptes.' });
+  }
+
+  // Toujours un NOUVEAU fonds (createWorkspace, pas findOrCreate) : deux
+  // clients peuvent porter le meme nom sans partager leurs dossiers.
+  const workspaceId = await createWorkspace(workspaceName);
+  let userId;
+  if (existing) {
+    await assignUserWorkspace(existing.id, workspaceId);
+    userId = existing.id;
+  } else {
+    userId = uuidv4();
+    await createUser({ id: userId, workspaceId, email, passwordHash: null });
+  }
+
+  const token = crypto.randomBytes(32).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const expiresAt = new Date(Date.now() + INVITE_VALIDITE_JOURS * 24 * 3600 * 1000).toISOString();
+  await setUserInvite(userId, tokenHash, expiresAt);
+
+  const base = `${req.protocol}://${req.get('host')}`;
+  res.status(201).json({
+    workspaceName, workspaceId, email,
+    inviteUrl: `${base}/invite.html?token=${token}`,
+    expiresAt,
+  });
+}));
+
 // Invitation : l'administrateur cree le compte (email + fonds), le serveur
 // renvoie un lien a transmettre a la personne, qui n'aura qu'a choisir son
 // mot de passe. Le compte est cree SANS mot de passe -- il ne peut donc pas
 // servir a se connecter tant que l'invitation n'a pas ete consommee.
-const INVITE_VALIDITE_JOURS = 14;
 router.post('/admin/users/invite', asyncHandler(async (req, res) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
   const workspaceId = typeof req.body?.workspaceId === 'string' && req.body.workspaceId ? req.body.workspaceId : null;
