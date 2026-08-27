@@ -112,6 +112,11 @@ async function runPipelineFrom(documentId, workspaceId, pdfBuffer, fromStage) {
       expiry_json: [],
       consistency_json: consistencyChecks,
       status: 'complete',
+      // Une reprise reussie EFFACE l'erreur de la tentative precedente :
+      // sans cela le dossier reste 'complete' tout en affichant l'ancien
+      // message d'echec, ce qui laisse croire que l'extraction a rate.
+      failed_stage: null,
+      error_message: null,
     }, workspaceId);
     analytics.track('extraction_completed', workspaceId, { workspaceId, resumedFrom: startIndex > 0 ? fromStage : null });
   } catch (err) {
