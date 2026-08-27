@@ -5,11 +5,8 @@
 // workspace, contrairement a tout le reste de l'API -- c'est le seul
 // endroit ou une vue transverse a tous les fonds est legitime.
 const express = require('express');
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 const { listAllWorkspaces, listAllUsers, createWorkspace, assignUserWorkspace,
-  findOrCreateWorkspace, getUserById, updateUserPassword,
-  getUserByEmail, createUser, setUserInvite } = require('../db');
+  findOrCreateWorkspace, getUserById, updateUserPassword } = require('../db');
 const { hashPassword } = require('../auth/passwords');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { requireSuperAdmin } = require('../auth/middleware');
@@ -45,43 +42,6 @@ router.get('/admin/users', asyncHandler(async (req, res) => {
     createdAt: u.created_at,
     lastLoginAt: u.last_login_at,
   })));
-}));
-
-// Invitation : l'administrateur cree le compte (email + fonds), le serveur
-// renvoie un lien a transmettre a la personne, qui n'aura qu'a choisir son
-// mot de passe. Le compte est cree SANS mot de passe -- il ne peut donc pas
-// servir a se connecter tant que l'invitation n'a pas ete consommee.
-const INVITE_VALIDITE_JOURS = 14;
-router.post('/admin/users/invite', asyncHandler(async (req, res) => {
-  const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
-  const workspaceId = typeof req.body?.workspaceId === 'string' && req.body.workspaceId ? req.body.workspaceId : null;
-  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email invalide.' });
-
-  let user = await getUserByEmail(email);
-  if (user && user.password_hash) {
-    return res.status(409).json({ error: 'Ce compte existe déjà et a un mot de passe — utilisez « Réinitialiser le mot de passe ».' });
-  }
-  if (!user) {
-    const id = uuidv4();
-    await createUser({ id, workspaceId, email, passwordHash: null });
-    user = await getUserById(id);
-  } else if (workspaceId && !user.workspace_id) {
-    await assignUserWorkspace(user.id, workspaceId);
-  }
-
-  // Jeton en clair envoye UNE SEULE FOIS dans la reponse ; seul son sha256
-  // est stocke -- une fuite de la base ne permet pas de forger un lien.
-  const token = crypto.randomBytes(32).toString('base64url');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  const expiresAt = new Date(Date.now() + INVITE_VALIDITE_JOURS * 24 * 3600 * 1000).toISOString();
-  await setUserInvite(user.id, tokenHash, expiresAt);
-
-  const base = `${req.protocol}://${req.get('host')}`;
-  res.status(201).json({
-    email: user.email,
-    inviteUrl: `${base}/invite.html?token=${token}`,
-    expiresAt,
-  });
 }));
 
 // Reinitialisation du mot de passe d'un compte par l'administrateur --

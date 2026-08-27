@@ -1,7 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const crypto = require('crypto');
-const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser, listAllUsers, findOrCreateWorkspace, getUserByInviteHash, consumeInvite } = require('../db');
+const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser, listAllUsers, findOrCreateWorkspace } = require('../db');
 const { verifyPassword, hashPassword } = require('../auth/passwords');
 const google = require('../auth/google');
 const { asyncHandler } = require('../utils/asyncHandler');
@@ -26,40 +25,6 @@ function establishSession(req, res, user, method, onDone) {
     onDone(null);
   });
 }
-
-// ---------- invitation par lien ----------
-// Deux routes publiques : verifier un lien (affichage de l'email) et le
-// consommer (choix du mot de passe). Un lien expire ou deja utilise renvoie
-// le meme message neutre -- on ne revele jamais si un compte existe.
-function hashToken(token) {
-  return crypto.createHash('sha256').update(String(token)).digest('hex');
-}
-async function inviteUserFromToken(token) {
-  if (!token || typeof token !== 'string') return null;
-  const user = await getUserByInviteHash(hashToken(token));
-  if (!user || !user.invite_expires_at) return null;
-  if (new Date(user.invite_expires_at).getTime() < Date.now()) return null;
-  return user;
-}
-
-router.get('/auth/invite/:token', asyncHandler(async (req, res) => {
-  const user = await inviteUserFromToken(req.params.token);
-  if (!user) return res.status(404).json({ error: 'Ce lien d\'invitation est invalide ou a expiré.' });
-  res.json({ email: user.email });
-}));
-
-router.post('/auth/invite/:token', asyncHandler(async (req, res) => {
-  const user = await inviteUserFromToken(req.params.token);
-  if (!user) return res.status(404).json({ error: 'Ce lien d\'invitation est invalide ou a expiré.' });
-  const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  if (password.length < 8) return res.status(400).json({ error: 'Le mot de passe doit faire au moins 8 caractères.' });
-  await consumeInvite(user.id, await hashPassword(password));
-  const fresh = await getUserById(user.id);
-  establishSession(req, res, fresh, 'invite', (err) => {
-    if (err) return res.status(500).json({ error: 'Session non créée.' });
-    res.json({ email: fresh.email, workspaceId: fresh.workspace_id });
-  });
-}));
 
 // ---------- première installation ----------
 // Une base fraîchement branchée n'a aucun compte : sans ce chemin, personne

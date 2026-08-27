@@ -45,22 +45,6 @@
 
     <div class="panel settings-form" style="margin-top:20px;">
       <div class="panel-head" style="padding:0 0 4px;"><h3 style="font-size:1rem;">Comptes</h3></div>
-      <div class="settings-form" style="padding:0 0 18px;margin-bottom:14px;border-bottom:1px solid var(--border-soft);">
-        <div class="label" style="margin-bottom:8px;">INVITER UN MEMBRE — LE LIEN LUI PERMET DE CHOISIR SON MOT DE PASSE</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input type="email" id="adminInviteEmail" placeholder="collegue@fonds.fr" style="flex:1;min-width:220px;">
-          <select id="adminInviteWorkspace"></select>
-          <button class="btn btn-solid" id="adminInviteBtn">Créer le lien</button>
-        </div>
-        <div class="admin-feedback" id="adminInviteFeedback" style="display:none;"></div>
-        <div id="adminInviteResult" style="display:none;margin-top:10px;">
-          <div class="label" style="margin-bottom:6px;">LIEN À ENVOYER (valable 14 jours, utilisable une seule fois)</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="text" id="adminInviteUrl" readonly style="flex:1;min-width:260px;">
-            <button class="btn btn-outline" id="adminInviteCopy">Copier</button>
-          </div>
-        </div>
-      </div>
       <div id="adminUserList" class="admin-list"></div>
       <div class="admin-feedback" id="adminUserFeedback" style="display:none;"></div>
     </div>
