@@ -334,68 +334,9 @@
     else { el.textContent = 'Aucune clé ANTHROPIC_API_KEY — voir le README'; el.classList.add('missing'); }
   }).catch(() => {});
 
-  // ---------- parcours d'accueil (rendez-vous puis acculturation) ----------
-  // Deux etapes, aucune bloquante : tant qu'aucun rendez-vous n'est constate
-  // par l'outil de reservation, on propose de le prendre ; une fois qu'il
-  // l'est, on invite (UNE fois) a s'acculturer via la page Ressources.
-  function closeOnboarding() {
-    const m = document.getElementById('onboardingModal');
-    m?.classList.remove('open');
-    m?.setAttribute('aria-hidden', 'true');
-  }
-  function openOnboarding(kicker, html) {
-    const m = document.getElementById('onboardingModal');
-    if (!m) return;
-    document.getElementById('onboardingKicker').textContent = kicker;
-    document.getElementById('onboardingBody').innerHTML = html;
-    m.classList.add('open');
-    m.setAttribute('aria-hidden', 'false');
-  }
-  document.getElementById('onboardingClose')?.addEventListener('click', closeOnboarding);
-  document.getElementById('onboardingBackdrop')?.addEventListener('click', closeOnboarding);
-
-  async function runOnboarding() {
-    let s;
-    try { s = await fetch('/api/onboarding').then(r => r.ok ? r.json() : null); } catch { return; }
-    if (!s) return;
-
-    if (!s.meetingBookedAt) {
-      // Etape 1 : prendre le rendez-vous strategique.
-      const lien = s.bookingUrl
-        ? `<a class="btn btn-solid" href="${escapeHtml(s.bookingUrl)}" target="_blank" rel="noopener" id="onbBookBtn">Prendre rendez-vous →</a>`
-        : `<span class="label" style="color:var(--amber);">Lien de réservation non configuré (BOOKING_URL).</span>`;
-      openOnboarding('BIENVENUE SUR LEEZ', `
-        <div class="onb-title">Définissons votre stratégie d'investissement</div>
-        <p class="onb-text">Leez ne produit de verdict que par rapport à des critères d'investissement. Un rendez-vous
-        stratégique nous permet de cadrer votre stratégie avec vous, puis de la traduire en critères appliqués
-        automatiquement à chaque dossier.</p>
-        <div class="onb-actions">${lien}<button class="btn btn-ghost" id="onbLater">Plus tard</button></div>`);
-      document.getElementById('onbLater')?.addEventListener('click', closeOnboarding);
-      return;
-    }
-
-    if (!s.acculturationSeenAt) {
-      // Etape 2 : acculturation, explicitement FACULTATIVE.
-      openOnboarding('RENDEZ-VOUS CONFIRMÉ', `
-        <div class="onb-title">Votre rendez-vous est enregistré</div>
-        <p class="onb-text">En attendant, prenez dix minutes pour vous familiariser avec la plateforme : comment
-        Leez extrait et vérifie chaque donnée, et comment vos critères deviennent des verdicts. C'est facultatif,
-        mais ça change la façon de lire un dossier.</p>
-        <div class="onb-actions">
-          <button class="btn btn-solid" id="onbAccBtn">S'acculturer — cliquez ici</button>
-          <button class="btn btn-ghost" id="onbAccSkip">Plus tard</button>
-        </div>`);
-      const marquerVu = () => fetch('/api/onboarding/acculturation-seen', { method: 'POST' }).catch(() => {});
-      document.getElementById('onbAccBtn')?.addEventListener('click', () => {
-        marquerVu(); closeOnboarding(); showView('ressources');
-      });
-      document.getElementById('onbAccSkip')?.addEventListener('click', () => { marquerVu(); closeOnboarding(); });
-    }
-  }
-
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
-  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'settings', 'account', 'ressources'];
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
   // Le Vault (liste des dossiers) est l'ecran d'arrivee par defaut -- pas
@@ -588,9 +529,6 @@
   // avec un hash (lien partage, rafraichissement, retour navigateur), elle
   // restaure directement le bon panneau (et le bon dossier le cas echeant).
   applyRouteFromHash();
-  // Parcours d'accueil : apres le premier rendu, jamais avant (la pop-up ne
-  // doit pas s'afficher devant une page vide).
-  queueMicrotask(runOnboarding);
 
   // ================= DONNÉES ================= //
   // Toujours un TABLEAU : une reponse d'erreur (403 compte sans espace de

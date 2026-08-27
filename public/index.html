@@ -36,7 +36,6 @@
       <div class="sidebar-subitems sidebar-queries" id="sidebarQueries"></div>
     </nav>
     <div class="sidebar-foot">
-      <button class="sidebar-foot-btn" data-view="ressources"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 3.5h4a2 2 0 0 1 1.5.7 2 2 0 0 1 1.5-.7h4v9h-4a2 2 0 0 0-1.5.7 2 2 0 0 0-1.5-.7h-4v-9Z"/><path d="M8 4.2v8.3"/></svg></span>Ressources</button>
       <button class="sidebar-foot-btn" data-view="account"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="3"/><path d="M2.5 14c1-3 3-4.2 5.5-4.2S12.5 11 13.5 14"/></svg></span>Mon compte</button>
       <span class="nav-status" id="navStatus">Vérification…</span>
     </div>
@@ -636,55 +635,6 @@
           </div>
         </section>
 
-        <!-- ================= RESSOURCES (acculturation) ================= -->
-        <section class="view" id="view-ressources">
-          <div class="view-head"><div><h1>Ressources</h1><div class="label">COMPRENDRE LEEZ EN 10 MINUTES</div></div></div>
-
-          <div class="panel" style="padding:24px 28px;">
-            <p style="font-family:var(--sans);font-size:.88rem;color:var(--text);line-height:1.7;margin:0;">
-              Leez ne résume pas vos documents : il en <b>extrait chaque donnée avec sa citation</b>, vérifie
-              cette citation contre le texte réel, puis recalcule les indicateurs par du code déterministe.
-              Une valeur qui ne se vérifie pas n'est jamais affichée comme un fait — elle apparaît
-              « non vérifiée ». C'est ce qui distingue l'outil d'un assistant conversationnel.
-            </p>
-          </div>
-
-          <div class="ressources-grid">
-            <div class="ressource-card">
-              <span class="label">1 · DÉPOSER</span>
-              <h3>Le Vault</h3>
-              <p>Chaque deal est un dossier : vous lui donnez un nom, vous déposez le dossier de commercialisation (PDF texte) et les pièces annexes. L'extraction démarre seule et vous suivez son avancement.</p>
-              <button class="cite-link" data-go="dossiers">Ouvrir le Vault →</button>
-            </div>
-            <div class="ressource-card">
-              <span class="label">2 · CADRER</span>
-              <h3>Les Critères</h3>
-              <p>Le mandat du fonds : tickets, typologies, localisation, rendement cible, et pour chacun s'il est éliminatoire ou négociable. Tout verdict d'analyse en découle — sans critères, pas de verdict.</p>
-              <button class="cite-link" data-go="settings">Définir les critères →</button>
-            </div>
-            <div class="ressource-card">
-              <span class="label">3 · DÉCIDER</span>
-              <h3>L'Analyse</h3>
-              <p>La Synthèse confronte le bien à vos critères, signale les contradictions entre documents, et sépare ce qui plaide pour, contre, et ce qui manque. Chaque valeur ouvre le PDF à la page exacte.</p>
-            </div>
-            <div class="ressource-card">
-              <span class="label">4 · CAPITALISER</span>
-              <h3>Mémoire</h3>
-              <p>Un dossier refusé n'est pas perdu : il rejoint Mémoire avec son motif, qui a décidé et quand. Il redevient un comparable, et se rappelle dans le Vault en un clic si le contexte change.</p>
-              <button class="cite-link" data-go="memoire">Ouvrir Mémoire →</button>
-            </div>
-          </div>
-
-          <div class="panel" style="padding:22px 26px;margin-top:18px;">
-            <div class="panel-head" style="padding:0 0 10px;"><h3 style="font-size:1rem;">Trois réflexes qui changent tout</h3></div>
-            <div class="flags-list">
-              <div class="flag"><span class="dot green"></span><div><div class="flag-title">Cliquez toujours la source</div><div class="flag-body">Chaque valeur extraite ouvre le document à la page exacte. Un chiffre qu'on ne peut pas remonter à sa source ne devrait jamais entrer dans un comité.</div></div></div>
-              <div class="flag"><span class="dot amber"></span><div><div class="flag-title">Lisez les contrôles de cohérence</div><div class="flag-body">Leez croise l'état locatif, le compte d'exploitation et la fiche entre eux. Quand deux documents se contredisent, c'est là que ça se voit — et c'est souvent le vrai sujet du dossier.</div></div></div>
-              <div class="flag"><span class="dot pink"></span><div><div class="flag-title">Un « — » n'est pas un zéro</div><div class="flag-body">Une donnée absente reste absente : elle n'est jamais estimée ni comblée. Le bloc « ce qui manque » liste ce qu'il faut demander au vendeur avant de trancher.</div></div></div>
-            </div>
-          </div>
-        </section>
-
         <!-- ================= MON COMPTE ================= -->
         <section class="view" id="view-account">
           <div class="account-content">
@@ -907,17 +857,6 @@
 
 <!-- Note libre sur un fichier du dossier (bouton ··· de la table
      Documents du dossier) -- affichée sous le nom du fichier. -->
-<!-- Parcours d'accueil : rendez-vous stratégique, puis acculturation
-     (facultative). Ne bloque jamais l'accès à l'application. -->
-<div class="source-modal" id="onboardingModal" aria-hidden="true">
-  <div class="source-modal-backdrop" id="onboardingBackdrop"></div>
-  <div class="source-modal-panel formula-modal-panel">
-    <button class="source-modal-close" id="onboardingClose" aria-label="Fermer">✕</button>
-    <div class="source-modal-head"><span class="label" id="onboardingKicker">BIENVENUE SUR LEEZ</span></div>
-    <div class="formula-modal-body" id="onboardingBody"></div>
-  </div>
-</div>
-
 <div class="source-modal" id="fileNoteModal" aria-hidden="true">
   <div class="source-modal-backdrop" id="fileNoteModalBackdrop"></div>
   <div class="source-modal-panel formula-modal-panel">

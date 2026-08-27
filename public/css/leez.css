@@ -2468,14 +2468,3 @@ td.dp-hideable .dp-hide-btn{top:50%;right:0;transform:translateY(-50%);}
   padding:2px 8px;min-width:320px;width:60%;
 }
 .title-edit-input:focus{outline:none;border-color:var(--text-muted);}
-
-/* Ressources (acculturation) */
-.ressources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:18px;}
-.ressource-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;display:flex;flex-direction:column;gap:8px;}
-.ressource-card h3{font-family:var(--sans);font-weight:600;font-size:1rem;color:var(--text);margin:0;}
-.ressource-card p{font-family:var(--sans);font-size:.82rem;color:var(--text-body);line-height:1.6;margin:0;flex:1;}
-.ressource-card .cite-link{align-self:flex-start;margin-top:4px;}
-/* Pop-up d'accueil */
-.onb-title{font-family:var(--sans);font-weight:700;font-size:1.2rem;color:var(--text);margin:0 0 10px;}
-.onb-text{font-family:var(--sans);font-size:.86rem;color:var(--text-body);line-height:1.7;margin:0 0 18px;}
-.onb-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}

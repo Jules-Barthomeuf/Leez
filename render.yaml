@@ -84,16 +84,6 @@ services:
         sync: false
       - key: GEMINI_MODEL
         sync: false
-      # Parcours d'accueil : lien de reservation du rendez-vous strategique
-      # affiche dans la pop-up, et secret partage avec l'outil de
-      # reservation (Calendly, Cal.com...). Le webhook a configurer cote
-      # outil : POST https://<domaine>/api/webhooks/booking avec l'en-tete
-      # x-booking-secret. Sans BOOKING_WEBHOOK_SECRET, la route repond 503
-      # et aucun rendez-vous ne peut etre marque comme pris.
-      - key: BOOKING_URL
-        sync: false
-      - key: BOOKING_WEBHOOK_SECRET
-        sync: false
       - key: VOYAGE_API_KEY
         sync: false
       # PostHog est optionnel -- server/services/analytics.js et le
