@@ -89,6 +89,41 @@
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Invitation : cree le compte et renvoie un lien a transmettre.
+  function wireInvite(workspaces) {
+    const sel = document.getElementById('adminInviteWorkspace');
+    if (sel) sel.innerHTML = workspaceOptions(workspaces, null);
+  }
+  document.getElementById('adminInviteBtn')?.addEventListener('click', async () => {
+    const feedback = document.getElementById('adminInviteFeedback');
+    const email = document.getElementById('adminInviteEmail').value.trim();
+    const workspaceId = document.getElementById('adminInviteWorkspace').value || null;
+    if (!email) { showFeedback(feedback, 'Renseignez un email.', false); return; }
+    const btn = document.getElementById('adminInviteBtn');
+    btn.disabled = true;
+    try {
+      const d = await fetchJson('/api/admin/users/invite', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, workspaceId }),
+      });
+      document.getElementById('adminInviteUrl').value = d.inviteUrl;
+      document.getElementById('adminInviteResult').style.display = 'block';
+      showFeedback(feedback, `Lien créé pour ${d.email}.`, true);
+      await loadAll();
+    } catch (err) {
+      showFeedback(feedback, err.message, false);
+    }
+    btn.disabled = false;
+  });
+  document.getElementById('adminInviteCopy')?.addEventListener('click', async () => {
+    const input = document.getElementById('adminInviteUrl');
+    try {
+      await navigator.clipboard.writeText(input.value);
+      const b = document.getElementById('adminInviteCopy');
+      b.textContent = '✓ Copié'; setTimeout(() => { b.textContent = 'Copier'; }, 1800);
+    } catch { input.select(); }
+  });
+
   async function loadAll() {
     const [workspaces, users] = await Promise.all([
       fetchJson('/api/admin/workspaces'),
@@ -96,6 +131,7 @@
     ]);
     renderWorkspaces(workspaces);
     renderUsers(users, workspaces);
+    wireInvite(workspaces);
   }
 
   document.getElementById('adminCreateWorkspaceBtn').addEventListener('click', async () => {

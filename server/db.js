@@ -82,6 +82,25 @@ async function getUserById(id) {
 async function updateUserPassword(id, passwordHash) {
   await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, id]);
 }
+
+// ---------- invitation par lien ----------
+// Le jeton n'est jamais stocke en clair : seul son sha256 l'est, comme un
+// mot de passe. Le lien envoye a la personne est la seule copie en clair.
+async function setUserInvite(id, tokenHash, expiresAt) {
+  await pool.query('UPDATE users SET invite_token_hash = $1, invite_expires_at = $2 WHERE id = $3', [tokenHash, expiresAt, id]);
+}
+async function getUserByInviteHash(tokenHash) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE invite_token_hash = $1', [tokenHash]);
+  return rows[0] || null;
+}
+// Consomme l'invitation : le mot de passe est pose ET le jeton efface dans
+// la MEME requete -- un lien ne peut jamais servir deux fois.
+async function consumeInvite(id, passwordHash) {
+  await pool.query(
+    'UPDATE users SET password_hash = $1, invite_token_hash = NULL, invite_expires_at = NULL WHERE id = $2',
+    [passwordHash, id]
+  );
+}
 async function getUserByGoogleId(googleId) {
   const { rows } = await pool.query('SELECT * FROM users WHERE google_id = $1', [googleId]);
   return rows[0] || null;
@@ -331,6 +350,7 @@ module.exports = {
   findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
   getUserByGoogleId, linkGoogleId,
   listAllWorkspaces, listAllUsers, assignUserWorkspace,
+  setUserInvite, getUserByInviteHash, consumeInvite,
   listUsersByWorkspace, deleteUser, getWorkspace,
   createDocument, updateDocument, getDocument, deleteDocument, listDocuments, clearDemoDocuments,
   createAgentRun, getAgentRun, updateAgentRun, listAgentRunsForDossier, failStaleAgentRuns,
