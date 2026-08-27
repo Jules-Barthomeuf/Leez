@@ -64,6 +64,16 @@ async function runExtractionGemini({ pdfBase64, schema, systemPrompt, userText, 
     // Message brut du fournisseur (quota, cle invalide...) -- jamais
     // masque : c'est ce que l'analyste doit voir dans le dossier en erreur.
     const msg = data?.error?.message || `HTTP ${res.status}`;
+    // Quota depasse : la cause n'est pas le document mais la CONFIGURATION
+    // (EXTRACTION_PROVIDER=gemini). On le dit explicitement, sinon
+    // l'analyste croit que son dossier pose probleme.
+    if (res.status === 429 || /quota|rate limit/i.test(msg)) {
+      throw new Error(
+        "Quota Gemini épuisé (palier gratuit : 5 requêtes/jour, un import en consomme 3). "
+        + "Cette instance est configurée avec EXTRACTION_PROVIDER=gemini : "
+        + "passez cette variable à « anthropic » pour utiliser vos crédits Anthropic."
+      );
+    }
     throw new Error(`Gemini : ${msg}`);
   }
   const cand = data?.candidates?.[0];
