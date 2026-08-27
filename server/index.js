@@ -72,6 +72,8 @@ async function main() {
   // page, avant meme d'avoir confirme qu'une session est valide.
   app.use('/api', authRouter);
   app.use('/api', publicConfigRouter);
+  // Webhook de l'outil de reservation : public (protege par secret partage).
+  app.use('/api', require('./routes/bookingWebhook'));
   app.use('/api', requireAuth);
 
   // adminRouter AVANT requireWorkspace : reserve a SUPER_ADMIN_EMAIL (voir
@@ -79,6 +81,9 @@ async function main() {
   // plateforme n'a pas besoin d'appartenir lui-meme a un fonds pour creer
   // des fonds et y rattacher des comptes auto-inscrits.
   app.use('/api', adminRouter);
+  // Parcours d'accueil : necessite une session, mais PAS un espace de
+  // travail -- la pop-up doit rester visible pour un compte en attente.
+  app.use('/api', require('./routes/onboarding'));
   // Tout ce qui suit manipule les dossiers/reglages d'UN fonds precis :
   // un compte auto-inscrit pas encore rattache (workspaceId null) ne doit
   // jamais les atteindre (voir requireWorkspace).
