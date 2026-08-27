@@ -21,6 +21,3 @@
 .admin-feedback{margin-top:14px;padding:11px 13px;font-size:.82rem;}
 .admin-feedback.ok{background:rgba(122,168,116,.12);border:1px solid rgba(122,168,116,.35);color:var(--green,#7aa874);}
 .admin-feedback.error{background:var(--pink-dim);border:1px solid rgba(226,99,92,.35);color:var(--pink);}
-
-/* Aide contextuelle sous un titre de section */
-.admin-hint{font-family:var(--sans);font-size:.8rem;color:var(--text-muted);line-height:1.55;margin:0 0 14px;}
