@@ -79,6 +79,9 @@ async function getUserById(id) {
   const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
   return rows[0] || null;
 }
+async function setUserPreferences(id, preferences) {
+  await pool.query('UPDATE users SET preferences_json = $1 WHERE id = $2', [JSON.stringify(preferences), id]);
+}
 async function updateUserPassword(id, passwordHash) {
   await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, id]);
 }
@@ -328,7 +331,7 @@ async function countKbChunks() {
 
 module.exports = {
   pool, needsSsl,
-  findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword,
+  findOrCreateWorkspace, createWorkspace, createUser, getUserByEmail, touchUserLogin, getUserById, updateUserPassword, setUserPreferences,
   getUserByGoogleId, linkGoogleId,
   listAllWorkspaces, listAllUsers, assignUserWorkspace,
   listUsersByWorkspace, deleteUser, getWorkspace,

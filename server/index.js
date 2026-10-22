@@ -44,7 +44,7 @@ async function main() {
   await require('./runMigrations').runPendingMigrations();
 
   const sessionMiddleware = require('./auth/session');
-  const { requireAuth, requireWorkspace } = require('./auth/middleware');
+  const { requireAuth, requireWorkspace, limiterInvite } = require('./auth/middleware');
   const authRouter = require('./routes/auth');
   const publicConfigRouter = require('./routes/publicConfig');
   const adminRouter = require('./routes/admin');
@@ -58,6 +58,7 @@ async function main() {
   const presentationRouter = require('./routes/presentation');
   const webPageRouter = require('./routes/webPage');
   const agentsRouter = require('./routes/agents');
+  const prospectionRouter = require('./routes/prospection');
   const { sweepStaleAgentRuns } = require('./services/agentRunner');
   await sweepStaleAgentRuns();
 
@@ -73,6 +74,7 @@ async function main() {
   app.use('/api', authRouter);
   app.use('/api', publicConfigRouter);
   app.use('/api', requireAuth);
+  app.use('/api', limiterInvite);
 
   // adminRouter AVANT requireWorkspace : reserve a SUPER_ADMIN_EMAIL (voir
   // requireSuperAdmin dans adminRouter lui-meme), l'administrateur de la
@@ -93,12 +95,14 @@ async function main() {
   app.use('/api', presentationRouter);
   app.use('/api', webPageRouter);
   app.use('/api', agentsRouter);
+  app.use('/api', prospectionRouter);
   // Page d'atterrissage publique à la racine ; l'application (Dashboard,
   // Dossiers, etc.) reste servie telle quelle sur /index.html. Ces fichiers
   // statiques (HTML/JS/CSS) ne portent aucune donnee de dossier -- la vraie
   // protection est sur les routes /api ci-dessus ; app.js se charge cote
   // client de rediriger vers /login.html si /api/auth/me echoue.
-  app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'landing.html')));
+  // La vitrine de la Prospection (FR / EN) ; l'ancienne page de l'analyse d'OM reste sur /landing.html.
+  app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'vitrine.html')));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // Filet de securite pour les routes async (voir utils/asyncHandler.js) :

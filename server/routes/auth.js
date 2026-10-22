@@ -1,11 +1,13 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, getUserByGoogleId, linkGoogleId, createUser, listAllUsers, findOrCreateWorkspace } = require('../db');
+const crypto = require('crypto');
+const { getUserByEmail, touchUserLogin, getUserById, updateUserPassword, setUserPreferences, getUserByGoogleId, linkGoogleId, createUser, listAllUsers, findOrCreateWorkspace } = require('../db');
 const { verifyPassword, hashPassword } = require('../auth/passwords');
 const google = require('../auth/google');
 const { asyncHandler } = require('../utils/asyncHandler');
 const analytics = require('../services/analytics');
 const { isSuperAdmin } = require('../auth/middleware');
+const Perso = require('../../public/js/personnalisation');
 
 const router = express.Router();
 
@@ -90,6 +92,33 @@ router.post('/auth/login', asyncHandler(async (req, res) => {
   establishSession(req, res, user, 'password', (err) => {
     if (err) return res.status(500).json({ error: 'Erreur lors de la connexion.' });
     res.json({ email: user.email, workspaceId: user.workspace_id });
+  });
+}));
+
+// ---------- acces sans compte (mode demo) ----------
+// La page vitrine propose d'entrer dans l'outil de Prospection sans compte.
+// Ouvert SEULEMENT si LEEZ_ACCES_LIBRE=true. Tous les visiteurs partagent un
+// compte « Visiteur » dans un espace de travail « Démo Leez », isole des fonds
+// reels ; ce qu'un visiteur peut faire est borne par limiterInvite
+// (auth/middleware.js) : pas d'analyse lancee, pas d'Apollo, pas d'import.
+const accesLibre = () => /^(1|true|oui)$/i.test(String(process.env.LEEZ_ACCES_LIBRE || '').trim());
+const EMAIL_INVITE = 'visiteur@demo.leez.invalid';
+
+router.get('/auth/acces-libre', (req, res) => res.json({ actif: accesLibre() }));
+
+router.post('/auth/invite', asyncHandler(async (req, res) => {
+  if (!accesLibre()) return res.status(404).json({ error: "L'accès sans compte n'est pas ouvert." });
+  let user = await getUserByEmail(EMAIL_INVITE);
+  if (!user) {
+    const workspaceId = await findOrCreateWorkspace('Démo Leez');
+    // Mot de passe aleatoire jamais communique : ce compte ne s'ouvre que par cette route.
+    await createUser({ id: uuidv4(), workspaceId, email: EMAIL_INVITE, passwordHash: await hashPassword(crypto.randomBytes(32).toString('hex')), name: 'Visiteur' });
+    user = await getUserByEmail(EMAIL_INVITE);
+  }
+  establishSession(req, res, user, 'invite', (err) => {
+    if (err) return res.status(500).json({ error: "Impossible d'ouvrir la démo." });
+    req.session.invite = true;
+    res.json({ ok: true });
   });
 }));
 
@@ -214,6 +243,7 @@ router.get('/auth/me', asyncHandler(async (req, res) => {
     name: user.name || null,
     workspaceId: user.workspace_id,
     isSuperAdmin: isSuperAdmin(user.email),
+    invite: !!req.session.invite,
   });
 }));
 
@@ -222,6 +252,7 @@ router.get('/auth/me', asyncHandler(async (req, res) => {
 // de session se fait ici, en dur, comme /auth/me juste au-dessus.
 router.patch('/auth/password', asyncHandler(async (req, res) => {
   if (!req.session?.userId) return res.status(401).json({ error: 'Non authentifié.' });
+  if (req.session.invite) return res.status(403).json({ error: 'Mode démo : créez un compte pour avoir votre mot de passe.' });
   const currentPassword = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
   const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Mot de passe actuel et nouveau mot de passe requis.' });
@@ -233,6 +264,25 @@ router.patch('/auth/password', asyncHandler(async (req, res) => {
   }
   await updateUserPassword(user.id, await hashPassword(newPassword));
   res.json({ ok: true });
+}));
+
+// Personnalisation de l'interface (page Mon compte) : propre a la personne,
+// normalisee par le meme module que le navigateur (une valeur inconnue
+// retombe sur le defaut, rien d'autre n'est enregistre).
+router.get('/auth/preferences', asyncHandler(async (req, res) => {
+  if (!req.session?.userId) return res.status(401).json({ error: 'Non authentifié.' });
+  const user = await getUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Non authentifié.' });
+  res.json({ preferences: Perso.normaliser(user.preferences_json) });
+}));
+
+router.put('/auth/preferences', asyncHandler(async (req, res) => {
+  if (!req.session?.userId) return res.status(401).json({ error: 'Non authentifié.' });
+  // Le compte visiteur est partage : ses reglages restent dans le navigateur (copie locale).
+  if (req.session.invite) return res.status(403).json({ error: 'Mode démo : réglages gardés dans ce navigateur.' });
+  const preferences = Perso.normaliser(req.body?.preferences);
+  await setUserPreferences(req.session.userId, preferences);
+  res.json({ preferences });
 }));
 
 module.exports = router;

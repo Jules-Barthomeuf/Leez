@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leez · Prospection cession-bail</title>
+<meta name="description" content="Leez repère les entreprises françaises qui possèdent leurs murs, estime ce qu'elles pourraient libérer en cession-bail et vous dit pourquoi elles vendraient maintenant.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/leez.css">
+<link rel="stylesheet" href="/css/theme-klocka.css">
+<link rel="stylesheet" href="/css/vitrine.css">
+<script src="/js/personnalisation.js"></script>
+</head>
+<body class="vt">
+
+<nav class="vt-nav">
+  <a class="vt-logo" href="/"><span class="vt-logo-mark">L</span>Leez</a>
+  <ul class="vt-nav-liens">
+    <li><a href="#produit" data-i18n="nav.produit">Produit</a></li>
+    <li><a href="#sources" data-i18n="nav.sources">Sources</a></li>
+    <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+  </ul>
+  <div class="vt-nav-actions">
+    <div class="vt-langue" role="group" aria-label="Langue / Language">
+      <button type="button" data-langue="fr">FR</button><button type="button" data-langue="en">EN</button>
+    </div>
+    <a class="vt-btn vt-btn-ghost" href="/login.html" data-i18n="nav.connexion">Se connecter</a>
+    <a class="vt-btn vt-btn-primaire" href="/index.html#prospection" data-acces data-i18n="cta.outil">Accéder à l'outil</a>
+  </div>
+</nav>
+
+<!-- ================= ACCROCHE ================= -->
+<header class="vt-hero">
+  <div class="vt-hero-fond" aria-hidden="true"></div>
+  <div class="vt-hero-texte">
+    <span class="vt-surtitre" data-i18n="hero.surtitre">Cession-bail · SCPI · France</span>
+    <h1 data-i18n="hero.titre">De la donnée publique à une conversation avec le propriétaire, en minutes.</h1>
+    <p data-i18n="hero.sous">Leez repère les entreprises françaises qui possèdent leurs murs, estime ce qu'elles pourraient libérer en cession-bail et vous dit pourquoi elles vendraient maintenant.</p>
+    <div class="vt-hero-actions">
+      <a class="vt-btn vt-btn-primaire vt-btn-grand" href="/index.html#prospection" data-acces data-i18n="cta.outil">Accéder à l'outil</a>
+      <a class="vt-btn vt-btn-contour vt-btn-grand" href="mailto:contact@leez.fr?subject=D%C3%A9mo%20Leez" data-i18n="cta.demo">Réserver une démo</a>
+    </div>
+    <p class="vt-hero-note" data-i18n="hero.note">Sans compte · Données publiques officielles · Chaque chiffre renvoie à sa source</p>
+  </div>
+  <figure class="vt-ecran vt-ecran-hero">
+    <img src="/img/vitrine/explorer.jpg" alt="Leez : les cibles d'un département sur la carte, classées par score" data-i18n-alt="img.explorer">
+  </figure>
+</header>
+
+<!-- ================= SOURCES ================= -->
+<section class="vt-bandeau" id="sources">
+  <p data-i18n="sources.titre">Construit sur les registres officiels français</p>
+  <ul>
+    <li>DGFiP</li><li data-i18n="sources.cadastre">Cadastre</li><li>DVF</li><li>SIRENE</li><li>RNE</li><li>BODACC</li><li>Google Maps</li>
+  </ul>
+</section>
+
+<main id="produit">
+
+<!-- 1 -->
+<section class="vt-etape">
+  <div class="vt-etape-tete">
+    <span class="vt-num">1</span>
+    <span class="vt-kicker" data-i18n="e1.kicker">Explorer le marché</span>
+    <h2 data-i18n="e1.titre">Tout un département sur une carte, déjà trié</h2>
+    <p data-i18n="e1.sous">Leez lit chaque local détenu par une société, retrouve qui l'occupe et classe les entreprises qui possèdent leurs propres murs.</p>
+  </div>
+  <div class="vt-etape-corps">
+    <div class="vt-cartes">
+      <article><h3 data-i18n="e1.c1.t">Carte interactive</h3><p data-i18n="e1.c1.p">Chaque cible est un point coloré par son score, à la taille de la valeur de ses murs. Regroupées au dézoom, filtrables en un geste.</p></article>
+      <article><h3 data-i18n="e1.c2.t">Les 20 meilleures d'abord</h3><p data-i18n="e1.c2.p">On ne montre pas 10 000 entreprises : les 20 qui collent à vos critères, et le reste par filtre (valeur, type d'actif, signaux, confiance du lien).</p></article>
+      <article><h3 data-i18n="e1.c3.t">Comparables à portée de main</h3><p data-i18n="e1.c3.p">Pour chaque site, les ventes DVF les plus proches, le prix au m² et le nombre de comparables utilisés.</p></article>
+    </div>
+    <figure class="vt-ecran"><img src="/img/vitrine/tableau.jpg" alt="Le tableau des cibles avec leurs trois scores" data-i18n-alt="img.tableau" loading="lazy"></figure>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="vt-etape vt-inverse">
+  <div class="vt-etape-tete">
+    <span class="vt-num">2</span>
+    <span class="vt-kicker" data-i18n="e2.kicker">Des critères à la liste d'appels</span>
+    <h2 data-i18n="e2.titre">Décrivez ce que cherche votre SCPI, en une phrase</h2>
+    <p data-i18n="e2.sous">« Logistique et activité, 8 à 30 M€, Auvergne-Rhône-Alpes et PACA, bail ferme 9 ans » : Leez en tire des critères que vous validez, puis recalcule tout en moins d'une seconde.</p>
+  </div>
+  <div class="vt-etape-corps">
+    <div class="vt-cartes">
+      <article><h3 data-i18n="e2.c1.t">Vos critères, en clair</h3><p data-i18n="e2.c1.p">Ticket, types d'actifs, régions ou départements, bail ferme, rendement cible, secteurs exclus et pondération des scores.</p></article>
+      <article><h3 data-i18n="e2.c2.t">Listes et pipeline</h3><p data-i18n="e2.c2.p">Mettez des cibles de côté, suivez-les d'« À qualifier » à « Signée ». Écarter demande un motif ; la relance tombe à J+7.</p></article>
+      <article><h3 data-i18n="e2.c3.t">Toute la France</h3><p data-i18n="e2.c3.p">Chaque département se lance en un clic et s'analyse en tâche de fond ; ensuite, tout répond instantanément.</p></article>
+    </div>
+    <figure class="vt-ecran"><img src="/img/vitrine/criteres.jpg" alt="Une phrase transformée en critères à valider" data-i18n-alt="img.criteres" loading="lazy"></figure>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="vt-etape">
+  <div class="vt-etape-tete">
+    <span class="vt-num">3</span>
+    <span class="vt-kicker" data-i18n="e3.kicker">Le vrai décideur</span>
+    <h2 data-i18n="e3.titre">Derrière la SCI, l'entreprise et son dirigeant</h2>
+    <p data-i18n="e3.sous">Les murs sont souvent au nom d'une SCI. Leez remonte jusqu'à la société qui les occupe, et dit à quel point il en est sûr.</p>
+  </div>
+  <div class="vt-etape-corps">
+    <div class="vt-cartes">
+      <article><h3 data-i18n="e3.c1.t">Propriétaire et exploitant reliés</h3><p data-i18n="e3.c1.p">Même SIREN, SCI dirigée par l'exploitant, ou dirigeant commun vérifié par son année de naissance : les homonymes sont écartés.</p></article>
+      <article><h3 data-i18n="e3.c2.t">Un niveau de confiance</h3><p data-i18n="e3.c2.p">Fort, moyen ou faible, selon la nature du lien et la position de l'établissement sur la parcelle.</p></article>
+      <article><h3 data-i18n="e3.c3.t">Les bonnes personnes</h3><p data-i18n="e3.c3.p">Dirigeants, fonction et âge, fonds au capital ; le DAF et le dirigeant via Apollo, au clic.</p></article>
+      <article><h3 data-i18n="e3.c4.t">Vérifiable en un clic</h3><p data-i18n="e3.c4.p">Vue satellite avec le contour de la parcelle, Street View à l'adresse, et les liens vers le cadastre, l'annuaire et le BODACC.</p></article>
+    </div>
+    <figure class="vt-ecran vt-ecran-colonne"><img src="/img/vitrine/fiche.jpg" alt="La fiche d'une cible : scores, vérification, valeur et cash libérable" data-i18n-alt="img.fiche" loading="lazy"></figure>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="vt-etape vt-inverse">
+  <div class="vt-etape-tete">
+    <span class="vt-num">4</span>
+    <span class="vt-kicker" data-i18n="e4.kicker">Pourquoi elle vendrait</span>
+    <h2 data-i18n="e4.titre">Tout pour qualifier une cible, sur un seul écran</h2>
+    <p data-i18n="e4.sous">La valeur des murs, le cash libérable et les raisons de vendre maintenant, chacune datée et sourcée.</p>
+  </div>
+  <div class="vt-etape-corps">
+    <div class="vt-cartes">
+      <article><h3 data-i18n="e4.c1.t">Valeur et cash libérable</h3><p data-i18n="e4.c1.p">Une fourchette basse, centrale et haute, jamais un chiffre seul, et le loyer induit au rendement de vos critères.</p></article>
+      <article><h3 data-i18n="e4.c2.t">Des signaux réels</h3><p data-i18n="e4.c2.p">Fonds au capital, dirigeant de 60 ans et plus, changement de dirigeant, murs détenus de longue date, modification du capital.</p></article>
+      <article><h3 data-i18n="e4.c3.t">Trois scores expliqués</h3><p data-i18n="e4.c3.p">Fit, Motivation, Locataire : chaque point a sa raison et sa source. Les règles décident, rien n'est estimé en silence.</p></article>
+    </div>
+    <figure class="vt-ecran vt-ecran-colonne"><img src="/img/vitrine/scores.jpg" alt="Les trois scores, point par point" data-i18n-alt="img.scores" loading="lazy"></figure>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="vt-etape vt-sources">
+  <div class="vt-etape-tete">
+    <span class="vt-num">5</span>
+    <span class="vt-kicker" data-i18n="e5.kicker">Des données officielles</span>
+    <h2 data-i18n="e5.titre">Chaque chiffre renvoie à son registre</h2>
+    <p data-i18n="e5.sous">Pas de base opaque : Leez croise les fichiers publics de l'État, datés, et vous montre d'où vient chaque donnée.</p>
+  </div>
+  <div class="vt-grille-sources">
+    <article><b>DGFiP</b><p data-i18n="e5.dgfip">Le fichier des locaux des personnes morales : qui possède quoi, local par local.</p></article>
+    <article><b data-i18n="sources.cadastre">Cadastre</b><p data-i18n="e5.cadastre">Le contour de chaque parcelle et l'emprise des bâtiments.</p></article>
+    <article><b>DVF</b><p data-i18n="e5.dvf">Les ventes immobilières des cinq dernières années, pour les comparables.</p></article>
+    <article><b>SIRENE · RNE</b><p data-i18n="e5.rne">Les établissements, les dirigeants et les comptes publiés.</p></article>
+    <article><b>BODACC</b><p data-i18n="e5.bodacc">Les annonces légales : procédures, changements de dirigeant, cessions.</p></article>
+    <article><b data-i18n="e5.ia.t">L'IA rédige, le code décide</b><p data-i18n="e5.ia">Scores, filtres et valeurs viennent de règles vérifiables ; une donnée introuvable s'affiche « — ».</p></article>
+  </div>
+</section>
+
+<!-- Appel final -->
+<section class="vt-final" id="contact">
+  <h2 data-i18n="final.titre">Prêt à trouver vos prochains actifs ?</h2>
+  <p data-i18n="final.sous">Ouvrez l'outil sans compte, ou parlons de vos critères.</p>
+  <div class="vt-hero-actions">
+    <a class="vt-btn vt-btn-primaire vt-btn-grand" href="/index.html#prospection" data-acces data-i18n="cta.outil">Accéder à l'outil</a>
+    <a class="vt-btn vt-btn-contour vt-btn-grand" href="mailto:contact@leez.fr?subject=D%C3%A9mo%20Leez" data-i18n="cta.demo">Réserver une démo</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="vt-pied">
+  <div>
+    <a class="vt-logo" href="/"><span class="vt-logo-mark">L</span>Leez</a>
+    <p data-i18n="pied.slogan">Prospectez mieux. Des conversations qui aboutissent.</p>
+  </div>
+  <nav>
+    <b data-i18n="pied.produit">Produit</b>
+    <a href="#produit" data-i18n="pied.comment">Comment ça marche</a>
+    <a href="#sources" data-i18n="nav.sources">Sources</a>
+    <a href="/index.html#prospection" data-acces data-i18n="cta.outil">Accéder à l'outil</a>
+  </nav>
+  <nav>
+    <b data-i18n="pied.societe">Société</b>
+    <a href="mailto:contact@leez.fr" data-i18n="nav.contact">Contact</a>
+    <a href="/login.html" data-i18n="nav.connexion">Se connecter</a>
+  </nav>
+  <p class="vt-copyright" data-i18n="pied.droits">© 2026 Leez. Tous droits réservés.</p>
+</footer>
+
+<script src="/js/vitrine.js"></script>
+</body>
+</html>

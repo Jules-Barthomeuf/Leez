@@ -45,4 +45,18 @@ function requireSuperAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireWorkspace, requireSuperAdmin, isSuperAdmin };
+// Mode demo (visiteur sans compte, voir POST /auth/invite) : seulement la Prospection, en
+// lecture et en suivi dans l'espace « Démo Leez », plus ce que l'application lit au demarrage.
+// Interdit : lancer une analyse (lourde), Apollo (credits), importer, l'assistant, les reglages.
+const LECTURES_DEMARRAGE = new Set(['/documents', '/workspace', '/workspace/members', '/settings', '/health']);
+function limiterInvite(req, res, next) {
+  if (!req.session || !req.session.invite) return next();
+  const p = req.path;
+  const m = req.method;
+  const prospection = p.startsWith('/prospection') && !(m === 'POST' && (p === '/prospection/analyses' || p === '/prospection/contact'));
+  if (prospection || (m === 'GET' && LECTURES_DEMARRAGE.has(p))) return next();
+  return res.status(403).json({ error: 'Mode démo : connectez-vous pour utiliser cette fonction.', code: 'demo' });
+}
+
+module.exports = {
+  limiterInvite, requireAuth, requireWorkspace, requireSuperAdmin, isSuperAdmin };

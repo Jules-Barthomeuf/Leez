@@ -1,0 +1,10 @@
+{
+  "_lisez_moi": [
+    "Liste noire tenue a la main : societes jamais proposees comme cibles, quel que soit leur score.",
+    "« sirens » : SIREN exacts (proprietaire ou occupant). « noms » : morceaux de denomination, en majuscules sans accents.",
+    "Chaque ajout porte sa raison dans « raisons » (cle = SIREN ou nom), pour qu'on sache pourquoi dans six mois."
+  ],
+  "sirens": [],
+  "noms": [],
+  "raisons": {}
+}

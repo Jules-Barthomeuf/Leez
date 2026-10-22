@@ -24,6 +24,16 @@
   // workspace renverraient 403 en boucle si on laissait le reste de l'app
   // demarrer normalement. Recouvre simplement tout l'ecran plutot que de
   // conditionner chacune des ~30 routines d'initialisation existantes.
+  // Visiteur de la demo (ouvert depuis la vitrine, sans compte) : on le dit, et on lui
+  // propose de se connecter ; le compte partage n'a ni mot de passe ni membres a gerer.
+  (async () => {
+    const me = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!me || !me.invite) return;
+    document.documentElement.setAttribute('data-invite', '1');
+    const pied = document.querySelector('.sidebar-foot');
+    if (pied) pied.insertAdjacentHTML('afterbegin', '<a class="demo-bandeau" href="/login.html" title="Mode démo : se connecter"><span class="demo-point"></span><span class="demo-texte">Mode démo · Se connecter</span></a>');
+  })();
+
   (async () => {
     const me = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
     if (!me || me.workspaceId) return;
@@ -331,12 +341,16 @@
   fetch('/api/health').then(r => r.json()).then(d => {
     const el = document.getElementById('navStatus');
     if (d.apiKeyConfigured) { el.textContent = ''; }
-    else { el.textContent = 'Aucune clé ANTHROPIC_API_KEY — voir le README'; el.classList.add('missing'); }
+    // Pas d'avertissement de cle manquante dans la barre (demande du 21 oct. 2026) : la Prospection n'en a pas besoin.
+    else { el.textContent = ''; }
   }).catch(() => {});
 
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
-  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'settings', 'account'];
+  // Ecran d'arrivee : le Simulateur, seul onglet d'origine encore affiche (Assistant, Vault,
+  // Memoire et Criteres sont masques via .nav-masque dans index.html, le code reste).
+  const ECRAN_ACCUEIL = 'analyze';
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'prospection', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
   // Le Vault (liste des dossiers) est l'ecran d'arrivee par defaut -- pas
@@ -447,6 +461,8 @@
     if (name !== 'extract') closeDataChatPanel();
     if (name === 'settings') loadSettingsForm();
     if (name === 'account') loadAccountForm();
+    // Prospection cession-bail : ecran autonome (public/js/prospection.js).
+    if (name === 'prospection' && window.LeezProspection) window.LeezProspection.show();
     // queueMicrotask : showView peut etre invoquee DES LE BOOT (routage par
     // ancre, ligne applyRouteFromHash() plus bas) alors que les constantes
     // que ces rendus consultent (FICHE_LABELS...) sont declarees plus loin
@@ -477,6 +493,8 @@
   function updateLocationHash() {
     const isDossierView = DOSSIER_SUBVIEWS.includes(currentViewName) || (currentViewName === 'analyze' && dossierMode);
     let hash = '';
+    // La Prospection gere ses propres sous-adresses (#prospection/cible/<siren>...) : ne pas les ecraser.
+    if (currentViewName === 'prospection' && location.hash.startsWith('#prospection')) return;
     if (isDossierView && currentDoc) hash = `#dossiers/${currentDoc.id}/${currentViewName}`;
     else if (currentViewName !== 'dossiers') hash = `#${currentViewName}`;
     if (location.hash === hash) return;
@@ -494,7 +512,7 @@
             currentDoc = await fetchDocument(id);
             applyCurrentDocRenders();
           } catch {
-            showView('dossiers');
+            showView(ECRAN_ACCUEIL);
             return;
           }
         }
@@ -504,7 +522,7 @@
         if (parts[0] === 'analyze') dossierMode = false;
         showView(parts[0]);
       } else {
-        showView('dossiers');
+        showView(ECRAN_ACCUEIL);
       }
     } finally {
       syncingRoute = false;

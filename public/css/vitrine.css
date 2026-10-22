@@ -1,0 +1,100 @@
+/* La vitrine de Leez : la structure de DealGround (accroche, sources, etapes
+   numerotees, appel final), sur les jetons du theme Leez (theme-klocka.css). */
+
+.vt{margin:0;color:var(--text-body);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+.vt *{box-sizing:border-box;}
+.vt a{text-decoration:none;}
+
+/* --- Navigation ----------------------------------------------------------- */
+.vt-nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:28px;height:64px;padding:0 clamp(16px,4vw,48px);background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-soft);}
+.vt-logo{display:inline-flex;align-items:center;gap:9px;font-size:1.05rem;font-weight:600;color:var(--text);}
+.vt-logo-mark{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--text);color:var(--bg);font-family:var(--serif);font-size:.95rem;}
+.vt-nav-liens{display:flex;gap:4px;list-style:none;margin:0;padding:0;}
+.vt-nav-liens a{padding:7px 12px;border-radius:999px;font-size:.9rem;color:var(--text-muted);}
+.vt-nav-liens a:hover{color:var(--text);background:var(--survol);}
+.vt-nav-actions{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.vt-langue{display:inline-flex;padding:3px;border-radius:999px;border:1px solid var(--border-strong);}
+.vt-langue button{height:28px;padding:0 10px;border:none;border-radius:999px;background:transparent;color:var(--text-muted);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;}
+.vt-langue button[aria-pressed="true"]{background:var(--text);color:var(--bg);}
+
+.vt-btn{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 16px;border-radius:999px;font-size:.88rem;font-weight:500;white-space:nowrap;transition:background .15s var(--ease),border-color .15s var(--ease);}
+.vt-btn-grand{height:46px;padding:0 22px;font-size:.95rem;}
+.vt-btn-primaire{background:var(--accent);color:var(--on-accent);}
+.vt-btn-primaire:hover{background:var(--accent-hover);}
+.vt-btn-contour{border:1px solid var(--border-strong);color:var(--text);}
+.vt-btn-contour:hover{background:var(--survol);}
+.vt-btn-ghost{color:var(--text-body);}
+.vt-btn-ghost:hover{color:var(--text);background:var(--survol);}
+
+/* --- Accroche --------------------------------------------------------------- */
+.vt-hero{position:relative;overflow:hidden;padding:clamp(48px,8vw,96px) clamp(16px,4vw,48px) 0;text-align:center;}
+.vt-hero-fond{position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(ellipse 55% 45% at 50% 0%, var(--accent-dim), transparent 70%),
+  repeating-linear-gradient(90deg, transparent 0 56px, color-mix(in srgb,var(--text) 4%,transparent) 56px 57px),
+  repeating-linear-gradient(0deg, transparent 0 56px, color-mix(in srgb,var(--text) 4%,transparent) 56px 57px);
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 85%);}
+.vt-hero-texte{position:relative;max-width:820px;margin:0 auto;}
+.vt-surtitre{display:inline-block;font-size:.78rem;font-weight:600;letter-spacing:.06em;color:var(--accent);background:var(--accent-dim);padding:5px 12px;border-radius:999px;margin-bottom:22px;}
+.vt-hero h1{margin:0 0 18px;font-size:clamp(2.1rem,5vw,3.6rem);line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--text);text-wrap:balance;}
+.vt-hero-texte > p{margin:0 auto;max-width:640px;font-size:clamp(1rem,1.6vw,1.15rem);line-height:1.6;color:var(--text-muted);}
+.vt-hero-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:30px;}
+.vt-hero-note{margin:16px 0 0 !important;font-size:.82rem !important;color:var(--text-faint) !important;}
+.vt-ecran{margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--border);background:var(--surface);box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent);}
+.vt-ecran img{display:block;width:100%;height:auto;}
+.vt-ecran-hero{position:relative;max-width:1180px;margin:56px auto 0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;}
+
+/* --- Bandeau des sources ------------------------------------------------------ */
+.vt-bandeau{padding:34px clamp(16px,4vw,48px);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);text-align:center;}
+.vt-bandeau p{margin:0 0 14px;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);}
+.vt-bandeau ul{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 34px;list-style:none;margin:0;padding:0;}
+.vt-bandeau li{font-size:1.05rem;font-weight:600;color:var(--text-muted);letter-spacing:.01em;}
+
+/* --- Etapes ------------------------------------------------------------------ */
+.vt-etape{max-width:1180px;margin:0 auto;padding:clamp(56px,9vw,110px) clamp(16px,4vw,48px) 0;}
+.vt-etape-tete{max-width:720px;margin-bottom:34px;}
+.vt-num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:.85rem;font-weight:700;margin-right:10px;vertical-align:middle;}
+.vt-kicker{font-size:.86rem;font-weight:600;color:var(--accent);vertical-align:middle;}
+.vt-etape h2{margin:16px 0 12px;font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.12;letter-spacing:-.02em;font-weight:600;color:var(--text);text-wrap:balance;}
+.vt-etape-tete > p{margin:0;font-size:1.02rem;line-height:1.6;color:var(--text-muted);}
+.vt-etape-corps{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:32px;align-items:center;}
+.vt-inverse .vt-etape-corps{grid-template-columns:minmax(0,7fr) minmax(0,5fr);}
+.vt-inverse .vt-cartes{order:2;}
+.vt-cartes{display:flex;flex-direction:column;gap:12px;}
+.vt-cartes article{padding:18px 20px;border-radius:14px;border:1px solid var(--border-soft);background:var(--surface);}
+.vt-cartes h3{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--text);}
+.vt-cartes p{margin:0;font-size:.9rem;line-height:1.55;color:var(--text-muted);}
+.vt-ecran-colonne{max-width:560px;justify-self:center;}
+
+.vt-grille-sources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+.vt-grille-sources article{padding:20px 22px;border-radius:14px;border:1px solid var(--border-soft);background:var(--surface);}
+.vt-grille-sources b{display:block;font-size:1rem;color:var(--text);margin-bottom:6px;}
+.vt-grille-sources p{margin:0;font-size:.9rem;line-height:1.55;color:var(--text-muted);}
+
+/* --- Appel final et pied ------------------------------------------------------- */
+.vt-final{max-width:1180px;margin:clamp(64px,10vw,120px) auto 0;padding:56px clamp(16px,4vw,48px);text-align:center;border-radius:22px;border:1px solid var(--border-soft);background:radial-gradient(ellipse 60% 80% at 50% 0%, var(--accent-dim), transparent 70%),var(--surface);}
+.vt-final h2{margin:0 0 10px;font-size:clamp(1.6rem,3.4vw,2.4rem);letter-spacing:-.02em;font-weight:600;color:var(--text);}
+.vt-final p{margin:0;color:var(--text-muted);font-size:1.02rem;}
+.vt-pied{max-width:1180px;margin:72px auto 0;padding:36px clamp(16px,4vw,48px) 40px;border-top:1px solid var(--border-soft);display:grid;grid-template-columns:2fr 1fr 1fr;gap:24px;}
+.vt-pied p{margin:10px 0 0;font-size:.88rem;color:var(--text-muted);}
+.vt-pied nav{display:flex;flex-direction:column;gap:8px;}
+.vt-pied nav b{font-size:.82rem;color:var(--text);margin-bottom:2px;}
+.vt-pied nav a{font-size:.88rem;color:var(--text-muted);}
+.vt-pied nav a:hover{color:var(--text);}
+.vt-copyright{grid-column:1 / -1;font-size:.78rem !important;color:var(--text-faint) !important;}
+
+/* --- Ecrans etroits -------------------------------------------------------------- */
+@media (max-width:960px){
+  .vt-nav-liens{display:none;}
+  .vt-etape-corps,.vt-inverse .vt-etape-corps{grid-template-columns:1fr;}
+  .vt-inverse .vt-cartes{order:0;}
+  .vt-grille-sources{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:600px){
+  .vt-nav{gap:10px;}
+  .vt-nav-actions .vt-btn-ghost{display:none;}
+  .vt-nav-actions .vt-btn-primaire{padding:0 12px;font-size:.8rem;}
+  .vt-grille-sources{grid-template-columns:1fr;}
+  .vt-pied{grid-template-columns:1fr 1fr;}
+  .vt-pied > div:first-child{grid-column:1 / -1;}
+  .vt-ecran-hero{margin-top:36px;}
+}

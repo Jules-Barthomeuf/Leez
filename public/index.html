@@ -6,6 +6,12 @@
 <title>Leez — Analyse immobilière</title>
 <link rel="stylesheet" href="/css/leez.css">
 <link rel="stylesheet" href="/css/login.css">
+<link rel="stylesheet" href="/css/prospection.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/theme-klocka.css">
+<!-- Personnalisation du compte : appliquee avant le premier affichage (pas de flash). -->
+<script src="/js/personnalisation.js"></script>
 </head>
 <body>
 
@@ -23,17 +29,19 @@
     <div class="sidebar-ws">
       <span class="sidebar-ws-mark">L</span>
       <span class="sidebar-ws-name">Leez</span>
+      <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir ou fermer la barre" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="2.5"/><path d="M6 2.5v11"/></svg></button>
     </div>
-    <button class="sidebar-create" data-go="ingest">+ Créer</button>
+    <button class="sidebar-create nav-masque" data-go="ingest">+ Créer</button>
     <nav class="sidebar-nav">
-      <button data-view="dashboard"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.7 5.3L15 8l-5.3 1.7L8 15l-1.7-5.3L1 8l5.3-1.7L8 1z"/></svg></span>Assistant</button>
-      <button data-view="dossiers"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9.5" rx="2"/><path d="M2 6.5h12"/></svg></span>Vault</button>
-      <div class="sidebar-subitems" id="sidebarRecentDossiers"></div>
-      <button data-view="memoire"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 13.5h11M4 13.5V7M8 13.5V7M12 13.5V7M2 6.5L8 2.5l6 4"/></svg></span>Mémoire</button>
-      <button data-view="settings"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.4" fill="currentColor" stroke="none"/></svg></span>Critères</button>
+      <button class="nav-masque" data-view="dashboard"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.7 5.3L15 8l-5.3 1.7L8 15l-1.7-5.3L1 8l5.3-1.7L8 1z"/></svg></span>Assistant</button>
+      <button class="nav-masque" data-view="dossiers"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9.5" rx="2"/><path d="M2 6.5h12"/></svg></span>Vault</button>
+      <div class="sidebar-subitems nav-masque" id="sidebarRecentDossiers"></div>
+      <button class="nav-masque" data-view="memoire"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 13.5h11M4 13.5V7M8 13.5V7M12 13.5V7M2 6.5L8 2.5l6 4"/></svg></span>Mémoire</button>
+      <button class="nav-masque" data-view="settings"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.4" fill="currentColor" stroke="none"/></svg></span>Critères</button>
       <button data-view="analyze"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 11.5l3.4-4 3 2.5 3-5 3.6 3"/></svg></span>Simulateur</button>
-      <div class="sidebar-section-label">Requêtes récentes</div>
-      <div class="sidebar-subitems sidebar-queries" id="sidebarQueries"></div>
+      <button data-view="prospection"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 14.5s-4.5-4.2-4.5-7.7a4.5 4.5 0 019 0c0 3.5-4.5 7.7-4.5 7.7z"/><circle cx="8" cy="6.8" r="1.6"/></svg></span>Prospection</button>
+      <div class="sidebar-section-label nav-masque">Requêtes récentes</div>
+      <div class="sidebar-subitems sidebar-queries nav-masque" id="sidebarQueries"></div>
     </nav>
     <div class="sidebar-foot">
       <button class="sidebar-foot-btn" data-view="account"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.5" r="3"/><path d="M2.5 14c1-3 3-4.2 5.5-4.2S12.5 11 13.5 14"/></svg></span>Mon compte</button>
@@ -439,6 +447,13 @@
           <div class="export-grid" id="exportGrid"></div>
         </section>
 
+        <!-- ================= PROSPECTION (cession-bail) ================= -->
+        <!-- Rempli par public/js/prospection.js ; regles des scores dans
+             public/js/prospection-scores.js, pipeline dans server/prospection. -->
+        <section class="view" id="view-prospection">
+          <div id="prApp" class="pr-app"></div>
+        </section>
+
         <!-- ================= SIMULATEUR ================= -->
         <section class="view" id="view-analyze">
           <div class="sim-scenario-bar" id="simScenarioBar">
@@ -717,6 +732,9 @@
             </div>
           </div>
           </div>
+
+          <!-- Personnalisation de l'interface : rendue par public/js/perso-ecran.js -->
+          <div class="perso" id="persoPanneau"></div>
         </section>
 
         <!-- ================= RÉGLAGES DU FONDS ================= -->
@@ -1072,5 +1090,9 @@
 
 <script src="/js/app.js"></script>
 <script src="/js/simulator.js"></script>
+<script src="/js/prospection-scores.js"></script>
+<script src="/js/prospection-mandat.js"></script>
+<script src="/js/prospection.js"></script>
+<script src="/js/perso-ecran.js"></script>
 </body>
 </html>
