@@ -14,10 +14,10 @@ test('couleurs personnalisees acceptees en hexadecimal seulement', () => {
   assert.equal(P.normaliser({ barre_sombre: 'javascript:alert(1)' }).barre_sombre, 'origine');
 });
 
-test('halo : faux seulement si demande explicitement', () => {
-  assert.equal(P.normaliser({ halo: false }).halo, false);
-  assert.equal(P.normaliser({ halo: 'false' }).halo, false);
-  assert.equal(P.normaliser({}).halo, true);
+test('halo : sans par defaut, avec seulement si demande', () => {
+  assert.equal(P.normaliser({ halo: true }).halo, true);
+  assert.equal(P.normaliser({ halo: 'true' }).halo, true);
+  assert.equal(P.normaliser({}).halo, false);
 });
 
 test('accent par theme et lisibilite de la barre', () => {

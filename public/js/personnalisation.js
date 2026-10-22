@@ -15,6 +15,7 @@
   else racine.LeezPerso = fabrique();
 }(typeof self !== 'undefined' ? self : this, () => {
   const ACCENTS = {
+    sable: { nom: 'Sable', sombre: '#d9c3a0', clair: '#6b4a33' },
     menthe: { nom: 'Menthe', sombre: '#96c0b8', clair: '#3f7466' },
     sauge: { nom: 'Sauge', sombre: '#a9c5a0', clair: '#4f7a45' },
     bleu: { nom: 'Bleu', sombre: '#8fb6e8', clair: '#2d60b2' },
@@ -26,12 +27,12 @@
     rose: { nom: 'Rose', sombre: '#e85c8a', clair: '#e85c8a' },
   };
   const FONDS = {
-    sombre: { noir: { nom: 'Noir chaud', fond: '#121312' }, profond: { nom: 'Noir pur', fond: '#000000' }, anthracite: { nom: 'Anthracite', fond: '#1b1d1c' } },
-    clair: { perle: { nom: 'Gris perle', fond: '#f0f0ee' }, blanc: { nom: 'Blanc', fond: '#ffffff' } },
+    sombre: { chocolat: { nom: 'Chocolat', fond: '#2a1d16' }, noir: { nom: 'Noir chaud', fond: '#121312' }, profond: { nom: 'Noir pur', fond: '#000000' }, anthracite: { nom: 'Anthracite', fond: '#1b1d1c' } },
+    clair: { creme: { nom: 'Crème', fond: '#efe8db' }, perle: { nom: 'Gris perle', fond: '#f0f0ee' }, blanc: { nom: 'Blanc', fond: '#ffffff' } },
   };
   const BARRES = {
-    sombre: { origine: { nom: 'Noir chaud', teinte: '#191a19' }, noir: { nom: 'Noir pur', teinte: '#000000' }, anthracite: { nom: 'Anthracite', teinte: '#242625' }, nuit: { nom: 'Bleu nuit', teinte: '#151a24' }, foret: { nom: 'Vert forêt', teinte: '#14201b' } },
-    clair: { origine: { nom: 'Gris perle', teinte: '#f4f4f2' }, blanc: { nom: 'Blanc', teinte: '#ffffff' }, sable: { nom: 'Sable', teinte: '#eeeae2' }, brume: { nom: 'Bleu brume', teinte: '#e8edf1' } },
+    sombre: { origine: { nom: 'Chocolat', teinte: '#221711' }, noirchaud: { nom: 'Noir chaud', teinte: '#191a19' }, noir: { nom: 'Noir pur', teinte: '#000000' }, anthracite: { nom: 'Anthracite', teinte: '#242625' }, nuit: { nom: 'Bleu nuit', teinte: '#151a24' }, foret: { nom: 'Vert forêt', teinte: '#14201b' } },
+    clair: { origine: { nom: 'Crème', teinte: '#e7dfcf' }, perle: { nom: 'Gris perle', teinte: '#f4f4f2' }, blanc: { nom: 'Blanc', teinte: '#ffffff' }, sable: { nom: 'Sable', teinte: '#eeeae2' }, brume: { nom: 'Bleu brume', teinte: '#e8edf1' } },
   };
   const POLICES = {
     instrument: { nom: 'Instrument Sans', css: "'Instrument Sans', Inter, system-ui, sans-serif" },
@@ -40,7 +41,7 @@
     montserrat: { nom: 'Montserrat', css: "Montserrat, 'Instrument Sans', system-ui, sans-serif" },
     systeme: { nom: 'Celle du système', css: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
   };
-  const DEFAUT = Object.freeze({ mode: 'sombre', accent: 'pervenche', accent_perso: null, fond_sombre: 'noir', fond_clair: 'perle', barre_sombre: 'origine', barre_clair: 'origine', halo: true, police: 'instrument' });
+  const DEFAUT = Object.freeze({ mode: 'sombre', accent: 'sable', accent_perso: null, fond_sombre: 'chocolat', fond_clair: 'creme', barre_sombre: 'origine', barre_clair: 'origine', halo: false, police: 'instrument' });
   const MODES = [['sombre', 'Sombre'], ['clair', 'Clair'], ['appareil', "Comme l'appareil"]];
   const CLE_LOCALE = 'leez-personnalisation';
 
@@ -56,7 +57,7 @@
     if (FONDS.sombre[b.fond_sombre]) p.fond_sombre = b.fond_sombre;
     if (FONDS.clair[b.fond_clair]) p.fond_clair = b.fond_clair;
     for (const t of ['sombre', 'clair']) { const v = b[`barre_${t}`]; if (BARRES[t][v] || hex(v)) p[`barre_${t}`] = hex(v) || v; }
-    if (b.halo === false || b.halo === 'false') p.halo = false;
+    if (b.halo === true || b.halo === 'true') p.halo = true;
     if (POLICES[b.police]) p.police = b.police;
     return p;
   }
