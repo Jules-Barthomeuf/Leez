@@ -347,8 +347,8 @@
 
   // ================= ROUTEUR ================= //
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
-  // Ecran d'arrivee : le Simulateur, seul onglet d'origine encore affiche (Assistant, Vault,
-  // Memoire et Criteres sont masques via .nav-masque dans index.html, le code reste).
+  // Les onglets d'origine (Assistant, Vault, Memoire, Criteres, Simulateur) sont masques via
+  // .nav-masque dans index.html ; le code reste.
   // Depuis le 23 oct. 2026, l'ecran d'arrivee est la plateforme (Dossiers, public/js/plateforme.js).
   const ECRAN_ACCUEIL = 'deals';
   const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'prospection', 'deals', 'settings', 'account'];
