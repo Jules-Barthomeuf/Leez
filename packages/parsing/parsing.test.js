@@ -82,3 +82,25 @@ test('rasteriser (MuPDF) : PNG par page, rotation', { skip: !jeuPresent && 'jeu 
   const [tournee] = await rasteriser(buffer, { dpi: 50, pages: [2], rotation: 90 });
   assert.ok(tournee.height > tournee.width, 'tournée de 90°, elle redevient portrait');
 });
+
+test('regle de decision par page : natif, scan, couche OCR existante', { skip: !jeuPresent && 'jeu benchmark-v1 absent' }, async () => {
+  assert.equal(P.decider({ caracteres: 1500, ratio_alnum: 0.95, couverture_image: 0 }), 'natif');
+  assert.equal(P.decider({ caracteres: 0, ratio_alnum: 0, couverture_image: 1 }), 'scan');
+  assert.equal(P.decider({ caracteres: 300, ratio_alnum: 0.2, couverture_image: 0 }), 'scan', 'couche texte parasite (symboles) : scan');
+  assert.equal(P.decider({ caracteres: 900, ratio_alnum: 0.95, couverture_image: 1 }), 'ocr_existant');
+  const b04 = await P.couchesTexte(fs.readFileSync(path.join(JEU, 'B04_bail_toulouse_avec_avenants_1-2.pdf')));
+  assert.deepEqual(b04.map((p) => p.verdict), ['natif', 'natif', 'natif', 'scan', 'natif']);
+  assert.equal(b04[3].couverture_image, 1, 'la page scannée est une image pleine page');
+});
+
+test('couche OCR existante : un PDF « cherchable » produit par Tesseract est reconnu comme tel', { skip: !jeuPresent && 'jeu benchmark-v1 absent' }, async () => {
+  const { createWorker } = require('tesseract.js');
+  const { rasteriser } = require('./rasteriser');
+  const [img] = await rasteriser(fs.readFileSync(path.join(JEU, 'T02_teaser_nice_scan.pdf')), { dpi: 120, pages: [1] });
+  const w = await createWorker('fra', 1, { cachePath: path.join(__dirname, '..', '..', 'eval', '.cache', 'tessdata'), logger: () => {} });
+  let pdf;
+  try { ({ data: { pdf } } = await w.recognize(img.png, {}, { pdf: true, text: true })); } finally { await w.terminate(); }
+  const couches = await P.couchesTexte(Buffer.from(pdf));
+  assert.equal(couches[0].verdict, 'ocr_existant');
+  assert.ok(couches[0].caracteres >= 50);
+});

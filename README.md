@@ -175,3 +175,11 @@ Depuis le 23 octobre 2026, Leez se construit phase par phase selon `docs/SPEC.md
 - `npm test` : toute la suite (schémas, plateforme sur une base jetable, prospection).
 - `npm run lint` : ESLint sur la plateforme.
 - `npm run worker` : le worker seul (avec `WORKER_INLINE=false` côté web).
+
+### Déploiement de la plateforme (Render + Scaleway)
+
+1. **Base** : Render Postgres 16, région Frankfurt. Vérifier région et extensions avec `DATABASE_URL=… node scripts/check-db.js` (pgvector, unaccent, pg_trgm sont créées par la migration 021 si le serveur les propose).
+2. **Stockage** : Scaleway Object Storage, région `fr-par`, un bucket privé. Dans Render (web et worker) : `STORAGE_DRIVER=s3`, `S3_ENDPOINT=https://s3.fr-par.scw.cloud`, `S3_REGION=fr-par`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`. Tant que `STORAGE_DRIVER=local`, les fichiers vont sur le disque Render du service web et ne sont pas visibles d'un worker séparé.
+3. **Worker** : d'abord S3, puis décommenter le service `leez-worker` de `render.yaml` (plan `standard`) et passer `WORKER_INLINE=false` sur le web.
+4. **Limites** : `MAX_UPLOAD_MB` (100), `WORKER_CONCURRENCY` (2).
+5. **Local avec pgvector** : `docker compose up -d` (image `pgvector/pgvector:pg16`) puis `DATABASE_URL=postgres://leez:leez@localhost:5432/leez REQUIRE_PGVECTOR=true npm run dev`.

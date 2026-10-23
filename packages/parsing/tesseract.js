@@ -43,19 +43,26 @@ function construirePage(resultat, numero) {
   const norme = (v, total) => Math.min(1, Math.max(0, v / total));
   const paragraphes = [];
   for (const b of data.blocks || []) for (const p of b.paragraphs || []) paragraphes.push(p);
+  // Un bloc par ligne (boite precise pour le visualiseur de source) ; les lignes d'un meme paragraphe sont
+  // separees par un retour simple, les paragraphes par une ligne vide.
   let texte = '';
   const blocks = [];
   for (const p of paragraphes) {
-    const t = (p.lines || []).map((l) => l.text.replace(/\s+$/, '')).join('\n').trim();
-    if (!t) continue;
-    texte += (texte ? '\n\n' : '') + t;
-    blocks.push({
-      id: `p${numero}-b${blocks.length + 1}`,
-      type: 'text',
-      bbox: p.bbox ? [norme(p.bbox.x0, width), norme(p.bbox.y0, height), norme(p.bbox.x1, width), norme(p.bbox.y1, height)] : null,
-      char_start: texte.length - t.length,
-      char_end: texte.length,
-      text: t,
+    const lignes = (p.lines || []).map((l) => ({ ...l, t: (l.text || '').replace(/\s+$/, '').trim() })).filter((l) => l.t);
+    if (!lignes.length) continue;
+    if (texte) texte += '\n\n';
+    lignes.forEach((l, i) => {
+      if (i) texte += '\n';
+      const char_start = texte.length;
+      texte += l.t;
+      blocks.push({
+        id: `p${numero}-b${blocks.length + 1}`,
+        type: 'text',
+        bbox: l.bbox ? [norme(l.bbox.x0, width), norme(l.bbox.y0, height), norme(l.bbox.x1, width), norme(l.bbox.y1, height)] : null,
+        char_start,
+        char_end: texte.length,
+        text: l.t,
+      });
     });
   }
   if (!blocks.length && data.text && data.text.trim()) {
@@ -88,4 +95,4 @@ async function fermer() {
   if (workerPromise) { const w = await workerPromise; await w.terminate(); workerPromise = null; }
 }
 
-module.exports = { nom: 'tesseract', description: `OCR Tesseract 5 (tesseract.js, langue fra, ${DPI} dpi, rendu MuPDF), rotation automatique, boîtes par paragraphe`, parse, disponible, fermer };
+module.exports = { nom: 'tesseract', description: `OCR Tesseract 5 (tesseract.js, langue fra, ${DPI} dpi, rendu MuPDF), rotation automatique, boîtes par ligne`, parse, disponible, fermer };

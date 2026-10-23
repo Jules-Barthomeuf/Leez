@@ -71,6 +71,34 @@ function construirePage(items, largeur, hauteur, numero) {
 }
 
 /**
+ * Part de la page couverte par la plus grande image dessinee (0 a 1). Une page scannee est une image qui
+ * couvre toute la page ; si elle porte aussi une couche texte, c'est un OCR fait en amont, de qualite inconnue.
+ * On suit la matrice de transformation courante dans la liste d'operateurs pour connaitre la taille dessinee.
+ */
+async function couvertureImage(page, OPS) {
+  const vp = page.getViewport({ scale: 1 });
+  const aire = vp.width * vp.height;
+  if (!aire) return 0;
+  const ops = await page.getOperatorList();
+  const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+  let ctm = [1, 0, 0, 1, 0, 0];
+  const pile = [];
+  let max = 0;
+  for (let i = 0; i < ops.fnArray.length; i++) {
+    const fn = ops.fnArray[i];
+    if (fn === OPS.save) pile.push(ctm);
+    else if (fn === OPS.restore) ctm = pile.pop() || ctm;
+    else if (fn === OPS.transform) ctm = mul(ctm, ops.argsArray[i]);
+    else if (fn === OPS.paintImageXObject || fn === OPS.paintInlineImageXObject || fn === OPS.paintImageXObjectRepeat || fn === OPS.paintJpegXObject) {
+      // L'image est dessinee dans le carre unite transforme par la matrice courante.
+      const a = Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]);
+      if (a > max) max = a;
+    }
+  }
+  return Math.min(1, max / aire);
+}
+
+/**
  * @param {{ buffer: Buffer }} entree
  * @returns {Promise<ParsedDocument>}
  */
@@ -80,11 +108,16 @@ async function parse({ buffer }) {
   /** @type {ParsedPage[]} */
   const pages = [];
   try {
+    const { OPS } = await require('./rasteriser').pdfjs();
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await doc.getPage(n);
       const vp = page.getViewport({ scale: 1 });
       const contenu = await page.getTextContent();
-      pages.push(construirePage(contenu.items, vp.width, vp.height, n));
+      const p = construirePage(contenu.items, vp.width, vp.height, n);
+      p.couverture_image = Math.round((await couvertureImage(page, OPS)) * 1000) / 1000;
+      // Image pleine page + texte : une couche OCR faite en amont, signalee comme telle (ocr = true).
+      if (p.couverture_image >= 0.8 && p.text.replace(/\s/g, '').length >= 50) p.ocr = true;
+      pages.push(p);
       page.cleanup();
     }
   } finally {
@@ -95,4 +128,4 @@ async function parse({ buffer }) {
 
 async function disponible() { return { ok: true }; }
 
-module.exports = { nom: 'pdfjs', description: 'Couche texte native (pdfjs-dist), coordonnées par bloc, sans OCR ni tableaux', parse, disponible, construirePage };
+module.exports = { nom: 'pdfjs', description: 'Couche texte native (pdfjs-dist), coordonnées par bloc, sans OCR ni tableaux', parse, disponible, construirePage, couvertureImage };

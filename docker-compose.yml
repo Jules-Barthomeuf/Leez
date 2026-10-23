@@ -1,10 +1,18 @@
-# Postgres local pour le developpement -- meme moteur qu'en production
-# (Render Postgres managé), un seul chemin de code, pas de divergence
-# SQLite/Postgres. Lancer avec `docker compose up -d`, puis
-# `npx node-pg-migrate up` pour creer le schema (voir server/migrations/).
+# Postgres local pour le developpement, le meme moteur qu'en production (Render
+# Postgres 16) avec pgvector, pour exercer en local la recherche vectorielle
+# (phase 4) et la RLS, pas seulement en CI. Le Postgres embarque (sans
+# DATABASE_URL) n'a pas pgvector : il reste le mode « zero configuration ».
+#   docker compose up -d
+#   DATABASE_URL=postgres://leez:leez@localhost:5432/leez REQUIRE_PGVECTOR=true npm run dev
+#   DATABASE_URL=postgres://leez:leez@localhost:5432/leez npm test      (bases jetables creees sur ce serveur)
+#   DATABASE_URL=postgres://leez:leez@localhost:5432/leez npm run check:db
+# Les migrations s'appliquent au demarrage du serveur (server/runMigrations.js).
+# Le role `leez` est superutilisateur (image officielle) : la RLS ne s'applique
+# pas a lui ; les tests la verifient sous un role non superutilisateur cree a la
+# volee (server/plateforme/plateforme.test.js).
 services:
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: leez

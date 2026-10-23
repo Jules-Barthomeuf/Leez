@@ -134,10 +134,10 @@ const RegleRecoupement = z.strictObject({
 
 // ---------- 3.6 Catalogue des cles canoniques ----------
 const CLES_CANONIQUES = {
-  bien: ['adresse', 'commune_insee', 'surface_utile', 'surface_ponderee', 'nombre_lots', 'occupation', 'destination'],
-  prix: ['prix_fai', 'honoraires_montant', 'honoraires_charge', 'prix_net_vendeur', 'rendement_annonce'],
+  bien: ['adresse', 'commune_insee', 'surface_utile', 'surface_ponderee', 'nombre_lots', 'occupation', 'destination', 'type_actif', 'taux_occupation'],
+  prix: ['prix_fai', 'honoraires_montant', 'honoraires_charge', 'prix_net_vendeur', 'prix_base', 'rendement_annonce', 'rendement_annonce_aem'],
   locataire: ['locataire_raison_sociale', 'locataire_siren', 'enseigne', 'activite', 'activite_categorie'],
-  bail: ['date_signature_bail', 'date_effet_bail', 'duree_bail', 'date_fin_bail', 'renonciation_triennale', 'loyer_contractuel_initial', 'loyer_contractuel_actuel', 'indice_indexation', 'indice_reference', 'periodicite_indexation', 'clause_echelle_mobile', 'depot_garantie', 'garantie_premiere_demande', 'caution', 'droit_preference_preneur', 'cession_bail_conditions', 'clause_resolutoire'],
+  bail: ['date_signature_bail', 'date_effet_bail', 'duree_bail', 'duree_ferme', 'date_fin_bail', 'renonciation_triennale', 'loyer_contractuel_initial', 'loyer_contractuel_actuel', 'terme_paiement', 'indice_indexation', 'indice_reference', 'periodicite_indexation', 'clause_echelle_mobile', 'depot_garantie', 'garantie_premiere_demande', 'caution', 'droit_preference_preneur', 'cession_bail_conditions', 'clause_resolutoire', 'reduction_loyer_pct', 'reduction_loyer_debut', 'reduction_loyer_fin', 'walb_annonce'],
   charges: ['taxe_fonciere_annuelle', 'taxe_fonciere_refacturee', 'charges_refacturees', 'travaux_606_bailleur', 'inventaire_charges_annexe', 'tva_loyer'],
   encaissements: ['loyer_quitte_annualise', 'date_derniere_quittance', 'impayes_mentionnes'],
   copropriete: ['tantiemes_lot', 'travaux_votes', 'procedures_en_cours', 'charges_copro_annuelles'],

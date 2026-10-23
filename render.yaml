@@ -109,8 +109,10 @@ services:
       # Sentry, optionnel.
       - key: SENTRY_DSN
         sync: false
-      # Stockage objet S3 (decision A1) : a renseigner avant de passer
-      # STORAGE_DRIVER a `s3` (valeurs dans le dashboard, jamais ici).
+      # Stockage objet S3 (decision A1) : Scaleway Object Storage, region fr-par.
+      # S3_ENDPOINT=https://s3.fr-par.scw.cloud, S3_REGION=fr-par, puis le bucket
+      # et les cles API (dashboard Render, jamais ici) avant de passer
+      # STORAGE_DRIVER a `s3` sur le web ET sur le worker.
       - key: STORAGE_DRIVER
         value: local
       - key: S3_ENDPOINT

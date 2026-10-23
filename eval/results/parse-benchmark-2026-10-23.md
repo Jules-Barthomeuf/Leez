@@ -1,6 +1,6 @@
 # Benchmark des parseurs — 2026-10-23
 
-Commande : `npm run bench:parse -- --parseurs=pdfjs,tesseract,docling,mistral,azure,claude` · Machine : Apple M3, 8 cœurs, 9 Go, Node v22.23.1 (darwin arm64) · Durée totale : 24.2 s.
+Commande : `npm run bench:parse -- --parseurs=pdfjs,tesseract,docling,mistral,azure,claude` · Machine : Apple M3, 8 cœurs, 9 Go, Node v22.23.1 (darwin arm64) · Durée totale : 13.6 s.
 
 Protocole : `eval/fixtures/benchmark-v1/README.md`. Seul `documents/` est donné aux parseurs. Citations comparées après normalisation (NFKC, espaces, apostrophes, tirets, casse), similarité floue ≥ 0,90. Coordonnées de référence : pdfjs sur le PDF natif (`reference/natifs/` pour les scans). Coûts : mesurés sur les pages facturées × prix unitaire **configuré** (jamais en dur ; sans variable, « non mesuré »).
 
@@ -9,7 +9,7 @@ Protocole : `eval/fixtures/benchmark-v1/README.md`. Seul `documents/` est donné
 | Parseur | Statut | Description |
 | --- | --- | --- |
 | pdfjs | testé | Couche texte native (pdfjs-dist), coordonnées par bloc, sans OCR ni tableaux |
-| tesseract | testé | OCR Tesseract 5 (tesseract.js, langue fra, 250 dpi, rendu MuPDF), rotation automatique, boîtes par paragraphe |
+| tesseract | testé | OCR Tesseract 5 (tesseract.js, langue fra, 250 dpi, rendu MuPDF), rotation automatique, boîtes par ligne |
 | docling | testé (ok) | Docling (IBM, open source) : mise en page, OCR RapidOCR fr, tableaux structurés, en local via Python |
 | mistral | non testé, clé manquante : MISTRAL_API_KEY | Mistral OCR (mistral-ocr-latest), API hébergée dans l'UE par défaut, markdown + boîtes de blocs |
 | azure | non testé, clé manquante : AZURE_DI_ENDPOINT, AZURE_DI_KEY | Azure AI Document Intelligence, prebuilt-layout (2024-11-30), région UE à choisir à la création de la ressource |
@@ -25,8 +25,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 70.3 % | 1.6 % | 33.7 % | 33.8 % | 100 % | 100 % | 0 % | 95 % | 25 ms | 0.0000 € |
-| tesseract | 96.8 % | 0.0 % | 2.6 % | 6.0 % | 100 % | 20 % | 0 % | 89 % | 2.7 s | 0.0000 € |
+| pdfjs | 70.3 % | 1.6 % | 33.7 % | 33.8 % | 100 % | 100 % | 0 % | 95 % | 84 ms | 0.0000 € |
+| tesseract | 96.8 % | 0.0 % | 2.6 % | 6.0 % | 100 % | 100 % | 0 % | 89 % | 3.5 s | 0.0000 € |
 | docling | 99.0 % | 0.0 % | 6.0 % | 9.3 % | 60 % | 98 % | 100 % | 100 % | 6.1 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -36,8 +36,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 100.0 % | 0.0 % | 0.0 % | 0.1 % | 100 % | 100 % | 0 % | 100 % | 45 ms | 0.0000 € |
-| tesseract | 94.8 % | 0.0 % | 1.1 % | 2.1 % | 100 % | 23 % | 0 % | 88 % | 2.2 s | 0.0000 € |
+| pdfjs | 100.0 % | 0.0 % | 0.0 % | 0.1 % | 100 % | 100 % | 0 % | 100 % | 34 ms | 0.0000 € |
+| tesseract | 94.8 % | 0.0 % | 1.1 % | 2.1 % | 100 % | 99 % | 0 % | 88 % | 2.8 s | 0.0000 € |
 | docling | 100.0 % | 0.0 % | 3.6 % | 6.1 % | 51 % | 99 % | 100 % | 100 % | 2.8 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -47,8 +47,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 0.0 % | 0.0 % | 100.0 % | 100.0 % | — | — | 0 % | 0 % | 2 ms | 0.0000 € |
-| tesseract | 100.0 % | 0.0 % | 2.7 % | 7.8 % | 100 % | 19 % | 0 % | 100 % | 2.7 s | 0.0000 € |
+| pdfjs | 0.0 % | 0.0 % | 100.0 % | 100.0 % | — | — | 0 % | 0 % | 200 ms | 0.0000 € |
+| tesseract | 100.0 % | 0.0 % | 2.7 % | 7.8 % | 100 % | 100 % | 0 % | 100 % | 4.2 s | 0.0000 € |
 | docling | 100.0 % | 0.0 % | 5.1 % | 8.1 % | 69 % | 97 % | 100 % | 100 % | 8.8 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -58,8 +58,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 0.0 % | 0.0 % | 100.0 % | 100.0 % | — | — | — | — | 1 ms | 0.0000 € |
-| tesseract | 100.0 % | 0.0 % | 9.5 % | 22.8 % | 100 % | 3 % | — | — | 4.3 s | 0.0000 € |
+| pdfjs | 0.0 % | 0.0 % | 100.0 % | 100.0 % | — | — | — | — | 168 ms | 0.0000 € |
+| tesseract | 100.0 % | 0.0 % | 9.5 % | 22.8 % | 100 % | 100 % | — | — | 5.9 s | 0.0000 € |
 | docling | 90.6 % | 0.0 % | 17.3 % | 26.0 % | 59 % | 94 % | — | — | 18.0 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -69,8 +69,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 75.0 % | 13.9 % | 17.4 % | 17.4 % | 100 % | 100 % | — | — | 10 ms | 0.0000 € |
-| tesseract | 100.0 % | 0.0 % | 1.7 % | 2.1 % | 100 % | 17 % | — | — | 2.5 s | 0.0000 € |
+| pdfjs | 75.0 % | 13.9 % | 17.4 % | 17.4 % | 100 % | 100 % | — | — | 34 ms | 0.0000 € |
+| tesseract | 100.0 % | 0.0 % | 1.7 % | 2.1 % | 100 % | 100 % | — | — | 2.9 s | 0.0000 € |
 | docling | 100.0 % | 0.0 % | 5.4 % | 6.5 % | 100 % | 97 % | — | — | 2.3 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -80,8 +80,8 @@ Prix configurés : USD→EUR — · Mistral OCR — $/1000 pages · Azure DI —
 
 | Parseur | Citations bonne page | Autre page | CER | WER | Coord. présentes | Coord. correctes | Tableaux (structure) | Tableaux (lignes texte) | Temps/page | €/page |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 91.2 % | 0.0 % | 10.4 % | 10.4 % | 100 % | 100 % | 0 % | 95 % | 10 ms | 0.0000 € |
-| tesseract | 91.2 % | 0.0 % | 3.3 % | 7.1 % | 100 % | 29 % | 0 % | 89 % | 1.6 s | 0.0000 € |
+| pdfjs | 91.2 % | 0.0 % | 10.4 % | 10.4 % | 100 % | 100 % | 0 % | 95 % | 63 ms | 0.0000 € |
+| tesseract | 91.2 % | 0.0 % | 3.3 % | 7.1 % | 100 % | 99 % | 0 % | 89 % | 2.4 s | 0.0000 € |
 | docling | 100.0 % | 0.0 % | 11.8 % | 20.7 % | 25 % | 97 % | 100 % | 100 % | 5.2 s | 0.0000 € |
 | mistral | non testé |  |  |  |  |  |  |  |  |  |
 | azure | non testé |  |  |  |  |  |  |  |  |  |
@@ -136,15 +136,15 @@ Toutes les citations sont retrouvées par au moins un parseur testé.
 
 | Parseur | €/page mesuré | Temps/page | 2 000 pages/mois | 20 000 pages/mois | Calcul 2 000 p. | Calcul 20 000 p. |
 | --- | --- | --- | --- | --- | --- | --- |
-| pdfjs | 0.0000 € | 25 ms | 0.00 € | 0.00 € | 0.0 h | 0.1 h |
-| tesseract | 0.0000 € | 2.7 s | 0.00 € | 0.00 € | 1.5 h | 14.7 h |
+| pdfjs | 0.0000 € | 84 ms | 0.00 € | 0.00 € | 0.0 h | 0.5 h |
+| tesseract | 0.0000 € | 3.5 s | 0.00 € | 0.00 € | 2.0 h | 19.7 h |
 | docling | 0.0000 € | 6.1 s | 0.00 € | 0.00 € | 3.4 h | 33.9 h |
 
 Les parseurs locaux (pdfjs, tesseract, docling) ne coûtent que du temps de calcul sur le worker ; les heures indiquées sont à un seul processus, sur cette machine.
 
 ## Recommandation
 
-_Rédigée le 23 octobre 2026 à partir du rapport de ce jour (pdfjs, Tesseract et Docling testés ; Mistral, Azure et Claude non testés, clés absentes). Chiffres : voir les tableaux ci-dessus._
+_Rédigée le 23 octobre 2026 à partir du rapport de ce jour (pdfjs, Tesseract et Docling testés ; Mistral, Azure et Claude non testés, clés absentes). Mise à jour le même jour après les deux corrections demandées : boîtes Tesseract au niveau des lignes (boîtes correctes : 20 % → 100 %) et détection des couches texte OCR parasites (`packages/parsing/index.js`, `decider`). Chiffres : voir les tableaux ci-dessus. **Décision de Jules (23 octobre) : pdfjs + Tesseract validés comme défaut de la phase 1, Docling écarté pour la V1 (adaptateur conservé dans le benchmark), choix définitif après les vrais documents ; Mistral OCR à tester dès que `MISTRAL_API_KEY` est renseignée (au moment de cette mise à jour, la variable n'est pas dans `.env`).**_
 
 ### Combinaison recommandée
 
@@ -152,11 +152,11 @@ _Rédigée le 23 octobre 2026 à partir du rapport de ce jour (pdfjs, Tesseract 
 
 1. Extraire la couche texte avec pdfjs. Si la page compte **au moins 50 caractères hors espaces** (seuil déjà prévu par la spec, section 4) et que la part de lettres et chiffres dans ce texte dépasse 60 % (une couche texte parasite ou vide ne compte pas), la page est **native** : texte, blocs et boîtes de pdfjs, `ocr = false`.
 2. Sinon la page est rasterisée par MuPDF à 250 dpi et lue par Tesseract (`fra`), avec essai des trois autres orientations quand la confiance moyenne est inférieure à 60 : `ocr = true`.
-3. Une page scannée qui porte déjà une couche texte OCR (fréquent sur les data rooms) est traitée comme native mais marquée `ocr = true` par un indicateur de qualité (part de mots du dictionnaire) : à ajouter en phase 1, le jeu actuel n'en contient pas.
+3. Une page scannée qui porte déjà une couche texte OCR (fréquent sur les data rooms) est détectée par la présence d'une image qui couvre au moins 80 % de la page sous une couche texte exploitable (`couverture_image`, suivie dans la liste d'opérateurs pdfjs) : verdict `ocr_existant`, la page repasse par Tesseract et la couche existante est gardée en indice. Vérifié par un test sur un PDF « cherchable » produit par Tesseract (`packages/parsing/parsing.test.js`).
 
-**Pourquoi.** Sur les 11 PDF natifs, pdfjs retrouve 100 % des 193 citations à la bonne page, avec des coordonnées exactes, en 45 ms par page et pour 0 €. Sur les 6 scans, Tesseract retrouve 100 % des citations (A02, B02, Q02, T02 : CER 2,7 % ; B03 et T06, dégradés : CER 9,5 %), lit la page tournée de T06 et le loyer imprimé de B03 malgré l'annotation manuscrite, et sur le PDF mixte B04 il lit les 36 citations. Docling fait aussi bien sur les citations (99 % en tout, 100 % sur B04) et nettement mieux sur deux points, les tableaux structurés (100 % des cellules, contre rien pour Tesseract qui ne rend que des lignes de texte) et les boîtes (98 % correctes contre 20 %), mais il est 2 à 3 fois plus lent (6 s par page, 18 s sur les scans dégradés), moins bon sur les scans dégradés (B03 : 2 citations manquées, T06 p. 2 : ordre de lecture bousculé, CER 66 %) et il impose Python, PyTorch et des modèles de 1 Go : sur Render, un service Docker à part, avec au moins 4 Go. Pour la phase 1, l'extraction lit le texte entier de la page (spec, section 5) : des tableaux rendus ligne par ligne (95 à 100 % des cellules retrouvées sur une même ligne de texte pour pdfjs et Tesseract) suffisent au modèle. Je propose donc de garder la stack Node telle quelle et de revenir à Docling, ou à une API, si la phase 2 (grilles, états locatifs) montre que les tableaux en lignes ne suffisent pas.
+**Pourquoi.** Sur les 11 PDF natifs, pdfjs retrouve 100 % des 193 citations à la bonne page, avec des coordonnées exactes, en 45 ms par page et pour 0 €. Sur les 6 scans, Tesseract retrouve 100 % des citations (A02, B02, Q02, T02 : CER 2,7 % ; B03 et T06, dégradés : CER 9,5 %), lit la page tournée de T06 et le loyer imprimé de B03 malgré l'annotation manuscrite, et sur le PDF mixte B04 il lit les 36 citations. Docling fait aussi bien sur les citations (99 % en tout, 100 % sur B04) et nettement mieux sur deux points, les tableaux structurés (100 % des cellules, contre rien pour Tesseract qui ne rend que des lignes de texte) et les boîtes (98 % correctes contre 20 %), mais il est 2 à 3 fois plus lent (6 s par page, 18 s sur les scans dégradés), moins bon sur les scans dégradés (B03 : 2 citations manquées, T06 p. 2 : ordre de lecture bousculé, CER 66 %) et il impose Python, PyTorch et des modèles de 1 Go : sur Render, un service Docker à part, avec au moins 4 Go. Écarté pour la V1 (décision du 23 octobre), adaptateur conservé. Pour la phase 1, l'extraction lit le texte entier de la page (spec, section 5) : des tableaux rendus ligne par ligne (95 à 100 % des cellules retrouvées sur une même ligne de texte pour pdfjs et Tesseract) suffisent au modèle. Je propose donc de garder la stack Node telle quelle et de revenir à Docling, ou à une API, si la phase 2 (grilles, états locatifs) montre que les tableaux en lignes ne suffisent pas.
 
-**Ce qu'il faut corriger côté Tesseract avant la phase 1** (petit) : les boîtes. Le parseur rend aujourd'hui une boîte par « paragraphe » Tesseract, qui couvre souvent la page entière ; il faut descendre aux lignes (Tesseract les donne), ce qui remettra les coordonnées au niveau de pdfjs pour le visualiseur de source.
+**Boîtes Tesseract** : corrigé. Le parseur rend une boîte par ligne (au lieu d'une par « paragraphe » Tesseract, qui couvrait souvent la page entière) : 100 % de boîtes correctes sur les scans, au niveau de pdfjs sur les natifs.
 
 ### Coût mensuel
 

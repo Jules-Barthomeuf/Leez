@@ -13,7 +13,8 @@ Lis `docs/SPEC.md` avant toute tâche. Travaille phase par phase (section 20 de 
 - Toute requête SQL de la plateforme passe par `avecOrg(orgId, role, fn)` de `server/plateforme/db.js`, qui pose `app.org_id` et `app.role` pour la RLS. Jamais de `pool.query` direct sur une table `plateforme.*`.
 - Les jobs sont dans pg-boss (`server/plateforme/file.js`). Chaque job reçoit `org_id` dans ses données et le filtre explicitement.
 - Code, commentaires, messages d'erreur et interface en français. Noms de fichiers et de fonctions en français dans la plateforme, sauf les noms imposés par la spec (tables, clés, routes).
-- Tests : `npm test` (tout), `npm run test:plateforme`, `npm run test:core`. Les tests de base de données créent une base jetable sur le Postgres local.
+- Tests : `npm test` (tout), `npm run test:plateforme`, `npm run test:core`, `npm run test:parsing`. Les tests de base de données créent une base jetable sur le Postgres pointé par `DATABASE_URL`, sinon sur le Postgres embarqué (sans pgvector). Pour exercer pgvector en local : `docker compose up -d` (image `pgvector/pgvector:pg16`) et `DATABASE_URL=postgres://leez:leez@localhost:5432/leez`.
+- Parseurs : `packages/parsing` (pdfjs pour les pages à couche texte, Tesseract pour les scans, décision page par page par `couchesTexte` / `decider`). Benchmark : `npm run bench:parse`, rapport dans `eval/results/`.
 
 ## Principes non négociables (spec, section 0)
 
