@@ -1039,12 +1039,24 @@ La spec a été écrite sans connaître le dépôt. Leez existe déjà : un serv
 | Drizzle + migrations SQL | `node-pg-migrate`, SQL brut, dans `server/migrations/` (à partir de `020_create_plateforme.js`) |
 | Supabase Auth, `auth.uid()` | `organizations` = la table `workspaces` (colonnes `slug`, `settings_json` ajoutées) ; `memberships` = `users.workspace_id` + `users.role`. `org_id` = `workspaces.id` partout |
 | RLS avec `auth.uid()` | RLS Postgres réelle sur chaque table à `org_id`, avec `FORCE ROW LEVEL SECURITY`, politique `org_id = current_setting('app.org_id', true)::uuid`, et écriture interdite quand `current_setting('app.role', true) = 'viewer'`. Toute requête de la plateforme passe par `avecOrg(orgId, role, fn)` (`server/plateforme/db.js`), qui ouvre une transaction et pose ces deux réglages. Les tables sans `org_id` n'ont pas de RLS. Note : un superutilisateur Postgres (cas du Postgres embarqué local) ignore la RLS ; le test d'isolation vérifie donc aussi l'API de bout en bout |
-| Supabase Storage, URL signées 5 min | Disque local sous `UPLOAD_DIR/plateforme/<org_id>/<deal_id>/<document_id>/<fichier>`. Téléchargement par lien signé HMAC (`SESSION_SECRET`) valable 5 minutes : `GET /api/storage/:jeton`. L'envoi se fait en multipart sur `POST /api/deals/:id/uploads` (pas d'URL d'upload signée : le serveur reçoit lui-même le fichier) |
+| Supabase Storage, URL signées 5 min | Interface `server/plateforme/stockage.js` à deux pilotes (`STORAGE_DRIVER=local|s3`), clés `org/<org_id>/docs/<sha256>`, liens signés 5 minutes par le pilote (voir 21.2 bis, A1). L'envoi se fait en multipart sur `POST /api/deals/:id/uploads` (pas d'URL d'upload signée : le serveur reçoit lui-même le fichier) |
 | Supabase Realtime | Sondage HTTP côté interface (toutes les 3 s pendant un traitement), comme la Prospection |
 | pg-boss | pg-boss 12, schéma `pgboss`. Concurrence par organisation via `group: { id: org_id }` et `groupConcurrency` |
 | `pgvector` | Créé s'il est disponible (Render) ; sinon la colonne `embedding` est un `real[]` et la recherche vectorielle se fait en mémoire (phase 4) |
 | Vitest, Playwright | `node --test`. Les tests de base utilisent une base jetable créée sur le Postgres local (`server/plateforme/test-utils.js`) |
 | Sentry | `@sentry/node`, actif seulement si `SENTRY_DSN` est défini |
+
+### 21.2 bis Décisions du 23 octobre 2026 (préparation de la phase 1)
+
+Validé par Jules : la plateforme se construit dans ce dépôt, sous quatre conditions, toutes traitées dans la branche `phase-1/preparation-benchmark`.
+
+**A1. Stockage des fichiers.** Les fichiers déposés et les fichiers extraits d'un zip ou d'un mail passent par une interface unique (`server/plateforme/stockage.js` : `put`, `get`, `signedUrl`, `delete`) avec deux pilotes choisis par `STORAGE_DRIVER` : `local` (disque, développement et tests) et `s3` (stockage objet compatible S3, production : `S3_ENDPOINT`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`). La clé d'un fichier est `org/<org_id>/docs/<sha256>` : le sha256 est calculé au dépôt, jamais le nom d'origine n'entre dans la clé, et deux dépôts identiques partagent le même objet. La colonne `documents.storage_path` contient cette clé. Un contenu déjà présent dans le dossier est créé directement en `duplicate` avec `duplicate_of`, sans job. Les liens signés de 5 minutes viennent du pilote : URL présignée S3 en production (Express ne sert jamais le fichier), jeton HMAC servi par `GET /api/storage/:jeton` en local. Le fournisseur (Scaleway Paris, Cloudflare R2 juridiction UE, OVHcloud) reste à choisir par Jules ; les trois sont compatibles.
+
+**A2. Extensions Postgres et région.** `scripts/check-db.js` vérifie version, hôte et extensions (`vector`, `unaccent`, `pg_trgm`). La migration 021 crée les extensions si elles manquent (vector seulement si le serveur la propose). Au démarrage, `verifierExtensions()` arrête le web et le worker si `unaccent` ou `pg_trgm` manquent, et si `vector` manque en production (`NODE_ENV=production`) ou avec `REQUIRE_PGVECTOR=true` ; hors production, le Postgres embarqué n'a pas pgvector et l'absence est seulement signalée. La région (Francfort) ne se vérifie que dans le tableau de bord Render.
+
+**A3. Typage.** Pas de migration vers TypeScript. `tsconfig.json` (`allowJs`, `checkJs`, `strict`, `noUncheckedIndexedAccess`, `noEmit`) couvre `packages/core`, `packages/calc` et `packages/rules`. Les types de base sont en JSDoc dans `packages/core/types.js` (`Money` en decimal.js, `Fact`, `Evidence`, `FactStatus`, `MetricResult`, `ParsedPage`). `npm run typecheck` fait partie de la CI.
+
+**A4. Worker séparé.** `WORKER_INLINE=false` démarre le web sans worker ; `npm run worker` lance le worker seul sur la même base et le même stockage (d'où A1 : le disque d'un service web Render n'est pas partagé). `MAX_UPLOAD_MB` (défaut 100) borne la taille d'un fichier, côté API (413, message clair) et côté interface (refus avant envoi). `WORKER_CONCURRENCY` (défaut 2) borne les jobs simultanés par file dans un processus ; 4 au plus par organisation. Le second service Render est décrit, commenté, dans `render.yaml` (plan `standard`, 2 Go). Test : `server/plateforme/worker-separe.test.js`.
 
 ### 21.3 Arborescence réelle
 
@@ -1057,7 +1069,7 @@ Leez/
 │   ├── calc/  rules/  llm/  parsing/  search/  extraction/  agent/  deliverables/  public-data/  evals/
 ├── templates/                   templates d'extraction, resolution.json, modèles .xlsx/.docx
 ├── server/
-│   ├── plateforme/              db.js (avecOrg), stockage.js, file.js (pg-boss), worker.js, jobs/*, routes.js, audit.js
+│   ├── plateforme/              db.js (avecOrg), stockage.js (local | s3), file.js (pg-boss), worker.js, jobs/*, routes.js, audit.js
 │   ├── worker.js                entrée du worker seul
 │   ├── prospection/             module indépendant (ne pas lier)
 │   └── migrations/020_create_plateforme.js
