@@ -1,0 +1,80 @@
+{
+  "id": "Q03",
+  "fichier": "documents/Q03_avis_echeance_paris_T4-2026.pdf",
+  "doc_type": "quittance",
+  "dossier": "C-Paris",
+  "format": "pdf_natif",
+  "champs": {
+    "type_piece": {
+      "valeur": "avis_echeance",
+      "type": "enum",
+      "citation": "AVIS D'ÉCHÉANCE",
+      "page": 1
+    },
+    "emetteur": {
+      "valeur": "Foncière Haussmann-Provence",
+      "type": "texte",
+      "citation": "Foncière Haussmann-Provence",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "ALTITUDE CONSEIL",
+      "type": "texte",
+      "citation": "ALTITUDE CONSEIL",
+      "page": 1
+    },
+    "periode_debut": {
+      "valeur": "2026-10-01",
+      "type": "date",
+      "citation": "du 01/10/2026 au 31/12/2026",
+      "page": 1
+    },
+    "periode_fin": {
+      "valeur": "2026-12-31",
+      "type": "date",
+      "citation": "du 01/10/2026 au 31/12/2026",
+      "page": 1
+    },
+    "loyer_ht": {
+      "valeur": "66200.00",
+      "type": "montant",
+      "citation": "66 200,00 €",
+      "unite": "EUR",
+      "note": "x4 = 264 800 € ≠ 262 880 € de l'état locatif E02 : anomalie volontaire",
+      "page": 1
+    },
+    "provisions_charges_ht": {
+      "valeur": "9180.00",
+      "type": "montant",
+      "citation": "9 180,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "taxe_fonciere_ht": {
+      "valeur": null,
+      "absent": true,
+      "note": "Incluse dans les provisions, non isolée"
+    },
+    "tva_totale": {
+      "valeur": "15076.00",
+      "type": "montant",
+      "citation": "15 076,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "total_ttc": {
+      "valeur": "90456.00",
+      "type": "montant",
+      "citation": "90 456,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "date_emission": {
+      "valeur": "2026-09-15",
+      "type": "date",
+      "citation": "Date d'émission : 15/09/2026",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

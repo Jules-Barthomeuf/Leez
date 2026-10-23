@@ -1,0 +1,81 @@
+{
+  "id": "Q01",
+  "fichier": "documents/Q01_quittance_lyon_T3-2026.pdf",
+  "doc_type": "quittance",
+  "dossier": "A-Lyon",
+  "format": "pdf_natif",
+  "champs": {
+    "type_piece": {
+      "valeur": "quittance",
+      "type": "enum",
+      "citation": "QUITTANCE DE LOYER",
+      "page": 1
+    },
+    "emetteur": {
+      "valeur": "Cabinet Gestion Rhodanienne",
+      "type": "texte",
+      "citation": "Cabinet Gestion Rhodanienne",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "MAISON VERLAINE OPTIQUE",
+      "type": "texte",
+      "citation": "MAISON VERLAINE OPTIQUE",
+      "page": 1
+    },
+    "periode_debut": {
+      "valeur": "2026-07-01",
+      "type": "date",
+      "citation": "du 01/07/2026 au 30/09/2026",
+      "page": 1
+    },
+    "periode_fin": {
+      "valeur": "2026-09-30",
+      "type": "date",
+      "citation": "du 01/07/2026 au 30/09/2026",
+      "page": 1
+    },
+    "loyer_ht": {
+      "valeur": "23100.00",
+      "type": "montant",
+      "citation": "23 100,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "provisions_charges_ht": {
+      "valeur": "1200.00",
+      "type": "montant",
+      "citation": "1 200,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "taxe_fonciere_ht": {
+      "valeur": "3412.00",
+      "type": "montant",
+      "citation": "3 412,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "tva_totale": {
+      "valeur": "5542.40",
+      "type": "montant",
+      "citation": "5 542,40 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "total_ttc": {
+      "valeur": "33254.40",
+      "type": "montant",
+      "citation": "33 254,40 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "date_emission": {
+      "valeur": "2026-07-05",
+      "type": "date",
+      "citation": "Date d'émission : 05/07/2026",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

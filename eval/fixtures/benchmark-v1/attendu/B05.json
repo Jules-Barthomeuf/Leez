@@ -1,0 +1,130 @@
+{
+  "id": "B05",
+  "fichier": "documents/B05_bail_paris_bureaux.pdf",
+  "doc_type": "bail_commercial",
+  "dossier": "C-Paris",
+  "format": "pdf_natif",
+  "champs": {
+    "bailleur": {
+      "valeur": "FONCIÈRE HAUSSMANN-PROVENCE",
+      "type": "texte",
+      "citation": "FONCIÈRE HAUSSMANN-PROVENCE",
+      "page": 1
+    },
+    "preneur": {
+      "valeur": "ALTITUDE CONSEIL",
+      "type": "texte",
+      "citation": "ALTITUDE CONSEIL",
+      "page": 1
+    },
+    "siren_preneur": {
+      "valeur": "999573914",
+      "type": "siren",
+      "citation": "999 573 914",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "48 rue de Provence, 75009 Paris",
+      "type": "adresse",
+      "citation": "48 rue de Provence, 75009 Paris",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "612",
+      "type": "surface",
+      "citation": "La surface totale des locaux est de 612 m² utiles",
+      "unite": "m2",
+      "page": 1
+    },
+    "destination": {
+      "valeur": "bureaux et activités de conseil aux entreprises",
+      "type": "texte",
+      "citation": "exclusivement à l'activité de bureaux et activités de conseil aux entreprises",
+      "page": 1
+    },
+    "date_prise_effet": {
+      "valeur": "2022-07-01",
+      "type": "date",
+      "citation": "commenceront à courir le 1er juillet 2022",
+      "page": 1
+    },
+    "duree_annees": {
+      "valeur": "9",
+      "type": "nombre",
+      "citation": "durée de neuf (9) années entières et consécutives",
+      "unite": "ans",
+      "page": 1
+    },
+    "duree_ferme_annees": {
+      "valeur": "6",
+      "type": "nombre",
+      "citation": "le Preneur renonce expressément à la faculté de donner congé à l'expiration de la première période triennale",
+      "unite": "ans",
+      "page": 1
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "248000.00",
+      "type": "montant",
+      "citation": "loyer annuel de 248 000 € (deux cent quarante-huit mille euros) hors taxes et hors charges",
+      "unite": "EUR",
+      "page": 1
+    },
+    "periodicite_paiement": {
+      "valeur": "trimestriel",
+      "type": "enum",
+      "citation": "trimestriellement et d'avance",
+      "page": 2
+    },
+    "terme_paiement": {
+      "valeur": "echoir",
+      "type": "enum",
+      "citation": "trimestriellement et d'avance",
+      "page": 2
+    },
+    "franchise_loyer_mois": {
+      "valeur": "4",
+      "type": "nombre",
+      "citation": "franchise de loyer de 4 mois",
+      "unite": "mois",
+      "page": 2
+    },
+    "indice": {
+      "valeur": "ILAT",
+      "type": "enum",
+      "citation": "Indice des Loyers des Activités Tertiaires (ILAT)",
+      "page": 2
+    },
+    "indice_base": {
+      "valeur": "ILAT_T1_2022=120.73",
+      "type": "indice_base",
+      "citation": "celui du 1er trimestre 2022, soit 120,73",
+      "page": 2
+    },
+    "depot_garantie": {
+      "valeur": "62000.00",
+      "type": "montant",
+      "citation": "dépôt de garantie de 62 000 €",
+      "unite": "EUR",
+      "page": 2
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Le Preneur remboursera au Bailleur, en sus du loyer, la taxe foncière",
+      "page": 2
+    },
+    "option_tva": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "le Preneur acquittera la TVA au taux en vigueur en sus du loyer",
+      "page": 2
+    },
+    "date_signature": {
+      "valeur": "2022-06-10",
+      "type": "date",
+      "citation": "le 10 juin 2022, en deux exemplaires",
+      "page": 3
+    }
+  },
+  "nombre_pages": 3
+}

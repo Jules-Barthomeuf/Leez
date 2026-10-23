@@ -17,3 +17,10 @@ data/pgdata/
 # Sauvegardes locales de .env (contiennent des secrets)
 .env.bak-*
 data/prospection/
+
+# Benchmark des parseurs : sorties brutes et cache, documents reels (jamais commites)
+eval/results/raw/
+eval/.cache/
+eval/fixtures/reels/*
+!eval/fixtures/reels/README.md
+eval/fixtures/benchmark-v1/.DS_Store

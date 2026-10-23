@@ -1,0 +1,76 @@
+{
+  "id": "A01",
+  "fichier": "documents/A01_avenant1_lyon_indice.pdf",
+  "doc_type": "avenant",
+  "dossier": "A-Lyon",
+  "format": "pdf_natif",
+  "champs": {
+    "numero_avenant": {
+      "valeur": "1",
+      "type": "nombre",
+      "citation": "AVENANT N° 1",
+      "page": 1
+    },
+    "bailleur": {
+      "valeur": "SCI LES ARCHERS INVEST",
+      "type": "texte",
+      "citation": "SCI LES ARCHERS INVEST",
+      "page": 1
+    },
+    "preneur": {
+      "valeur": "MAISON VERLAINE OPTIQUE",
+      "type": "texte",
+      "citation": "MAISON VERLAINE OPTIQUE",
+      "page": 1
+    },
+    "bail_date_origine": {
+      "valeur": "2021-03-15",
+      "type": "date",
+      "citation": "bail commercial en date du 15 mars 2021",
+      "page": 1
+    },
+    "date_avenant": {
+      "valeur": "2023-01-16",
+      "type": "date",
+      "citation": "Fait à Lyon, le 16 janvier 2023",
+      "page": 1
+    },
+    "objet": {
+      "valeur": "substitution_indice",
+      "type": "enum",
+      "citation": "Substitution d'indice",
+      "page": 1
+    },
+    "nouvel_indice": {
+      "valeur": "ILC",
+      "type": "enum",
+      "citation": "en lieu et place de l'indice du coût de la construction (ICC)",
+      "page": 1
+    },
+    "nouvel_indice_base": {
+      "valeur": "ILC_T3_2022=128.59",
+      "type": "indice_base",
+      "citation": "celui du 3e trimestre 2022, soit 128,59",
+      "page": 1
+    },
+    "date_effet_modification": {
+      "valeur": "2023-04-01",
+      "type": "date",
+      "citation": "À compter du 1er avril 2023",
+      "page": 1
+    },
+    "loyer_en_vigueur_ht_hc": {
+      "valeur": "89250.00",
+      "type": "montant",
+      "citation": "soit 89 250 € hors taxes et hors charges",
+      "unite": "EUR",
+      "page": 1
+    },
+    "nouvelle_duree_annees": {
+      "valeur": null,
+      "absent": true,
+      "note": "Durée inchangée"
+    }
+  },
+  "nombre_pages": 1
+}

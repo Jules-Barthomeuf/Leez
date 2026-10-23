@@ -1,0 +1,246 @@
+{
+  "id": "T04",
+  "fichier": "documents/T04_teaser_marseille_multilots.pdf",
+  "doc_type": "teaser",
+  "dossier": "B-Marseille",
+  "format": "pdf_natif",
+  "champs": {
+    "type_actif": {
+      "valeur": "retail_park",
+      "type": "enum",
+      "citation": "Retail park – ensemble commercial de périphérie",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "210 route des Camoins, 13011 Marseille",
+      "type": "adresse",
+      "citation": "Vallon Rouge, 210 route des Camoins, 13011 Marseille",
+      "page": 1
+    },
+    "code_postal": {
+      "valeur": "13011",
+      "type": "texte",
+      "citation": "13011 Marseille",
+      "page": 1
+    },
+    "ville": {
+      "valeur": "Marseille",
+      "type": "texte",
+      "citation": "13011 Marseille",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "4050",
+      "type": "surface",
+      "citation": "4 050 m² SDP",
+      "unite": "m2",
+      "page": 1
+    },
+    "nombre_lots": {
+      "valeur": "4",
+      "type": "nombre",
+      "citation": "4 (dont 1 vacante)",
+      "page": 1
+    },
+    "taux_occupation_pct": {
+      "valeur": "88",
+      "type": "pourcentage",
+      "citation": "88 % (en surface)",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": null,
+      "absent": true,
+      "note": "Multi-locataires : voir lignes"
+    },
+    "date_effet_bail": {
+      "valeur": null,
+      "absent": true,
+      "note": "Multi-locataires"
+    },
+    "indice": {
+      "valeur": null,
+      "absent": true,
+      "note": "Non précisé"
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "380400.00",
+      "type": "montant",
+      "citation": "380 400 € HT HC par an",
+      "unite": "EUR",
+      "note": "Ne pas confondre avec le potentiel de réversion de 52 800 € (valeur locative, pas un loyer)",
+      "page": 1
+    },
+    "prix": {
+      "valeur": "5450000.00",
+      "type": "montant",
+      "citation": "5 450 000 € acte en main",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix_base": {
+      "valeur": "acte_en_main",
+      "type": "enum",
+      "citation": "5 450 000 € acte en main",
+      "page": 1
+    },
+    "rendement_annonce_pct": {
+      "valeur": "6.98",
+      "type": "pourcentage",
+      "citation": "6,98 %",
+      "note": "Rendement acte en main",
+      "page": 1
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Taxe foncière intégralement refacturée aux locataires",
+      "page": 1
+    },
+    "mandataire": {
+      "valeur": "Provence Retail Advisory",
+      "type": "texte",
+      "citation": "Provence Retail Advisory",
+      "page": 1
+    }
+  },
+  "lignes": [
+    {
+      "lot": {
+        "valeur": "A",
+        "type": "texte",
+        "citation": "A",
+        "page": 1
+      },
+      "locataire": {
+        "valeur": "Brico Sud Distribution",
+        "type": "texte",
+        "citation": "Brico Sud Distribution",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "1850",
+        "type": "surface",
+        "citation": "1 850 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "185000.00",
+        "type": "montant",
+        "citation": "185 000 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2031-12-31",
+        "type": "date",
+        "citation": "31/12/2031",
+        "page": 1
+      }
+    },
+    {
+      "lot": {
+        "valeur": "B",
+        "type": "texte",
+        "citation": "B",
+        "page": 1
+      },
+      "locataire": {
+        "valeur": "Croquettes & Co",
+        "type": "texte",
+        "citation": "Croquettes & Co",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "620",
+        "type": "surface",
+        "citation": "620 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "74400.00",
+        "type": "montant",
+        "citation": "74 400 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2030-06-30",
+        "type": "date",
+        "citation": "30/06/2030",
+        "page": 1
+      }
+    },
+    {
+      "lot": {
+        "valeur": "C",
+        "type": "texte",
+        "citation": "C",
+        "page": 1
+      },
+      "locataire": {
+        "valeur": "Sportissime Méditerranée",
+        "type": "texte",
+        "citation": "Sportissime Méditerranée",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "1100",
+        "type": "surface",
+        "citation": "1 100 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "121000.00",
+        "type": "montant",
+        "citation": "121 000 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2028-08-31",
+        "type": "date",
+        "citation": "31/08/2028",
+        "page": 1
+      }
+    },
+    {
+      "lot": {
+        "valeur": "D",
+        "type": "texte",
+        "citation": "D",
+        "page": 1
+      },
+      "locataire": {
+        "valeur": null,
+        "type": "texte",
+        "citation": "Vacant",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "480",
+        "type": "surface",
+        "citation": "480 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": null,
+        "type": "montant",
+        "citation": "—",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": null,
+        "type": "date",
+        "citation": "—",
+        "page": 1
+      }
+    }
+  ],
+  "nombre_pages": 1
+}

@@ -1,0 +1,65 @@
+{
+  "id": "A03",
+  "fichier": "documents/A03_avenant3_toulouse_loyer.pdf",
+  "doc_type": "avenant",
+  "dossier": "F-Toulouse",
+  "format": "pdf_natif",
+  "champs": {
+    "numero_avenant": {
+      "valeur": "3",
+      "type": "nombre",
+      "citation": "AVENANT N° 3",
+      "page": 1
+    },
+    "bailleur": {
+      "valeur": "SCI CAPITOLE 18",
+      "type": "texte",
+      "citation": "SCI CAPITOLE 18",
+      "page": 1
+    },
+    "preneur": {
+      "valeur": "BOULANGERIES GARONNE",
+      "type": "texte",
+      "citation": "BOULANGERIES GARONNE",
+      "page": 1
+    },
+    "bail_date_origine": {
+      "valeur": "2018-05-14",
+      "type": "date",
+      "citation": "bail commercial en date du 14 mai 2018",
+      "page": 1
+    },
+    "date_avenant": {
+      "valeur": "2026-05-18",
+      "type": "date",
+      "citation": "Fait à Toulouse, le 18 mai 2026",
+      "page": 1
+    },
+    "objet": {
+      "valeur": "baisse_loyer_prorogation",
+      "type": "enum",
+      "citation": "Prorogation",
+      "page": 1
+    },
+    "nouveau_loyer_annuel_ht_hc": {
+      "valeur": "47000.00",
+      "type": "montant",
+      "citation": "le loyer annuel est fixé à la somme de 47 000 € hors taxes et hors charges",
+      "unite": "EUR",
+      "page": 1
+    },
+    "date_effet_modification": {
+      "valeur": "2026-07-01",
+      "type": "date",
+      "citation": "À compter du 1er juillet 2026",
+      "page": 1
+    },
+    "nouvelle_date_fin": {
+      "valeur": "2030-05-31",
+      "type": "date",
+      "citation": "soit jusqu'au 31 mai 2030",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

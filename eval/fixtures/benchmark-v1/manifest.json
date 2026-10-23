@@ -1,0 +1,245 @@
+{
+  "version": "1.0",
+  "genere_le": "2026-10-23",
+  "date_de_reference": "2026-10-23",
+  "avertissement": "Documents entièrement fictifs. Noms, SIREN (préfixe 999), adresses et indices INSEE sont inventés ou approximatifs : ne pas les utiliser comme référence réelle.",
+  "documents": [
+    {
+      "id": "A01",
+      "fichier": "documents/A01_avenant1_lyon_indice.pdf",
+      "doc_type": "avenant",
+      "dossier": "A-Lyon",
+      "format": "pdf_natif",
+      "defauts": [],
+      "natif_reference": null
+    },
+    {
+      "id": "A02",
+      "fichier": "documents/A02_avenant_nice_renouvellement_scan.pdf",
+      "doc_type": "avenant",
+      "dossier": "D-Nice",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan moyen",
+        "pas de couche texte"
+      ],
+      "natif_reference": "reference/natifs/A02_natif.pdf"
+    },
+    {
+      "id": "A03",
+      "fichier": "documents/A03_avenant3_toulouse_loyer.pdf",
+      "doc_type": "avenant",
+      "dossier": "F-Toulouse",
+      "format": "pdf_natif",
+      "defauts": [
+        "renvoie à des avenants précédents"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "B01",
+      "fichier": "documents/B01_bail_lyon_optique.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "A-Lyon",
+      "format": "pdf_natif",
+      "defauts": [],
+      "natif_reference": null
+    },
+    {
+      "id": "B02",
+      "fichier": "documents/B02_bail_marseille_lotC_scan.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "B-Marseille",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan 200 dpi niveaux de gris",
+        "légère inclinaison",
+        "pas de couche texte"
+      ],
+      "natif_reference": "reference/natifs/B02_natif.pdf"
+    },
+    {
+      "id": "B03",
+      "fichier": "documents/B03_bail_nice_scan_degrade.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "D-Nice",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan dégradé couleur",
+        "tampon d'enregistrement p.1",
+        "annotation manuscrite contradictoire sur le loyer",
+        "indice entouré au stylo",
+        "tampon COPIE sur la dernière page",
+        "perforations"
+      ],
+      "natif_reference": "reference/natifs/B03_natif.pdf"
+    },
+    {
+      "id": "B04",
+      "fichier": "documents/B04_bail_toulouse_avec_avenants_1-2.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "F-Toulouse",
+      "format": "pdf_mixte",
+      "defauts": [
+        "un seul PDF : bail + avenant 1 + avenant 2",
+        "avenant 1 scanné au milieu de pages natives",
+        "découpage en sous-documents"
+      ],
+      "natif_reference": "reference/natifs/B04_natif.pdf"
+    },
+    {
+      "id": "B05",
+      "fichier": "documents/B05_bail_paris_bureaux.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "C-Paris",
+      "format": "pdf_natif",
+      "defauts": [
+        "franchise",
+        "renonciation 1re triennale"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "B06",
+      "fichier": "documents/B06_bail_bordeaux_pharmacie.pdf",
+      "doc_type": "bail_commercial",
+      "dossier": "E-Bordeaux",
+      "format": "pdf_natif",
+      "defauts": [
+        "espaces insécables dans les montants",
+        "bail ferme 10 ans",
+        "loyer à terme échu",
+        "pas de TVA"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "E01",
+      "fichier": "documents/E01_etat_locatif_marseille.xlsx",
+      "doc_type": "etat_locatif",
+      "dossier": "B-Marseille",
+      "format": "xlsx",
+      "defauts": [
+        "en-tête décalé (ligne 5)",
+        "ligne de total en formule",
+        "lot vacant",
+        "2e onglet"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "E02",
+      "fichier": "documents/E02_etat_locatif_paris.pdf",
+      "doc_type": "etat_locatif",
+      "dossier": "C-Paris",
+      "format": "pdf_natif",
+      "defauts": [
+        "tableau paysage",
+        "ligne de total"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "Q01",
+      "fichier": "documents/Q01_quittance_lyon_T3-2026.pdf",
+      "doc_type": "quittance",
+      "dossier": "A-Lyon",
+      "format": "pdf_natif",
+      "defauts": [],
+      "natif_reference": null
+    },
+    {
+      "id": "Q02",
+      "fichier": "documents/Q02_quittance_marseille_lotB_scan.pdf",
+      "doc_type": "quittance",
+      "dossier": "B-Marseille",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan moyen",
+        "perforations de classeur",
+        "pas de couche texte"
+      ],
+      "natif_reference": "reference/natifs/Q02_natif.pdf"
+    },
+    {
+      "id": "Q03",
+      "fichier": "documents/Q03_avis_echeance_paris_T4-2026.pdf",
+      "doc_type": "quittance",
+      "dossier": "C-Paris",
+      "format": "pdf_natif",
+      "defauts": [
+        "avis d'échéance, pas une quittance"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "T01",
+      "fichier": "documents/T01_teaser_lyon.pdf",
+      "doc_type": "teaser",
+      "dossier": "A-Lyon",
+      "format": "pdf_natif",
+      "defauts": [],
+      "natif_reference": null
+    },
+    {
+      "id": "T02",
+      "fichier": "documents/T02_teaser_nice_scan.pdf",
+      "doc_type": "teaser",
+      "dossier": "D-Nice",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan moyen",
+        "pas de couche texte"
+      ],
+      "natif_reference": "reference/natifs/T02_natif.pdf"
+    },
+    {
+      "id": "T03",
+      "fichier": "documents/T03_teaser_bordeaux_email.eml",
+      "doc_type": "teaser",
+      "dossier": "E-Bordeaux",
+      "format": "eml",
+      "defauts": [
+        "teaser dans le corps du mail",
+        "fil transféré avec un ancien prix",
+        "texte + HTML"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "T04",
+      "fichier": "documents/T04_teaser_marseille_multilots.pdf",
+      "doc_type": "teaser",
+      "dossier": "B-Marseille",
+      "format": "pdf_natif",
+      "defauts": [
+        "tableau"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "T05",
+      "fichier": "documents/T05_teaser_paris_bureaux.pdf",
+      "doc_type": "teaser",
+      "dossier": "C-Paris",
+      "format": "pdf_natif",
+      "defauts": [
+        "tableau"
+      ],
+      "natif_reference": null
+    },
+    {
+      "id": "T06",
+      "fichier": "documents/T06_teaser_toulouse_scan.pdf",
+      "doc_type": "teaser",
+      "dossier": "F-Toulouse",
+      "format": "pdf_scan",
+      "defauts": [
+        "scan moyen couleur",
+        "tampon CONFIDENTIEL",
+        "dernière page scannée à 90°"
+      ],
+      "natif_reference": "reference/natifs/T06_natif.pdf"
+    }
+  ]
+}

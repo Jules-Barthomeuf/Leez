@@ -1,0 +1,109 @@
+{
+  "id": "T03",
+  "fichier": "documents/T03_teaser_bordeaux_email.eml",
+  "doc_type": "teaser",
+  "dossier": "E-Bordeaux",
+  "format": "eml",
+  "champs": {
+    "type_actif": {
+      "valeur": "commerce_pharmacie",
+      "type": "enum",
+      "citation": "Murs d'une pharmacie",
+      "partie": "text/plain"
+    },
+    "adresse": {
+      "valeur": "57 cours Alsace-et-Lorraine, 33000 Bordeaux",
+      "type": "adresse",
+      "citation": "57 cours Alsace-et-Lorraine, 33000 Bordeaux",
+      "partie": "text/plain"
+    },
+    "code_postal": {
+      "valeur": "33000",
+      "type": "texte",
+      "citation": "33000 Bordeaux",
+      "partie": "text/plain"
+    },
+    "ville": {
+      "valeur": "Bordeaux",
+      "type": "texte",
+      "citation": "33000 Bordeaux",
+      "partie": "text/plain"
+    },
+    "surface_m2": {
+      "valeur": "168",
+      "type": "surface",
+      "citation": "Surface : 168 m² + cave",
+      "unite": "m2",
+      "partie": "text/plain"
+    },
+    "locataire": {
+      "valeur": "PHARMACIE DU PORT DE LA LUNE",
+      "type": "texte",
+      "citation": "Pharmacie du Port de la Lune (SELARL)",
+      "partie": "text/plain"
+    },
+    "date_effet_bail": {
+      "valeur": "2024-01-01",
+      "type": "date",
+      "citation": "à compter du 1er janvier 2024",
+      "partie": "text/plain"
+    },
+    "duree_ferme_annees": {
+      "valeur": "10",
+      "type": "nombre",
+      "citation": "Bail ferme de 10 ans",
+      "unite": "ans",
+      "partie": "text/plain"
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "58000.00",
+      "type": "montant",
+      "citation": "58 000 € HT HC par an",
+      "unite": "EUR",
+      "partie": "text/plain"
+    },
+    "indice": {
+      "valeur": "ILC",
+      "type": "enum",
+      "citation": "indexé ILC",
+      "partie": "text/plain"
+    },
+    "option_tva": {
+      "valeur": false,
+      "type": "booleen",
+      "citation": "non soumis à TVA",
+      "partie": "text/plain"
+    },
+    "prix": {
+      "valeur": "980000.00",
+      "type": "montant",
+      "citation": "980 000 € frais d'agence inclus",
+      "unite": "EUR",
+      "note": "Le prix de 1 050 000 € du message d'origine est un ancien souhait du vendeur, pas le prix demandé",
+      "partie": "text/plain"
+    },
+    "prix_base": {
+      "valeur": "fai_hors_frais_notaire",
+      "type": "enum",
+      "citation": "frais d'agence inclus, hors frais de notaire",
+      "partie": "text/plain"
+    },
+    "rendement_annonce_pct": {
+      "valeur": "5.92",
+      "type": "pourcentage",
+      "citation": "Rendement : 5,92 %",
+      "partie": "text/plain"
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": null,
+      "absent": true,
+      "note": "Non mentionnée dans le mail"
+    },
+    "mandataire": {
+      "valeur": "Cabinet Dupré Transactions",
+      "type": "texte",
+      "citation": "Cabinet Dupré Transactions",
+      "partie": "text/plain"
+    }
+  }
+}

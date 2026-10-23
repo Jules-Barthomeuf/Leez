@@ -1,0 +1,81 @@
+{
+  "id": "A02",
+  "fichier": "documents/A02_avenant_nice_renouvellement_scan.pdf",
+  "doc_type": "avenant",
+  "dossier": "D-Nice",
+  "format": "pdf_scan",
+  "champs": {
+    "numero_avenant": {
+      "valeur": "1",
+      "type": "nombre",
+      "citation": "AVENANT N° 1",
+      "page": 1
+    },
+    "bailleur": {
+      "valeur": "SCI BAIE DES ANGES PATRIMOINE",
+      "type": "texte",
+      "citation": "SCI BAIE DES ANGES PATRIMOINE",
+      "page": 1
+    },
+    "preneur": {
+      "valeur": "LE COMPTOIR NIÇOIS",
+      "type": "texte",
+      "citation": "LE COMPTOIR NIÇOIS",
+      "page": 1
+    },
+    "bail_date_origine": {
+      "valeur": "2016-09-12",
+      "type": "date",
+      "citation": "bail commercial en date du 12 septembre 2016",
+      "page": 1
+    },
+    "date_avenant": {
+      "valeur": "2025-07-08",
+      "type": "date",
+      "citation": "Fait à Nice, le 8 juillet 2025",
+      "page": 1
+    },
+    "objet": {
+      "valeur": "renouvellement",
+      "type": "enum",
+      "citation": "Renouvellement",
+      "page": 1
+    },
+    "nouvelle_duree_annees": {
+      "valeur": "9",
+      "type": "nombre",
+      "citation": "durée de neuf (9) années à compter du 1er octobre 2025",
+      "unite": "ans",
+      "page": 1
+    },
+    "date_effet_modification": {
+      "valeur": "2025-10-01",
+      "type": "date",
+      "citation": "à compter du 1er octobre 2025",
+      "page": 1
+    },
+    "nouvelle_date_fin": {
+      "valeur": "2034-09-30",
+      "type": "date",
+      "citation": "pour se terminer le 30 septembre 2034",
+      "page": 1
+    },
+    "nouveau_loyer_annuel_ht_hc": {
+      "valeur": "41400.00",
+      "type": "montant",
+      "citation": "la somme de 41 400 € hors taxes et hors charges",
+      "unite": "EUR",
+      "page": 1
+    },
+    "nouvel_indice_base": {
+      "valeur": "ILC_T1_2025=135.30",
+      "type": "indice_base",
+      "citation": "celui du 1er trimestre 2025, soit 135,30",
+      "page": 1
+    }
+  },
+  "notes": [
+    "Avenant qui change la durée (renouvellement 9 ans) et le loyer."
+  ],
+  "nombre_pages": 1
+}

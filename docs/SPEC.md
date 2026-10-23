@@ -1058,6 +1058,16 @@ Validé par Jules : la plateforme se construit dans ce dépôt, sous quatre cond
 
 **A4. Worker séparé.** `WORKER_INLINE=false` démarre le web sans worker ; `npm run worker` lance le worker seul sur la même base et le même stockage (d'où A1 : le disque d'un service web Render n'est pas partagé). `MAX_UPLOAD_MB` (défaut 100) borne la taille d'un fichier, côté API (413, message clair) et côté interface (refus avant envoi). `WORKER_CONCURRENCY` (défaut 2) borne les jobs simultanés par file dans un processus ; 4 au plus par organisation. Le second service Render est décrit, commenté, dans `render.yaml` (plan `standard`, 2 Go). Test : `server/plateforme/worker-separe.test.js`.
 
+### 21.2 ter Benchmark des parseurs (préparation de la phase 1, 23 octobre 2026)
+
+- **Où.** Les parseurs sont dans `packages/parsing/` (interface `DocumentParser` : `disponible()`, `parse({ buffer, chemin }) → ParsedDocument`), le benchmark dans `eval/bench/` (`npm run bench:parse`), le jeu de référence dans `eval/fixtures/benchmark-v1/` (fictif, commité) et les vrais documents dans `eval/fixtures/reels/` (hors git). Le code métier n'appellera jamais un fournisseur directement : toujours via `packages/parsing`.
+- **Sortie normalisée.** `ParsedDocument` (typé dans `packages/core/types.js`) : par page, le texte dans l'ordre de lecture, les blocs avec `char_start`/`char_end` dans ce texte, une boîte `[x0, y0, x1, y1]` en fractions de page quand le parseur la connaît (null sinon), les tableaux en lignes de cellules, et `ocr` ; plus `mesure` (ms, coût en euros mesuré, pages). C'est l'entrée du job `document.parse` et la forme de `document_pages.blocks`.
+- **Rasterisation.** MuPDF en WebAssembly (paquet `mupdf`) : aucune dépendance native, même code en local et sur Render. Le rendu d'images de pdfjs en Node (canvas natifs) s'est révélé instable et n'est plus utilisé que pour la couche texte.
+- **Docling** tourne via un sous-processus Python (`DOCLING_PYTHON`, `packages/parsing/docling_run.py`), modèles chargés une fois par lot. Sur Render (runtime Node), il faudrait un service Docker ou un conteneur dédié : à décider avec le choix du parseur.
+- **Coûts.** Les prix unitaires sont en configuration (`.env.example`, avec leur source et leur date) ; le benchmark mesure pages et tokens, jamais un prix en dur. Sans variable, « non mesuré ».
+- **Champs du jeu absents des templates** : listés dans `eval/fixtures/benchmark-v1/correspondance-spec.json` (`champs_sans_equivalent`), à ajouter aux templates de la section 19 sur décision de Jules.
+- **Choix du parseur** : par Jules, sur le rapport `eval/results/parse-benchmark-<date>.md`. L'extraction (phase 1) ne commence pas avant.
+
 ### 21.3 Arborescence réelle
 
 ```
@@ -1066,8 +1076,10 @@ Leez/
 ├── CLAUDE.md                    principes et consignes
 ├── packages/                    bibliothèques métier, CommonJS, sans Express
 │   ├── core/                    schémas Zod (section 3), constantes
-│   ├── calc/  rules/  llm/  parsing/  search/  extraction/  agent/  deliverables/  public-data/  evals/
+│   ├── parsing/                 parseurs (pdfjs, tesseract, docling, mistral, azure, claude) et lecteurs (excel, email)
+│   ├── calc/  rules/  llm/  search/  extraction/  agent/  deliverables/  public-data/  evals/
 ├── templates/                   templates d'extraction, resolution.json, modèles .xlsx/.docx
+├── eval/                        jeux de référence (benchmark-v1, reels), benchmark des parseurs, rapports
 ├── server/
 │   ├── plateforme/              db.js (avecOrg), stockage.js (local | s3), file.js (pg-boss), worker.js, jobs/*, routes.js, audit.js
 │   ├── worker.js                entrée du worker seul

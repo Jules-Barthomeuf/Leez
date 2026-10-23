@@ -1,0 +1,157 @@
+[
+  {
+    "id": "ANO-C1",
+    "dossier": "C-Paris",
+    "type": "surface_divergente",
+    "gravite": "moyenne",
+    "faits": [
+      {
+        "doc": "B05",
+        "champ": "surface_m2",
+        "valeur": "612"
+      },
+      {
+        "doc": "E02",
+        "ligne": "Altitude Conseil",
+        "champ": "surface_m2",
+        "valeur": "640"
+      },
+      {
+        "doc": "T05",
+        "ligne": "Altitude Conseil",
+        "champ": "surface_m2",
+        "valeur": "640"
+      }
+    ],
+    "explication": "Le bail indique 612 m² utiles, l'état locatif et le teaser 640 m². Écart de 28 m² (4,6 %)."
+  },
+  {
+    "id": "ANO-C2",
+    "dossier": "C-Paris",
+    "type": "loyer_quittance_divergent",
+    "gravite": "haute",
+    "faits": [
+      {
+        "doc": "Q03",
+        "champ": "loyer_ht",
+        "valeur": "66200.00",
+        "annualise": "264800.00"
+      },
+      {
+        "doc": "E02",
+        "ligne": "Altitude Conseil",
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "262880.00"
+      }
+    ],
+    "explication": "Le loyer appelé (66 200 € par trimestre, soit 264 800 €/an) dépasse le loyer de l'état locatif de 1 920 €/an."
+  },
+  {
+    "id": "FAUX-D1",
+    "dossier": "D-Nice",
+    "type": "fausse_anomalie_resolue_par_avenant",
+    "faits": [
+      {
+        "doc": "B03",
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "36000.00"
+      },
+      {
+        "doc": "T02",
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "41400.00"
+      },
+      {
+        "doc": "A02",
+        "champ": "nouveau_loyer_annuel_ht_hc",
+        "valeur": "41400.00"
+      }
+    ],
+    "explication": "L'écart bail / teaser est expliqué par le renouvellement (A02). Le système ne doit pas lever d'anomalie une fois A02 pris en compte."
+  },
+  {
+    "id": "FAUX-F1",
+    "dossier": "F-Toulouse",
+    "type": "fausse_anomalie_resolue_par_avenant",
+    "faits": [
+      {
+        "doc": "B04",
+        "segment": 1,
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "45000.00"
+      },
+      {
+        "doc": "B04",
+        "segment": 2,
+        "champ": "nouveau_loyer_annuel_ht_hc",
+        "valeur": "48600.00"
+      },
+      {
+        "doc": "A03",
+        "champ": "nouveau_loyer_annuel_ht_hc",
+        "valeur": "47000.00"
+      },
+      {
+        "doc": "T06",
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "47000.00"
+      }
+    ],
+    "explication": "Chaîne bail + 3 avenants : le loyer en vigueur au 23/10/2026 est 47 000 €, cohérent avec le teaser."
+  },
+  {
+    "id": "FAUX-A1",
+    "dossier": "A-Lyon",
+    "type": "fausse_anomalie_resolue_par_avenant",
+    "faits": [
+      {
+        "doc": "B01",
+        "champ": "indice",
+        "valeur": "ICC"
+      },
+      {
+        "doc": "A01",
+        "champ": "nouvel_indice",
+        "valeur": "ILC"
+      },
+      {
+        "doc": "T01",
+        "champ": "indice",
+        "valeur": "ILC"
+      }
+    ],
+    "explication": "Indice du bail (ICC) remplacé par l'ILC à compter du 01/04/2023."
+  },
+  {
+    "id": "INFO-B1",
+    "dossier": "B-Marseille",
+    "type": "vacance",
+    "faits": [
+      {
+        "doc": "E01",
+        "ligne": "D",
+        "champ": "loyer_annuel_ht_hc",
+        "valeur": "0.00"
+      },
+      {
+        "doc": "T04",
+        "champ": "taux_occupation_pct",
+        "valeur": "88"
+      }
+    ],
+    "explication": "Lot D vacant (480 m²). Le potentiel de réversion de 52 800 € du teaser n'est pas un loyer."
+  },
+  {
+    "id": "INFO-E1",
+    "dossier": "E-Bordeaux",
+    "type": "prix_remplace_dans_le_fil",
+    "faits": [
+      {
+        "doc": "T03",
+        "champ": "prix",
+        "valeur": "980000.00"
+      }
+    ],
+    "explication": "Le fil de mail contient un ancien prix (1 050 000 €) : seul 980 000 € est le prix demandé."
+  }
+]

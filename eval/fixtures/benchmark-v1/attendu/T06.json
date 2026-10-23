@@ -1,0 +1,102 @@
+{
+  "id": "T06",
+  "fichier": "documents/T06_teaser_toulouse_scan.pdf",
+  "doc_type": "teaser",
+  "dossier": "F-Toulouse",
+  "format": "pdf_scan",
+  "champs": {
+    "type_actif": {
+      "valeur": "commerce_pied_immeuble",
+      "type": "enum",
+      "citation": "Murs de commerce – boulangerie",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "18 rue d'Alsace-Lorraine, 31000 Toulouse",
+      "type": "adresse",
+      "citation": "18 rue d'Alsace-Lorraine, 31000 Toulouse",
+      "page": 1
+    },
+    "code_postal": {
+      "valeur": "31000",
+      "type": "texte",
+      "citation": "31000 Toulouse",
+      "page": 1
+    },
+    "ville": {
+      "valeur": "Toulouse",
+      "type": "texte",
+      "citation": "31000 Toulouse",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "112",
+      "type": "surface",
+      "citation": "112 m² (82 m² boutique + 30 m² réserve)",
+      "unite": "m2",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "BOULANGERIES GARONNE",
+      "type": "texte",
+      "citation": "Boulangeries Garonne (SAS, 14 points de vente)",
+      "page": 1
+    },
+    "date_effet_bail": {
+      "valeur": null,
+      "absent": true,
+      "note": "Absente en clair : seule la date de signature du bail (14/05/2018) figure en annexe"
+    },
+    "date_fin_bail": {
+      "valeur": "2030-05-31",
+      "type": "date",
+      "citation": "31 mai 2030 (après avenant de prorogation)",
+      "page": 1
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "47000.00",
+      "type": "montant",
+      "citation": "47 000 € HT HC / an depuis le 1er juillet 2026",
+      "unite": "EUR",
+      "page": 1
+    },
+    "indice": {
+      "valeur": "ILC",
+      "type": "enum",
+      "citation": "Indexation ILC",
+      "page": 1
+    },
+    "prix": {
+      "valeur": "760000.00",
+      "type": "montant",
+      "citation": "760 000 € net vendeur",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix_base": {
+      "valeur": "net_vendeur",
+      "type": "enum",
+      "citation": "760 000 € net vendeur",
+      "page": 1
+    },
+    "rendement_annonce_pct": {
+      "valeur": "6.18",
+      "type": "pourcentage",
+      "citation": "6,18 % net vendeur",
+      "page": 1
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Refacturée au preneur",
+      "page": 1
+    },
+    "mandataire": {
+      "valeur": "Garonne Immobilier d'Entreprise",
+      "type": "texte",
+      "citation": "Garonne Immobilier d'Entreprise",
+      "page": 2
+    }
+  },
+  "nombre_pages": 2
+}

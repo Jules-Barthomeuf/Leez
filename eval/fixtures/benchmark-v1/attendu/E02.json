@@ -1,0 +1,173 @@
+{
+  "id": "E02",
+  "fichier": "documents/E02_etat_locatif_paris.pdf",
+  "doc_type": "etat_locatif",
+  "dossier": "C-Paris",
+  "format": "pdf_natif",
+  "champs": {
+    "date_situation": {
+      "valeur": "2026-09-30",
+      "type": "date",
+      "citation": "situation au 30/09/2026",
+      "page": 1
+    },
+    "surface_totale_m2": {
+      "valeur": "1480",
+      "type": "surface",
+      "citation": "1 480",
+      "unite": "m2",
+      "page": 1
+    },
+    "loyer_total_ht_hc": {
+      "valeur": "612400.00",
+      "type": "montant",
+      "citation": "612 400 €",
+      "unite": "EUR",
+      "page": 1
+    }
+  },
+  "lignes": [
+    {
+      "locataire": {
+        "valeur": "Altitude Conseil",
+        "type": "texte",
+        "citation": "Altitude Conseil",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "640",
+        "type": "surface",
+        "citation": "640",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "262880.00",
+        "type": "montant",
+        "citation": "262 880 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_effet": {
+        "valeur": "2022-07-01",
+        "type": "date",
+        "citation": "01/07/2022",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2031-06-30",
+        "type": "date",
+        "citation": "30/06/2031",
+        "page": 1
+      },
+      "indice": {
+        "valeur": "ILAT",
+        "type": "enum",
+        "citation": "ILAT",
+        "page": 1
+      },
+      "depot_garantie": {
+        "valeur": "62000.00",
+        "type": "montant",
+        "citation": "62 000 €",
+        "unite": "EUR",
+        "page": 1
+      }
+    },
+    {
+      "locataire": {
+        "valeur": "Cabinet Morel Avocats",
+        "type": "texte",
+        "citation": "Cabinet Morel Avocats",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "452",
+        "type": "surface",
+        "citation": "452",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "205320.00",
+        "type": "montant",
+        "citation": "205 320 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_effet": {
+        "valeur": "2020-01-01",
+        "type": "date",
+        "citation": "01/01/2020",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2029-12-31",
+        "type": "date",
+        "citation": "31/12/2029",
+        "page": 1
+      },
+      "indice": {
+        "valeur": "ILAT",
+        "type": "enum",
+        "citation": "ILAT",
+        "page": 1
+      },
+      "depot_garantie": {
+        "valeur": "51330.00",
+        "type": "montant",
+        "citation": "51 330 €",
+        "unite": "EUR",
+        "page": 1
+      }
+    },
+    {
+      "locataire": {
+        "valeur": "Studio Kéa",
+        "type": "texte",
+        "citation": "Studio Kéa",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "388",
+        "type": "surface",
+        "citation": "388",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "144200.00",
+        "type": "montant",
+        "citation": "144 200 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_effet": {
+        "valeur": "2019-04-01",
+        "type": "date",
+        "citation": "01/04/2019",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2028-03-31",
+        "type": "date",
+        "citation": "31/03/2028",
+        "page": 1
+      },
+      "indice": {
+        "valeur": "ILC",
+        "type": "enum",
+        "citation": "ILC",
+        "page": 1
+      },
+      "depot_garantie": {
+        "valeur": "36050.00",
+        "type": "montant",
+        "citation": "36 050 €",
+        "unite": "EUR",
+        "page": 1
+      }
+    }
+  ],
+  "nombre_pages": 1
+}

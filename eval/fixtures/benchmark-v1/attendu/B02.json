@@ -1,0 +1,135 @@
+{
+  "id": "B02",
+  "fichier": "documents/B02_bail_marseille_lotC_scan.pdf",
+  "doc_type": "bail_commercial",
+  "dossier": "B-Marseille",
+  "format": "pdf_scan",
+  "champs": {
+    "bailleur": {
+      "valeur": "SCI VALLON ROUGE",
+      "type": "texte",
+      "citation": "SCI VALLON ROUGE",
+      "page": 1
+    },
+    "preneur": {
+      "valeur": "SPORTISSIME MÉDITERRANÉE",
+      "type": "texte",
+      "citation": "SPORTISSIME MÉDITERRANÉE",
+      "page": 1
+    },
+    "siren_preneur": {
+      "valeur": "999630118",
+      "type": "siren",
+      "citation": "999 630 118",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "Parc d'activités du Vallon Rouge, 210 route des Camoins, 13011 Marseille",
+      "type": "adresse",
+      "citation": "Parc d'activités du Vallon Rouge, 210 route des Camoins, 13011 Marseille",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "1100",
+      "type": "surface",
+      "citation": "La surface totale des locaux est de 1 100 m²",
+      "unite": "m2",
+      "page": 1
+    },
+    "destination": {
+      "valeur": "vente au détail d'articles de sport, de textile et de chaussures de sport",
+      "type": "texte",
+      "citation": "exclusivement à l'activité de vente au détail d'articles de sport, de textile et de chaussures de sport",
+      "page": 1
+    },
+    "date_prise_effet": {
+      "valeur": "2019-09-01",
+      "type": "date",
+      "citation": "à compter du 1er septembre 2019",
+      "page": 1
+    },
+    "duree_annees": {
+      "valeur": "9",
+      "type": "nombre",
+      "citation": "pour une durée de 9 ans",
+      "unite": "ans",
+      "page": 1
+    },
+    "duree_ferme_annees": {
+      "valeur": "3",
+      "type": "nombre",
+      "citation": "le Preneur aura la faculté de donner congé à l'expiration de chaque période triennale",
+      "unite": "ans",
+      "page": 1
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "110000.00",
+      "type": "montant",
+      "citation": "Le loyer annuel est fixé à la somme de 110 000 € hors taxes et hors charges",
+      "unite": "EUR",
+      "page": 1
+    },
+    "periodicite_paiement": {
+      "valeur": "trimestriel",
+      "type": "enum",
+      "citation": "trimestriellement et d'avance",
+      "page": 1
+    },
+    "terme_paiement": {
+      "valeur": "echoir",
+      "type": "enum",
+      "citation": "trimestriellement et d'avance",
+      "page": 1
+    },
+    "franchise_loyer_mois": {
+      "valeur": null,
+      "absent": true,
+      "note": "Aucune franchise prévue"
+    },
+    "indice": {
+      "valeur": "ILC",
+      "type": "enum",
+      "citation": "Indice des Loyers Commerciaux (ILC)",
+      "page": 2
+    },
+    "indice_base": {
+      "valeur": "ILC_T2_2019=114.47",
+      "type": "indice_base",
+      "citation": "celui du 2e trimestre 2019, soit 114,47",
+      "page": 2
+    },
+    "depot_garantie": {
+      "valeur": null,
+      "absent": true,
+      "note": "Pas de dépôt de garantie : garantie autonome à première demande à la place"
+    },
+    "garantie_autre": {
+      "valeur": "garantie_autonome_premiere_demande_6_mois",
+      "type": "texte",
+      "citation": "garantie autonome à première demande d'un montant égal à six mois de loyer",
+      "page": 2
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Le Preneur remboursera au Bailleur, en sus du loyer, la taxe foncière",
+      "page": 2
+    },
+    "option_tva": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "le Preneur acquittera la TVA au taux en vigueur en sus du loyer",
+      "page": 2
+    },
+    "date_signature": {
+      "valeur": "2019-07-22",
+      "type": "date",
+      "citation": "le 22 juillet 2019, en deux exemplaires",
+      "page": 3
+    }
+  },
+  "notes": [
+    "Loyer d'origine 110 000 € ; loyer indexé en vigueur 121 000 € (état locatif E01) : écart normal, pas une anomalie."
+  ],
+  "nombre_pages": 3
+}

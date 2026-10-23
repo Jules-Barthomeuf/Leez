@@ -1,0 +1,109 @@
+{
+  "id": "T01",
+  "fichier": "documents/T01_teaser_lyon.pdf",
+  "doc_type": "teaser",
+  "dossier": "A-Lyon",
+  "format": "pdf_natif",
+  "champs": {
+    "type_actif": {
+      "valeur": "commerce_pied_immeuble",
+      "type": "enum",
+      "citation": "Murs de commerce – pied d'immeuble",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "14 rue des Archers, 69002 Lyon",
+      "type": "adresse",
+      "citation": "14 rue des Archers, 69002 Lyon",
+      "page": 1
+    },
+    "code_postal": {
+      "valeur": "69002",
+      "type": "texte",
+      "citation": "69002 Lyon",
+      "page": 1
+    },
+    "ville": {
+      "valeur": "Lyon",
+      "type": "texte",
+      "citation": "69002 Lyon",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "142",
+      "type": "surface",
+      "citation": "142 m² (98 m² RDC + 44 m² sous-sol)",
+      "unite": "m2",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "MAISON VERLAINE OPTIQUE",
+      "type": "texte",
+      "citation": "Verlaine Optique (SAS Maison Verlaine Optique)",
+      "page": 1
+    },
+    "date_effet_bail": {
+      "valeur": "2021-04-01",
+      "type": "date",
+      "citation": "ayant pris effet le 1er avril 2021",
+      "page": 1
+    },
+    "prochaine_echeance": {
+      "valeur": "2027-03-31",
+      "type": "date",
+      "citation": "31 mars 2027",
+      "page": 1
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "92400.00",
+      "type": "montant",
+      "citation": "92 400 € HT HC",
+      "unite": "EUR",
+      "page": 1
+    },
+    "indice": {
+      "valeur": "ILC",
+      "type": "enum",
+      "citation": "Annuelle – ILC",
+      "page": 1
+    },
+    "prix": {
+      "valeur": "1340000.00",
+      "type": "montant",
+      "citation": "1 340 000 € net vendeur",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix_base": {
+      "valeur": "net_vendeur",
+      "type": "enum",
+      "citation": "1 340 000 € net vendeur",
+      "page": 1
+    },
+    "rendement_annonce_pct": {
+      "valeur": "6.90",
+      "type": "pourcentage",
+      "citation": "6,90 %",
+      "note": "Rendement net vendeur annoncé",
+      "page": 1
+    },
+    "rendement_aem_annonce_pct": {
+      "valeur": "6.41",
+      "type": "pourcentage",
+      "citation": "6,41 % (frais d'acquisition estimés à 7,5 %)",
+      "page": 1
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": null,
+      "absent": true,
+      "note": "Le teaser ne dit rien de la taxe foncière"
+    },
+    "mandataire": {
+      "valeur": "Cabinet Saône Commerce",
+      "type": "texte",
+      "citation": "Cabinet Saône Commerce",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

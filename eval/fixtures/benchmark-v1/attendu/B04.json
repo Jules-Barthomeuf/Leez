@@ -1,0 +1,274 @@
+{
+  "id": "B04",
+  "fichier": "documents/B04_bail_toulouse_avec_avenants_1-2.pdf",
+  "doc_type": "bail_commercial",
+  "dossier": "F-Toulouse",
+  "format": "pdf_mixte",
+  "segments": [
+    {
+      "doc_type": "bail_commercial",
+      "pages": [
+        1,
+        3
+      ],
+      "champs": {
+        "bailleur": {
+          "valeur": "SCI CAPITOLE 18",
+          "type": "texte",
+          "citation": "SCI CAPITOLE 18",
+          "page": 1
+        },
+        "preneur": {
+          "valeur": "BOULANGERIES GARONNE",
+          "type": "texte",
+          "citation": "BOULANGERIES GARONNE",
+          "page": 1
+        },
+        "siren_preneur": {
+          "valeur": "999804557",
+          "type": "siren",
+          "citation": "999 804 557",
+          "page": 1
+        },
+        "adresse": {
+          "valeur": "18 rue d'Alsace-Lorraine, 31000 Toulouse",
+          "type": "adresse",
+          "citation": "18 rue d'Alsace-Lorraine, 31000 Toulouse",
+          "page": 1
+        },
+        "surface_m2": {
+          "valeur": "82",
+          "type": "surface",
+          "citation": "La surface totale des locaux est de 82 m²",
+          "unite": "m2",
+          "page": 1
+        },
+        "destination": {
+          "valeur": "boulangerie, pâtisserie, viennoiserie, snacking et vente de boissons non alcoolisées",
+          "type": "texte",
+          "citation": "exclusivement à l'activité de boulangerie, pâtisserie, viennoiserie, snacking et vente de boissons non alcoolisées",
+          "page": 1
+        },
+        "date_prise_effet": {
+          "valeur": "2018-06-01",
+          "type": "date",
+          "citation": "à compter du 1er juin 2018",
+          "page": 1
+        },
+        "duree_annees": {
+          "valeur": "9",
+          "type": "nombre",
+          "citation": "pour une durée de 9 ans",
+          "unite": "ans",
+          "page": 1
+        },
+        "duree_ferme_annees": {
+          "valeur": "3",
+          "type": "nombre",
+          "citation": "le Preneur aura la faculté de donner congé à l'expiration de chaque période triennale",
+          "unite": "ans",
+          "page": 1
+        },
+        "loyer_annuel_ht_hc": {
+          "valeur": "45000.00",
+          "type": "montant",
+          "citation": "Le loyer annuel est fixé à la somme de 45 000 € hors taxes et hors charges",
+          "unite": "EUR",
+          "page": 1
+        },
+        "periodicite_paiement": {
+          "valeur": "mensuel",
+          "type": "enum",
+          "citation": "mensuellement et d'avance",
+          "page": 1
+        },
+        "terme_paiement": {
+          "valeur": "echoir",
+          "type": "enum",
+          "citation": "mensuellement et d'avance",
+          "page": 1
+        },
+        "franchise_loyer_mois": {
+          "valeur": null,
+          "absent": true,
+          "note": "Aucune franchise prévue"
+        },
+        "indice": {
+          "valeur": "ILC",
+          "type": "enum",
+          "citation": "Indice des Loyers Commerciaux (ILC)",
+          "page": 2
+        },
+        "indice_base": {
+          "valeur": "ILC_T4_2017=111.33",
+          "type": "indice_base",
+          "citation": "celui du 4e trimestre 2017, soit 111,33",
+          "page": 2
+        },
+        "depot_garantie": {
+          "valeur": "11250.00",
+          "type": "montant",
+          "citation": "dépôt de garantie de 11 250 €",
+          "unite": "EUR",
+          "page": 2
+        },
+        "taxe_fonciere_refacturee": {
+          "valeur": true,
+          "type": "booleen",
+          "citation": "Le Preneur remboursera au Bailleur, en sus du loyer, la taxe foncière",
+          "page": 2
+        },
+        "option_tva": {
+          "valeur": true,
+          "type": "booleen",
+          "citation": "le Preneur acquittera la TVA au taux en vigueur en sus du loyer",
+          "page": 2
+        },
+        "date_signature": {
+          "valeur": "2018-05-14",
+          "type": "date",
+          "citation": "le 14 mai 2018, en deux exemplaires",
+          "page": 3
+        }
+      }
+    },
+    {
+      "doc_type": "avenant",
+      "pages": [
+        4,
+        4
+      ],
+      "champs": {
+        "numero_avenant": {
+          "valeur": "1",
+          "type": "nombre",
+          "citation": "AVENANT N° 1",
+          "page": 4
+        },
+        "bailleur": {
+          "valeur": "SCI CAPITOLE 18",
+          "type": "texte",
+          "citation": "SCI CAPITOLE 18",
+          "page": 4
+        },
+        "preneur": {
+          "valeur": "BOULANGERIES GARONNE",
+          "type": "texte",
+          "citation": "BOULANGERIES GARONNE",
+          "page": 4
+        },
+        "bail_date_origine": {
+          "valeur": "2018-05-14",
+          "type": "date",
+          "citation": "bail commercial en date du 14 mai 2018",
+          "page": 4
+        },
+        "date_avenant": {
+          "valeur": "2019-11-20",
+          "type": "date",
+          "citation": "Fait à Toulouse, le 20 novembre 2019",
+          "page": 4
+        },
+        "objet": {
+          "valeur": "extension_surface",
+          "type": "enum",
+          "citation": "Extension de l'assiette du bail",
+          "page": 4
+        },
+        "nouvelle_surface_m2": {
+          "valeur": "112",
+          "type": "surface",
+          "citation": "portant la surface totale des locaux loués à 112 m²",
+          "unite": "m2",
+          "page": 4
+        },
+        "nouveau_loyer_annuel_ht_hc": {
+          "valeur": "48600.00",
+          "type": "montant",
+          "citation": "le loyer annuel est porté à la somme de 48 600 € hors taxes et hors charges",
+          "unite": "EUR",
+          "page": 4
+        },
+        "date_effet_modification": {
+          "valeur": "2020-01-01",
+          "type": "date",
+          "citation": "À compter du 1er janvier 2020, l'assiette",
+          "page": 4
+        }
+      }
+    },
+    {
+      "doc_type": "avenant",
+      "pages": [
+        5,
+        5
+      ],
+      "champs": {
+        "numero_avenant": {
+          "valeur": "2",
+          "type": "nombre",
+          "citation": "AVENANT N° 2",
+          "page": 5
+        },
+        "bailleur": {
+          "valeur": "SCI CAPITOLE 18",
+          "type": "texte",
+          "citation": "SCI CAPITOLE 18",
+          "page": 5
+        },
+        "preneur": {
+          "valeur": "BOULANGERIES GARONNE",
+          "type": "texte",
+          "citation": "BOULANGERIES GARONNE",
+          "page": 5
+        },
+        "bail_date_origine": {
+          "valeur": "2018-05-14",
+          "type": "date",
+          "citation": "bail commercial en date du 14 mai 2018",
+          "page": 5
+        },
+        "date_avenant": {
+          "valeur": "2021-03-02",
+          "type": "date",
+          "citation": "Fait à Toulouse, le 2 mars 2021",
+          "page": 5
+        },
+        "objet": {
+          "valeur": "reduction_temporaire",
+          "type": "enum",
+          "citation": "Aménagement temporaire du loyer",
+          "page": 5
+        },
+        "reduction_pct": {
+          "valeur": "50",
+          "type": "pourcentage",
+          "citation": "le loyer est réduit de 50 %",
+          "page": 5
+        },
+        "periode_debut": {
+          "valeur": "2021-04-01",
+          "type": "date",
+          "citation": "Pour la période du 1er avril 2021 au 30 juin 2021",
+          "page": 5
+        },
+        "periode_fin": {
+          "valeur": "2021-06-30",
+          "type": "date",
+          "citation": "Pour la période du 1er avril 2021 au 30 juin 2021",
+          "page": 5
+        },
+        "nouveau_loyer_annuel_ht_hc": {
+          "valeur": null,
+          "absent": true,
+          "note": "Réduction temporaire : le loyer contractuel n'est pas modifié durablement"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Les pages des segments et des citations sont celles du PDF fusionné.",
+    "Le loyer en vigueur après les avenants 1 et 2 est 48 600 € ; l'avenant A03 le ramène à 47 000 € au 01/07/2026."
+  ],
+  "nombre_pages": 5
+}

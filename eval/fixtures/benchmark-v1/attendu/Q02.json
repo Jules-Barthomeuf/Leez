@@ -1,0 +1,80 @@
+{
+  "id": "Q02",
+  "fichier": "documents/Q02_quittance_marseille_lotB_scan.pdf",
+  "doc_type": "quittance",
+  "dossier": "B-Marseille",
+  "format": "pdf_scan",
+  "champs": {
+    "type_piece": {
+      "valeur": "quittance",
+      "type": "enum",
+      "citation": "QUITTANCE DE LOYER",
+      "page": 1
+    },
+    "emetteur": {
+      "valeur": "SCI VALLON ROUGE",
+      "type": "texte",
+      "citation": "SCI VALLON ROUGE",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "CROQUETTES & CO",
+      "type": "texte",
+      "citation": "CROQUETTES & CO",
+      "page": 1
+    },
+    "periode_debut": {
+      "valeur": "2026-10-01",
+      "type": "date",
+      "citation": "du 01/10/2026 au 31/10/2026",
+      "page": 1
+    },
+    "periode_fin": {
+      "valeur": "2026-10-31",
+      "type": "date",
+      "citation": "du 01/10/2026 au 31/10/2026",
+      "page": 1
+    },
+    "loyer_ht": {
+      "valeur": "6200.00",
+      "type": "montant",
+      "citation": "6 200,00 €",
+      "unite": "EUR",
+      "note": "Loyer mensuel ; x12 = 74 400 €, cohérent avec E01",
+      "page": 1
+    },
+    "provisions_charges_ht": {
+      "valeur": "410.00",
+      "type": "montant",
+      "citation": "410,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "taxe_fonciere_ht": {
+      "valeur": null,
+      "absent": true,
+      "note": "Pas de ligne taxe foncière sur cette quittance"
+    },
+    "tva_totale": {
+      "valeur": "1322.00",
+      "type": "montant",
+      "citation": "1 322,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "total_ttc": {
+      "valeur": "7932.00",
+      "type": "montant",
+      "citation": "7 932,00 €",
+      "unite": "EUR",
+      "page": 1
+    },
+    "date_emission": {
+      "valeur": "2026-10-01",
+      "type": "date",
+      "citation": "Date d'émission : 01/10/2026",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

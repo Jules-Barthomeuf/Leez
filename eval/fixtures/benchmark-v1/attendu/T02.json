@@ -1,0 +1,97 @@
+{
+  "id": "T02",
+  "fichier": "documents/T02_teaser_nice_scan.pdf",
+  "doc_type": "teaser",
+  "dossier": "D-Nice",
+  "format": "pdf_scan",
+  "champs": {
+    "type_actif": {
+      "valeur": "commerce_restauration",
+      "type": "enum",
+      "citation": "Murs de commerce – restauration",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "21 rue Pastorelli, 06000 Nice",
+      "type": "adresse",
+      "citation": "21 rue Pastorelli, 06000 Nice",
+      "page": 1
+    },
+    "code_postal": {
+      "valeur": "06000",
+      "type": "texte",
+      "citation": "06000 Nice",
+      "page": 1
+    },
+    "ville": {
+      "valeur": "Nice",
+      "type": "texte",
+      "citation": "06000 Nice",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "85",
+      "type": "surface",
+      "citation": "85 m² + terrasse de 20 m²",
+      "unite": "m2",
+      "note": "La terrasse (domaine public) n'est pas de la surface louée",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": "LE COMPTOIR NIÇOIS",
+      "type": "texte",
+      "citation": "Le Comptoir Niçois (SARL)",
+      "page": 1
+    },
+    "date_effet_bail": {
+      "valeur": "2025-10-01",
+      "type": "date",
+      "citation": "Renouvelé pour 9 ans à compter du 1er octobre 2025",
+      "page": 1
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "41400.00",
+      "type": "montant",
+      "citation": "41 400 € HT HC / an",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix": {
+      "valeur": "690000.00",
+      "type": "montant",
+      "citation": "690 000 € net vendeur",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix_base": {
+      "valeur": "net_vendeur",
+      "type": "enum",
+      "citation": "690 000 € net vendeur",
+      "page": 1
+    },
+    "rendement_annonce_pct": {
+      "valeur": "6.00",
+      "type": "pourcentage",
+      "citation": "6,00 % net vendeur",
+      "page": 1
+    },
+    "indice": {
+      "valeur": null,
+      "absent": true,
+      "note": "Non précisé dans le teaser"
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Refacturée au preneur",
+      "page": 1
+    },
+    "mandataire": {
+      "valeur": "Riviera Commerces",
+      "type": "texte",
+      "citation": "Riviera Commerces",
+      "page": 1
+    }
+  },
+  "nombre_pages": 1
+}

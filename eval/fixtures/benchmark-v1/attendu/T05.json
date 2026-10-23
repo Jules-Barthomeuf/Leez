@@ -1,0 +1,194 @@
+{
+  "id": "T05",
+  "fichier": "documents/T05_teaser_paris_bureaux.pdf",
+  "doc_type": "teaser",
+  "dossier": "C-Paris",
+  "format": "pdf_natif",
+  "champs": {
+    "type_actif": {
+      "valeur": "bureaux",
+      "type": "enum",
+      "citation": "Immeuble de bureaux",
+      "page": 1
+    },
+    "adresse": {
+      "valeur": "48 rue de Provence, 75009 Paris",
+      "type": "adresse",
+      "citation": "48 rue de Provence, 75009 Paris",
+      "page": 1
+    },
+    "code_postal": {
+      "valeur": "75009",
+      "type": "texte",
+      "citation": "75009 Paris",
+      "page": 1
+    },
+    "ville": {
+      "valeur": "Paris",
+      "type": "texte",
+      "citation": "75009 Paris",
+      "page": 1
+    },
+    "surface_m2": {
+      "valeur": "1480",
+      "type": "surface",
+      "citation": "1 480 m² utiles (R+3)",
+      "unite": "m2",
+      "page": 1
+    },
+    "nombre_lots": {
+      "valeur": "3",
+      "type": "nombre",
+      "citation": "Nombre de locataires 3",
+      "page": 1
+    },
+    "locataire": {
+      "valeur": null,
+      "absent": true,
+      "note": "Multi-locataires : voir lignes"
+    },
+    "date_effet_bail": {
+      "valeur": null,
+      "absent": true,
+      "note": "Multi-locataires"
+    },
+    "loyer_annuel_ht_hc": {
+      "valeur": "612400.00",
+      "type": "montant",
+      "citation": "612 400 € HT HC par an",
+      "unite": "EUR",
+      "page": 1
+    },
+    "walb_annonce_annees": {
+      "valeur": "4.1",
+      "type": "nombre",
+      "citation": "4,1 ans",
+      "unite": "ans",
+      "page": 1
+    },
+    "prix": {
+      "valeur": "10900000.00",
+      "type": "montant",
+      "citation": "10 900 000 € hors droits",
+      "unite": "EUR",
+      "page": 1
+    },
+    "prix_base": {
+      "valeur": "hors_droits",
+      "type": "enum",
+      "citation": "10 900 000 € hors droits",
+      "page": 1
+    },
+    "rendement_annonce_pct": {
+      "valeur": "5.62",
+      "type": "pourcentage",
+      "citation": "5,62 % hors droits",
+      "page": 1
+    },
+    "indice": {
+      "valeur": "ILAT+ILC",
+      "type": "enum",
+      "citation": "ILAT et ILC selon les baux",
+      "page": 1
+    },
+    "taxe_fonciere_refacturee": {
+      "valeur": true,
+      "type": "booleen",
+      "citation": "Taxe foncière refacturée aux locataires",
+      "page": 1
+    },
+    "mandataire": {
+      "valeur": "Opéra Investissement",
+      "type": "texte",
+      "citation": "Opéra Investissement",
+      "page": 1
+    }
+  },
+  "lignes": [
+    {
+      "locataire": {
+        "valeur": "Altitude Conseil",
+        "type": "texte",
+        "citation": "Altitude Conseil",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "640",
+        "type": "surface",
+        "citation": "640 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "262880.00",
+        "type": "montant",
+        "citation": "262 880 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2031-06-30",
+        "type": "date",
+        "citation": "30/06/2031",
+        "page": 1
+      }
+    },
+    {
+      "locataire": {
+        "valeur": "Cabinet Morel Avocats",
+        "type": "texte",
+        "citation": "Cabinet Morel Avocats",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "452",
+        "type": "surface",
+        "citation": "452 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "205320.00",
+        "type": "montant",
+        "citation": "205 320 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2029-12-31",
+        "type": "date",
+        "citation": "31/12/2029",
+        "page": 1
+      }
+    },
+    {
+      "locataire": {
+        "valeur": "Studio Kéa",
+        "type": "texte",
+        "citation": "Studio Kéa",
+        "page": 1
+      },
+      "surface_m2": {
+        "valeur": "388",
+        "type": "surface",
+        "citation": "388 m²",
+        "unite": "m2",
+        "page": 1
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "144200.00",
+        "type": "montant",
+        "citation": "144 200 €",
+        "unite": "EUR",
+        "page": 1
+      },
+      "date_fin_bail": {
+        "valeur": "2028-03-31",
+        "type": "date",
+        "citation": "31/03/2028",
+        "page": 1
+      }
+    }
+  ],
+  "nombre_pages": 1
+}

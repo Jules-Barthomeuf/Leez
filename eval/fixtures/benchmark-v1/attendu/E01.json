@@ -1,0 +1,226 @@
+{
+  "id": "E01",
+  "fichier": "documents/E01_etat_locatif_marseille.xlsx",
+  "doc_type": "etat_locatif",
+  "dossier": "B-Marseille",
+  "format": "xlsx",
+  "champs": {
+    "date_situation": {
+      "valeur": "2026-09-30",
+      "type": "date",
+      "cellule": "Etat locatif!A3"
+    },
+    "surface_totale_m2": {
+      "valeur": "4050",
+      "type": "surface",
+      "unite": "m2",
+      "note": "Cellule en formule =SUM(D6:D9)",
+      "cellule": "Etat locatif!D10"
+    },
+    "loyer_total_ht_hc": {
+      "valeur": "380400.00",
+      "type": "montant",
+      "unite": "EUR",
+      "note": "Cellule en formule =SUM(E6:E9)",
+      "cellule": "Etat locatif!E10"
+    }
+  },
+  "lignes": [
+    {
+      "lot": {
+        "valeur": "A",
+        "type": "texte",
+        "cellule": "Etat locatif!A6"
+      },
+      "locataire": {
+        "valeur": "Brico Sud Distribution",
+        "type": "texte",
+        "cellule": "Etat locatif!B6"
+      },
+      "surface_m2": {
+        "valeur": "1850",
+        "type": "surface",
+        "unite": "m2",
+        "cellule": "Etat locatif!D6"
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "185000.00",
+        "type": "montant",
+        "unite": "EUR",
+        "cellule": "Etat locatif!E6"
+      },
+      "date_effet": {
+        "valeur": "2022-01-01",
+        "type": "date",
+        "cellule": "Etat locatif!F6"
+      },
+      "prochaine_echeance": {
+        "valeur": "2027-12-31",
+        "type": "date",
+        "cellule": "Etat locatif!G6"
+      },
+      "date_fin_bail": {
+        "valeur": "2031-12-31",
+        "type": "date",
+        "cellule": "Etat locatif!H6"
+      },
+      "indice": {
+        "valeur": "ILC",
+        "type": "enum",
+        "cellule": "Etat locatif!I6"
+      },
+      "taxe_fonciere_refacturee": {
+        "valeur": true,
+        "type": "booleen",
+        "cellule": "Etat locatif!J6"
+      }
+    },
+    {
+      "lot": {
+        "valeur": "B",
+        "type": "texte",
+        "cellule": "Etat locatif!A7"
+      },
+      "locataire": {
+        "valeur": "Croquettes & Co",
+        "type": "texte",
+        "cellule": "Etat locatif!B7"
+      },
+      "surface_m2": {
+        "valeur": "620",
+        "type": "surface",
+        "unite": "m2",
+        "cellule": "Etat locatif!D7"
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "74400.00",
+        "type": "montant",
+        "unite": "EUR",
+        "cellule": "Etat locatif!E7"
+      },
+      "date_effet": {
+        "valeur": "2021-07-01",
+        "type": "date",
+        "cellule": "Etat locatif!F7"
+      },
+      "prochaine_echeance": {
+        "valeur": "2027-06-30",
+        "type": "date",
+        "cellule": "Etat locatif!G7"
+      },
+      "date_fin_bail": {
+        "valeur": "2030-06-30",
+        "type": "date",
+        "cellule": "Etat locatif!H7"
+      },
+      "indice": {
+        "valeur": "ILC",
+        "type": "enum",
+        "cellule": "Etat locatif!I7"
+      },
+      "taxe_fonciere_refacturee": {
+        "valeur": true,
+        "type": "booleen",
+        "cellule": "Etat locatif!J7"
+      }
+    },
+    {
+      "lot": {
+        "valeur": "C",
+        "type": "texte",
+        "cellule": "Etat locatif!A8"
+      },
+      "locataire": {
+        "valeur": "Sportissime Méditerranée",
+        "type": "texte",
+        "cellule": "Etat locatif!B8"
+      },
+      "surface_m2": {
+        "valeur": "1100",
+        "type": "surface",
+        "unite": "m2",
+        "cellule": "Etat locatif!D8"
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "121000.00",
+        "type": "montant",
+        "unite": "EUR",
+        "cellule": "Etat locatif!E8"
+      },
+      "date_effet": {
+        "valeur": "2019-09-01",
+        "type": "date",
+        "cellule": "Etat locatif!F8"
+      },
+      "prochaine_echeance": {
+        "valeur": "2028-08-31",
+        "type": "date",
+        "cellule": "Etat locatif!G8"
+      },
+      "date_fin_bail": {
+        "valeur": "2028-08-31",
+        "type": "date",
+        "cellule": "Etat locatif!H8"
+      },
+      "indice": {
+        "valeur": "ILC",
+        "type": "enum",
+        "cellule": "Etat locatif!I8"
+      },
+      "taxe_fonciere_refacturee": {
+        "valeur": true,
+        "type": "booleen",
+        "cellule": "Etat locatif!J8"
+      }
+    },
+    {
+      "lot": {
+        "valeur": "D",
+        "type": "texte",
+        "cellule": "Etat locatif!A9"
+      },
+      "locataire": {
+        "valeur": null,
+        "type": "texte",
+        "cellule": "Etat locatif!B9"
+      },
+      "surface_m2": {
+        "valeur": "480",
+        "type": "surface",
+        "unite": "m2",
+        "cellule": "Etat locatif!D9"
+      },
+      "loyer_annuel_ht_hc": {
+        "valeur": "0.00",
+        "type": "montant",
+        "unite": "EUR",
+        "cellule": "Etat locatif!E9"
+      },
+      "date_effet": {
+        "valeur": null,
+        "absent": true,
+        "note": "Lot vacant"
+      },
+      "prochaine_echeance": {
+        "valeur": null,
+        "absent": true,
+        "note": "Lot vacant"
+      },
+      "date_fin_bail": {
+        "valeur": null,
+        "absent": true,
+        "note": "Lot vacant"
+      },
+      "indice": {
+        "valeur": null,
+        "absent": true,
+        "note": "Lot vacant"
+      },
+      "taxe_fonciere_refacturee": {
+        "valeur": null,
+        "absent": true,
+        "note": "Lot vacant"
+      }
+    }
+  ]
+}
