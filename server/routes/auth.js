@@ -21,6 +21,7 @@ function establishSession(req, res, user, method, onDone) {
     req.session.workspaceId = user.workspace_id;
     req.session.email = user.email;
     req.session.name = user.name || null;
+    req.session.role = user.role || 'analyst';
     touchUserLogin(user.id).catch(() => {});
     analytics.identify(user.id, { email: user.email, workspaceId: user.workspace_id });
     analytics.track('user_logged_in', user.id, { workspaceId: user.workspace_id, method });

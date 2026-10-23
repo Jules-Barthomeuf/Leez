@@ -1,0 +1,36 @@
+# CI de la plateforme (docs/SPEC.md, phase 0) : lint, tests unitaires et tests
+# de base sur un Postgres 16, comme en production.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: leez
+          POSTGRES_PASSWORD: leez
+          POSTGRES_DB: leez
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U leez"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://leez:leez@localhost:5432/leez
+      SESSION_SECRET: ci-secret
+      ANTHROPIC_API_KEY: cle-de-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test

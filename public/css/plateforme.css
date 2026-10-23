@@ -1,0 +1,75 @@
+/* L'onglet « Dossiers » (plateforme, docs/SPEC.md). Memes jetons de couleur que
+   le reste de l'outil (theme-klocka.css) ; classes prefixees pl-. */
+.pl-app{min-height:100vh;font-family:var(--sans);color:var(--text-body);padding:18px 0 60px;}
+.pl-app *{box-sizing:border-box;}
+.pl-tete{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.pl-tete small{display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px;}
+.pl-tete h1{margin:0;font-size:1.5rem;font-weight:600;color:var(--text);line-height:1.2;}
+.pl-tete h1[contenteditable]:focus{outline:1px solid var(--accent-line);border-radius:6px;padding:0 6px;margin:0 -6px;}
+.pl-tete > div > small:last-child{margin:6px 0 0;text-transform:none;letter-spacing:0;font-size:.8rem;color:var(--text-muted);}
+.pl-retour{display:inline-block;font-size:.8rem;color:var(--text-muted);text-decoration:none;margin-bottom:6px;}
+.pl-retour:hover{color:var(--text);}
+.pl-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.pl-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font:inherit;font-size:.84rem;font-weight:500;cursor:pointer;}
+.pl-btn:hover{border-color:var(--accent-line);}
+.pl-btn-primaire{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pl-btn-primaire:hover{filter:brightness(1.08);}
+.pl-lien{background:none;border:none;padding:0;color:var(--accent);font:inherit;font-size:.78rem;cursor:pointer;}
+.pl-lien:hover{text-decoration:underline;}
+.pl-actions-ligne{white-space:nowrap;display:flex;gap:12px;}
+
+.pl-filtres{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.pl-filtres input,.pl-filtres select{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font:inherit;font-size:.86rem;}
+.pl-filtres input{min-width:260px;}
+.pl-compte{margin-left:auto;font-size:.78rem;color:var(--text-muted);}
+
+.pl-table-defile{overflow-x:auto;border:1px solid var(--border-soft);border-radius:14px;background:var(--surface);}
+.pl-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.pl-table th{position:sticky;top:0;background:var(--surface);font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);font-weight:600;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.pl-table td{padding:10px 12px;border-bottom:1px solid var(--border-soft);color:var(--text-body);vertical-align:middle;}
+.pl-table tbody tr:last-child td{border-bottom:none;}
+.pl-table tr[data-deal]{cursor:pointer;}
+.pl-table tbody tr[data-deal]:hover{background:var(--survol);}
+.pl-table .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pl-table b{color:var(--text);font-weight:600;}
+.pl-vide{padding:22px 16px;font-size:.84rem;color:var(--text-muted);text-align:center;}
+.pl-vide a{color:var(--accent);}
+.pl-erreur{margin:0 0 14px;padding:12px 14px;border-radius:10px;border:1px solid rgba(220,80,80,.35);background:rgba(220,80,80,.08);color:var(--text);font-size:.84rem;}
+.pl-erreur-cellule{max-width:320px;font-size:.76rem;color:var(--amber);}
+
+.pl-etape{display:inline-block;padding:3px 9px;border-radius:999px;border:1px solid var(--border-strong);font-size:.74rem;color:var(--text);}
+.pl-conf{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.74rem;font-weight:600;border:1px solid var(--border-strong);color:var(--text-muted);}
+.pl-conf-conforme{color:var(--green);border-color:var(--green);}
+.pl-conf-a_discuter{color:var(--amber);border-color:var(--amber);}
+.pl-conf-incomplet{color:var(--text);}
+.pl-conf-non_conforme{color:#e06c6c;border-color:#e06c6c;}
+.pl-statut{font-size:.76rem;color:var(--text-muted);}
+.pl-statut-failed{color:#e06c6c;}
+.pl-statut-duplicate{color:var(--text-faint);}
+.pl-statut-extracted{color:var(--green);}
+.pl-doc-duplicate td{color:var(--text-faint);}
+.pl-enfant{color:var(--text-faint);margin-right:2px;}
+.pl-encours{font-size:.76rem;color:var(--amber);}
+
+.pl-frise{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.pl-frise-etape{padding:6px 12px;border-radius:999px;border:1px solid var(--border-soft);font-size:.76rem;color:var(--text-faint);}
+.pl-frise-etape.active{border-color:var(--accent-line);background:var(--accent-dim);color:var(--text);font-weight:600;}
+
+.pl-panneau{margin-top:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:18px 20px;}
+.pl-panneau-tete{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+.pl-panneau-tete h3{margin:0;font-size:1rem;font-weight:600;color:var(--text);}
+.pl-panneau-tete h3 small{font-weight:400;color:var(--text-muted);margin-left:6px;}
+.pl-panneau-tete > small{font-size:.74rem;color:var(--text-faint);}
+.pl-panneau .pl-table-defile{border-radius:10px;}
+.pl-zone-depot{transition:box-shadow .15s ease,border-color .15s ease;}
+.pl-zone-depot.pl-survol{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);}
+
+.pl-jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;}
+.pl-job{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-soft);background:var(--bg);}
+.pl-job b{font-size:.8rem;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:500;}
+.pl-job span{font-size:.74rem;color:var(--text-muted);}
+
+.pl-avis{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);padding:10px 16px;border-radius:12px;background:var(--text);color:var(--bg);font-size:.84rem;opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;z-index:50;max-width:min(90vw,640px);}
+.pl-avis.visible{opacity:1;transform:translate(-50%,0);}
+.pl-avis.erreur{background:#b94a4a;color:#fff;}
+@media (max-width:760px){.pl-filtres input{min-width:0;flex:1;}.pl-compte{margin-left:0;}}

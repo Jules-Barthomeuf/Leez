@@ -9,6 +9,8 @@ function requireAuth(req, res, next) {
   req.userId = req.session.userId;
   req.workspaceId = req.session.workspaceId;
   req.userEmail = req.session.email;
+  // Role de membre pour la plateforme (users.role) ; un visiteur demo lit seulement.
+  req.userRole = req.session.invite ? 'viewer' : (req.session.role || 'analyst');
   next();
 }
 

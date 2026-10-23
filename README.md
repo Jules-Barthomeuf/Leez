@@ -167,3 +167,11 @@ démonstration statique) :
   gestionnaires d'événements et les appels serveur ont été vérifiés via un
   DOM headless (jsdom) avec des dossiers synthétiques, mais un test visuel
   manuel reste à faire par vous en premier lancement.
+
+## Plateforme (docs/SPEC.md)
+
+Depuis le 23 octobre 2026, Leez se construit phase par phase selon `docs/SPEC.md` (faits sourcés, calculs vérifiables, livrables). La phase 0 (fondations : schéma `plateforme`, RLS, pg-boss, dépôt de documents, onglet « Dossiers ») est livrée ; voir `server/plateforme/README.md` et `CLAUDE.md`. La vitrine et la Prospection restent telles quelles, la Prospection étant un module indépendant.
+
+- `npm test` : toute la suite (schémas, plateforme sur une base jetable, prospection).
+- `npm run lint` : ESLint sur la plateforme.
+- `npm run worker` : le worker seul (avec `WORKER_INLINE=false` côté web).

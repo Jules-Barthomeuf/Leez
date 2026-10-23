@@ -101,3 +101,11 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      # ---- Plateforme (docs/SPEC.md, section 21) ----
+      # Le worker pg-boss tourne dans ce service web ; `false` + un service
+      # worker (`npm run worker`) pour le separer.
+      - key: WORKER_INLINE
+        value: "true"
+      # Sentry, optionnel.
+      - key: SENTRY_DSN
+        sync: false

@@ -1,4 +1,6 @@
 require('dotenv').config();
+// Sentry (plateforme), actif seulement avec SENTRY_DSN.
+require('./plateforme/observabilite').initialiser('web');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
@@ -59,6 +61,8 @@ async function main() {
   const webPageRouter = require('./routes/webPage');
   const agentsRouter = require('./routes/agents');
   const prospectionRouter = require('./routes/prospection');
+  // La plateforme (docs/SPEC.md) : deals, documents, organisation, files de jobs.
+  const plateforme = require('./plateforme/routes');
   const { sweepStaleAgentRuns } = require('./services/agentRunner');
   await sweepStaleAgentRuns();
 
@@ -73,6 +77,8 @@ async function main() {
   // page, avant meme d'avoir confirme qu'une session est valide.
   app.use('/api', authRouter);
   app.use('/api', publicConfigRouter);
+  // Telechargement par lien signe (5 minutes) : le jeton vaut authentification.
+  app.use('/api', plateforme.publique);
   app.use('/api', requireAuth);
   app.use('/api', limiterInvite);
 
@@ -86,6 +92,9 @@ async function main() {
   // jamais les atteindre (voir requireWorkspace).
   app.use('/api', requireWorkspace);
   app.use('/api', workspaceRouter);
+  // AVANT documentsRouter : les deux exposent GET /documents/:id/file ; la
+  // plateforme passe la main quand l'id n'est pas un de ses documents.
+  app.use('/api', plateforme.router);
   app.use('/api', documentsRouter);
   app.use('/api', settingsRouter);
   app.use('/api', simulateRouter);
@@ -135,11 +144,21 @@ async function main() {
     console.log(`Leez — serveur local sur http://localhost:${PORT}`);
   });
 
+  // Worker de la plateforme dans ce processus (server/plateforme/worker.js).
+  // WORKER_INLINE=false pour le lancer a part avec `npm run worker`.
+  if (process.env.WORKER_INLINE !== 'false') {
+    require('./plateforme/worker').demarrerWorker().catch((e) => console.error('[worker] démarrage impossible :', e.message));
+  }
+
   // Render envoie SIGTERM avant de couper un service (redeploiement,
   // mise a l'echelle) -- laisse a PostHog une chance d'envoyer les
   // evenements encore en file plutot que de les perdre silencieusement.
   const analytics = require('./services/analytics');
-  process.on('SIGTERM', async () => { await analytics.shutdown(); process.exit(0); });
+  process.on('SIGTERM', async () => {
+    await require('./plateforme/worker').arreterWorker().catch(() => {});
+    await analytics.shutdown();
+    process.exit(0);
+  });
 }
 
 main().catch(err => {

@@ -349,8 +349,9 @@
   const DOSSIER_SUBVIEWS = ['deal', 'extract', 'audit', 'reconciliation', 'verification', 'documents', 'notes', 'export'];
   // Ecran d'arrivee : le Simulateur, seul onglet d'origine encore affiche (Assistant, Vault,
   // Memoire et Criteres sont masques via .nav-masque dans index.html, le code reste).
-  const ECRAN_ACCUEIL = 'analyze';
-  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'prospection', 'settings', 'account'];
+  // Depuis le 23 oct. 2026, l'ecran d'arrivee est la plateforme (Dossiers, public/js/plateforme.js).
+  const ECRAN_ACCUEIL = 'deals';
+  const TOP_LEVEL_VIEWS = ['dashboard', 'dossiers', 'memoire', 'ingest', 'analyze', 'prospection', 'deals', 'settings', 'account'];
   let dossierMode = false;
   let currentDoc = null;
   // Le Vault (liste des dossiers) est l'ecran d'arrivee par defaut -- pas
@@ -463,6 +464,8 @@
     if (name === 'account') loadAccountForm();
     // Prospection cession-bail : ecran autonome (public/js/prospection.js).
     if (name === 'prospection' && window.LeezProspection) window.LeezProspection.show();
+    // Plateforme (Dossiers) : ecran autonome (public/js/plateforme.js), independant de la Prospection.
+    if (name === 'deals' && window.LeezPlateforme) window.LeezPlateforme.show();
     // queueMicrotask : showView peut etre invoquee DES LE BOOT (routage par
     // ancre, ligne applyRouteFromHash() plus bas) alors que les constantes
     // que ces rendus consultent (FICHE_LABELS...) sont declarees plus loin
@@ -495,6 +498,7 @@
     let hash = '';
     // La Prospection gere ses propres sous-adresses (#prospection/cible/<siren>...) : ne pas les ecraser.
     if (currentViewName === 'prospection' && location.hash.startsWith('#prospection')) return;
+    if (currentViewName === 'deals' && location.hash.startsWith('#deals')) return;
     if (isDossierView && currentDoc) hash = `#dossiers/${currentDoc.id}/${currentViewName}`;
     else if (currentViewName !== 'dossiers') hash = `#${currentViewName}`;
     if (location.hash === hash) return;

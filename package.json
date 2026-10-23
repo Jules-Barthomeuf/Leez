@@ -2,7 +2,7 @@
   "name": "leez",
   "version": "0.1.0",
   "private": true,
-  "description": "Leez — extraction reelle de memorandums de vente immobiliers, avec citation et verification anti-hallucination.",
+  "description": "Leez — plateforme d'analyse de dossiers d'immobilier commercial (faits sourcés, calculs vérifiables) et prospection cession-bail.",
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon server/index.js",
@@ -21,27 +21,41 @@
     "test:geography": "node server/services/geography.test.js",
     "prospection": "node server/scripts/prospection.js",
     "test:prospection": "node --test server/prospection/prospection.test.js",
-    "test:personnalisation": "node --test server/personnalisation.test.js"
+    "test:personnalisation": "node --test server/personnalisation.test.js",
+    "worker": "node server/worker.js",
+    "lint": "eslint packages server/plateforme server/worker.js server/migrations/020_create_plateforme.js",
+    "test": "node --test packages/core/core.test.js server/plateforme/plateforme.test.js server/prospection/prospection.test.js server/personnalisation.test.js",
+    "test:core": "node --test packages/core/core.test.js",
+    "test:plateforme": "node --test server/plateforme/plateforme.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
+    "@sentry/node": "^11.8.0",
+    "adm-zip": "^0.6.1",
     "bcryptjs": "^3.0.3",
     "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",
+    "decimal.js": "^10.6.0",
     "docx": "^9.7.1",
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "express-session": "^1.19.0",
+    "mailparser": "^3.12.4",
     "multer": "^1.4.5-lts.1",
     "node-pg-migrate": "^9.0.0",
     "pdfjs-dist": "^4.9.155",
     "pg": "^8.23.0",
+    "pg-boss": "^12.38.0",
     "posthog-node": "^5.48.1",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "embedded-postgres": "^18.4.0-beta.17",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
     "nodemon": "^3.1.9"
   },
   "nodemonConfig": {

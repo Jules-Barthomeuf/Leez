@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/css/leez.css">
 <link rel="stylesheet" href="/css/login.css">
 <link rel="stylesheet" href="/css/prospection.css">
+<link rel="stylesheet" href="/css/plateforme.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/theme-klocka.css">
@@ -38,6 +39,7 @@
       <div class="sidebar-subitems nav-masque" id="sidebarRecentDossiers"></div>
       <button class="nav-masque" data-view="memoire"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 13.5h11M4 13.5V7M8 13.5V7M12 13.5V7M2 6.5L8 2.5l6 4"/></svg></span>Mémoire</button>
       <button class="nav-masque" data-view="settings"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.4" fill="currentColor" stroke="none"/></svg></span>Critères</button>
+      <button data-view="deals"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M2 5.5a1.5 1.5 0 011.5-1.5h3l1.5 1.5h4.5A1.5 1.5 0 0114 7v5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 12z"/></svg></span>Dossiers</button>
       <button data-view="analyze"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1.5 11.5l3.4-4 3 2.5 3-5 3.6 3"/></svg></span>Simulateur</button>
       <button data-view="prospection"><span class="sidebar-ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 14.5s-4.5-4.2-4.5-7.7a4.5 4.5 0 019 0c0 3.5-4.5 7.7-4.5 7.7z"/><circle cx="8" cy="6.8" r="1.6"/></svg></span>Prospection</button>
       <div class="sidebar-section-label nav-masque">Requêtes récentes</div>
@@ -448,6 +450,11 @@
         </section>
 
         <!-- ================= PROSPECTION (cession-bail) ================= -->
+        <!-- La plateforme (docs/SPEC.md) : rempli par public/js/plateforme.js. -->
+        <section class="view" id="view-deals">
+          <div id="plApp" class="pl-app"></div>
+        </section>
+
         <!-- Rempli par public/js/prospection.js ; regles des scores dans
              public/js/prospection-scores.js, pipeline dans server/prospection. -->
         <section class="view" id="view-prospection">
@@ -1093,6 +1100,7 @@
 <script src="/js/prospection-scores.js"></script>
 <script src="/js/prospection-mandat.js"></script>
 <script src="/js/prospection.js"></script>
+<script src="/js/plateforme.js"></script>
 <script src="/js/perso-ecran.js"></script>
 </body>
 </html>
