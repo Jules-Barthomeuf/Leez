@@ -41,13 +41,14 @@ function construirePage(items, largeur, hauteur, numero) {
     l.y0 = Math.max(...l.mots.map((m) => m.y + m.h)); // haut (origine en bas chez pdfjs)
     l.y1 = Math.min(...l.mots.map((m) => m.y));        // bas
   }
-  // Blocs : lignes consecutives dont l'ecart vertical reste inferieur a 1,6 hauteur de ligne.
+  // Blocs : lignes consecutives dont l'ecart vertical (bas de l'une, haut de la suivante) reste inferieur a
+  // 0,45 hauteur de ligne : un interligne normal vaut ~0,15 h, un saut de paragraphe au moins 0,5 h.
   const hauteurs = lignes.map((l) => l.h).sort((p, q) => p - q);
   const hMediane = hauteurs.length ? hauteurs[Math.floor(hauteurs.length / 2)] : 10;
   const blocs = [];
   for (const l of lignes) {
     const b = blocs[blocs.length - 1];
-    if (b && b.derniere.y1 - l.y0 < 1.6 * Math.max(b.derniere.h, l.h) && b.derniere.y1 - l.y0 > -0.3 * l.h) { b.lignes.push(l); b.derniere = l; }
+    if (b && b.derniere.y1 - l.y0 < 0.45 * Math.max(b.derniere.h, l.h) && b.derniere.y1 - l.y0 > -0.3 * l.h) { b.lignes.push(l); b.derniere = l; }
     else blocs.push({ lignes: [l], derniere: l });
   }
   const norme = (v, total) => Math.min(1, Math.max(0, v / total));

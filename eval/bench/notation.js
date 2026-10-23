@@ -169,8 +169,12 @@ function iou(a, b) {
   const union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter;
   return union > 0 ? inter / union : 0;
 }
-function centresProches(a, b, tol = 0.05) {
-  return Math.abs((a[0] + a[2]) / 2 - (b[0] + b[2]) / 2) <= tol && Math.abs((a[1] + a[3]) / 2 - (b[1] + b[3]) / 2) <= tol;
+function aire(b) { return Math.max(0, b[2] - b[0]) * Math.max(0, b[3] - b[1]); }
+function centreDans(a, b) { const cx = (a[0] + a[2]) / 2; const cy = (a[1] + a[3]) / 2; return cx >= b[0] && cx <= b[2] && cy >= b[1] && cy <= b[3]; }
+/** La boite du parseur tombe sur la zone de reference : recouvrement net, ou centre de l'une dans l'autre, sans etre plus de 4 fois plus grande (une boite « toute la page » ne sert a rien). */
+function boiteCorrecte(parseur, ref) {
+  if (aire(parseur) > 4 * aire(ref) + 0.01) return false;
+  return iou(parseur, ref) >= 0.25 || centreDans(parseur, ref) || centreDans(ref, parseur);
 }
 /** La boite (union des blocs) qui couvre un intervalle du texte normalise d'une page. */
 function boiteDeSpan(page, carte, debut, fin) {
@@ -238,7 +242,7 @@ function noterDocument(attendu, parsed, { referenceNatif, texteNatif } = {}) {
       const boite = boiteDeSpan(page, page.norm.carte, trouve.debut, trouve.fin);
       let ref = null;
       if (refPages && refPages[trouve.page]) { const rp = refPages[trouve.page]; const rr = chercher(cit, rp.norm.texte); if (rr && rr.score >= SEUIL) ref = boiteDeSpan(rp, rp.norm.carte, rr.debut, rr.fin); }
-      resultat.coordonnees = { presente: !!boite, reference: !!ref, correcte: boite && ref ? (iou(boite, ref) >= 0.25 || centresProches(boite, ref)) : null, boite, boite_reference: ref };
+      resultat.coordonnees = { presente: !!boite, reference: !!ref, correcte: boite && ref ? boiteCorrecte(boite, ref) : null, boite, boite_reference: ref };
     }
     citations.push(resultat);
   }

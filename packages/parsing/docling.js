@@ -72,7 +72,18 @@ function normaliser(document) {
     const y1 = bas ? 1 - b / t.height : b / t.height;
     return [Math.max(0, l / t.width), Math.max(0, Math.min(y0, y1)), Math.min(1, r / t.width), Math.min(1, Math.max(y0, y1))];
   };
-  for (const item of ordre) {
+  // Les elements de la couche « furniture » (en-tete, pied de page, parfois le titre) arrivent en fin de parcours :
+  // on les replace selon leur position verticale parmi les elements de la meme page.
+  const haut = (item) => { const p = (item.prov || [])[0]; const t = p && tailles[p.page_no]; if (!p || !p.bbox || !t) return 0; return p.bbox.coord_origin === 'BOTTOMLEFT' ? 1 - p.bbox.t / t.height : p.bbox.t / t.height; };
+  const corps = ordre.filter((i) => i.content_layer !== 'furniture');
+  for (const meuble of ordre.filter((i) => i.content_layer === 'furniture')) {
+    const page = ((meuble.prov || [])[0] || {}).page_no;
+    const y = haut(meuble);
+    let idx = corps.findIndex((i) => ((i.prov || [])[0] || {}).page_no === page && haut(i) > y);
+    if (idx < 0) { const dernier = corps.map((i, k) => (((i.prov || [])[0] || {}).page_no === page ? k : -1)).filter((k) => k >= 0).pop(); idx = dernier == null ? corps.length : dernier + 1; }
+    corps.splice(idx, 0, meuble);
+  }
+  for (const item of corps) {
     const prov = (item.prov || [])[0];
     if (!prov) continue;
     const n = prov.page_no;
