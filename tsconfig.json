@@ -1,0 +1,19 @@
+{
+  "// ": "Typage JSDoc (decision A3) : pas de migration vers TypeScript. Seuls les modules qui manipulent de l'argent sont verifies en mode strict : packages/core, packages/calc, packages/rules. `npm run typecheck`.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["es2022"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["packages/core/**/*.js", "packages/calc/**/*.js", "packages/rules/**/*.js"],
+  "exclude": ["node_modules", "**/*.test.js"]
+}

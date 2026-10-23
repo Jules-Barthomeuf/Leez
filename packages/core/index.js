@@ -31,9 +31,13 @@ const VALEURS = {
 };
 const VALUE_TYPES = Object.keys(VALEURS);
 
-/** Le schema Zod de la valeur d'un type donne (ex. 'money'). */
+/**
+ * Le schema Zod de la valeur d'un type donne (ex. 'money').
+ * @param {string} type
+ * @returns {import('zod').ZodTypeAny}
+ */
 function schemaValeur(type) {
-  const s = VALEURS[type];
+  const s = /** @type {Record<string, import('zod').ZodTypeAny | undefined>} */ (VALEURS)[type];
   if (!s) throw new Error(`Type de valeur inconnu : ${type}`);
   return s;
 }
@@ -81,7 +85,10 @@ const ChampExtrait = z.strictObject({
 const SortieExtraction = z.strictObject({
   rows: z.array(z.strictObject({ row_key: z.string().nullable(), fields: z.record(z.string(), ChampExtrait) })),
 });
-/** La sortie attendue pour UN template : exactement ses champs, rien d'autre. Sert a generer le schema de l'outil du modele. */
+/**
+ * La sortie attendue pour UN template : exactement ses champs, rien d'autre. Sert a generer le schema de l'outil du modele.
+ * @param {{ fields: Array<{ key: string, active?: boolean }> }} template
+ */
 function schemaSortiePour(template) {
   const champs = Object.fromEntries(template.fields.filter((f) => f.active !== false).map((f) => [f.key, ChampExtrait]));
   return z.strictObject({ rows: z.array(z.strictObject({ row_key: z.string().nullable(), fields: z.strictObject(champs) })) });
@@ -170,13 +177,20 @@ const TYPES_FICHIERS = {
   jpeg: 'image/jpeg',
   png: 'image/png',
 };
-/** { extension, mime } d'un nom de fichier accepte, sinon null. */
+/**
+ * { extension, mime } d'un nom de fichier accepte, sinon null.
+ * @param {string} nom
+ * @returns {{ extension: string, mime: string } | null}
+ */
 function typeDeFichier(nom) {
   const m = /\.([a-z0-9]+)$/i.exec(String(nom || ''));
-  const ext = m ? m[1].toLowerCase() : '';
-  return TYPES_FICHIERS[ext] ? { extension: ext, mime: TYPES_FICHIERS[ext] } : null;
+  const ext = m && m[1] ? m[1].toLowerCase() : '';
+  const mime = /** @type {Record<string, string | undefined>} */ (TYPES_FICHIERS)[ext];
+  return mime ? { extension: ext, mime } : null;
 }
-const LIMITES = { taille_fichier: 100 * 1024 * 1024, pages_par_document: 600, documents_par_deal: 2000 };
+// MAX_UPLOAD_MB (defaut 100) : lue une fois au chargement, par le serveur web (multer) et par le worker (ingest).
+const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB) > 0 ? Number(process.env.MAX_UPLOAD_MB) : 100;
+const LIMITES = { taille_fichier: MAX_UPLOAD_MB * 1024 * 1024, pages_par_document: 600, documents_par_deal: 2000 };
 
 // Reglages par defaut d'une organisation (sections 7, 9 et 19).
 const DOCUMENTS_DEMANDES_DEFAUT = [
@@ -206,6 +220,7 @@ const ReglagesOrganisation = z.strictObject({
 
 // ---------- Validation ----------
 class ErreurValidation extends Error {
+  /** @param {Array<{ path?: PropertyKey[], message: string }>} issues */
   constructor(issues) {
     const detail = issues.map((i) => `${i.path && i.path.length ? i.path.join('.') + ' : ' : ''}${i.message}`).join(' ; ');
     super(detail || 'Données invalides.');
@@ -214,7 +229,13 @@ class ErreurValidation extends Error {
     this.issues = issues;
   }
 }
-/** Rend la valeur validee (avec les valeurs par defaut), ou leve ErreurValidation. */
+/**
+ * Rend la valeur validee (avec les valeurs par defaut), ou leve ErreurValidation.
+ * @template T
+ * @param {import('zod').ZodType<T>} schema
+ * @param {unknown} donnees
+ * @returns {T}
+ */
 function valider(schema, donnees) {
   const r = schema.safeParse(donnees);
   if (!r.success) throw new ErreurValidation(r.error.issues);

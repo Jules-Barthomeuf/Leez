@@ -28,6 +28,10 @@ Lis `docs/SPEC.md` avant toute tâche. Travaille phase par phase (section 20 de 
 9. **Donnée introuvable = « — ».** Jamais d'estimation à la place d'une valeur manquante.
 10. **Les statuts de conformité sont** Conforme, À discuter, Incomplet, Non conforme. Aucun autre vocabulaire.
 
+## Argent et typage (décision A3)
+
+Dans `packages/calc`, `packages/rules` et `packages/core`, tout montant passe par decimal.js (`Decimal`), jamais par un `number`, et toute fonction exportée est typée en JSDoc (`@param`, `@returns`, types de `packages/core/types.js`). `npm run typecheck` (TypeScript en mode `checkJs` strict sur ces trois dossiers) doit passer ; la CI échoue sinon.
+
 ## Règle de dépendances
 
 `packages/core`, `packages/calc` et `packages/rules` ne font aucune I/O (ni base, ni réseau, ni disque) et se testent seuls. `server/*` dépend de `packages/*`, jamais l'inverse. Aucun package ne dépend de `server/prospection`.
