@@ -40,4 +40,22 @@ function avecSysteme(fn) {
   return transaction({ 'app.systeme': '1' }, fn);
 }
 
-module.exports = { avecOrg, avecSysteme, uuidValide, pool };
+/**
+ * Verifie au demarrage que les extensions de la plateforme sont installees (decision A2).
+ * unaccent et pg_trgm sont toujours requises ; vector l'est en production (NODE_ENV=production)
+ * ou si REQUIRE_PGVECTOR=true, sinon son absence est seulement signalee (Postgres embarque local).
+ * Leve une erreur explicite, qui doit arreter le processus.
+ */
+async function verifierExtensions() {
+  const { rows } = await pool.query("SELECT extname FROM pg_extension WHERE extname IN ('vector', 'unaccent', 'pg_trgm')");
+  const presentes = new Set(rows.map((r) => r.extname));
+  const vectorRequise = process.env.NODE_ENV === 'production' || process.env.REQUIRE_PGVECTOR === 'true';
+  const manquantes = ['unaccent', 'pg_trgm', ...(vectorRequise ? ['vector'] : [])].filter((e) => !presentes.has(e));
+  if (manquantes.length) {
+    throw new Error(`Extensions Postgres manquantes : ${manquantes.join(', ')}. Lancez \`node scripts/check-db.js\` puis, sur la base, CREATE EXTENSION ${manquantes[0]}; (la migration 021 le fait si l'extension est disponible sur le serveur).`);
+  }
+  if (!presentes.has('vector')) console.warn('[plateforme] pgvector absent : toléré hors production, la recherche vectorielle (phase 4) se fera en mémoire.');
+  return { presentes: [...presentes] };
+}
+
+module.exports = { avecOrg, avecSysteme, uuidValide, pool, verifierExtensions };

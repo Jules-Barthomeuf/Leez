@@ -10,6 +10,8 @@ async function main() {
     await ensureLocalPostgres();
   }
   await require('./runMigrations').runPendingMigrations();
+  await require('./plateforme/db').verifierExtensions();
+  require('./plateforme/stockage').verifierConfiguration();
   const { demarrerWorker, arreterWorker } = require('./plateforme/worker');
   await demarrerWorker();
   const arret = async () => { await arreterWorker(); process.exit(0); };

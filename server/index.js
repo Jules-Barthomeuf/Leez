@@ -44,6 +44,11 @@ async function main() {
   // service sans commande de pre-deploiement configuree (voir
   // runMigrations.js). No-op si tout est deja a jour.
   await require('./runMigrations').runPendingMigrations();
+  // Extensions Postgres de la plateforme : echec explicite si l'une manque (decision A2).
+  await require('./plateforme/db').verifierExtensions();
+  // Pilote de stockage : echec explicite si STORAGE_DRIVER=s3 sans ses variables (decision A1).
+  const stockage = require('./plateforme/stockage').verifierConfiguration();
+  console.log(`[stockage] pilote ${stockage.driver}${stockage.bucket ? ` (bucket ${stockage.bucket})` : stockage.racine ? ` (${stockage.racine})` : ''}`);
 
   const sessionMiddleware = require('./auth/session');
   const { requireAuth, requireWorkspace, limiterInvite } = require('./auth/middleware');
