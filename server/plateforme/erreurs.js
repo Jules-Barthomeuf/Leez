@@ -19,7 +19,8 @@ function gererErreurs(err, req, res, next) {
     return res.status(err.status || 400).json({ error: { code: err.code, message: err.message } });
   }
   if (err && err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ error: { code: 'taille_fichier', message: 'Fichier trop volumineux : 100 Mo au plus.' } });
+    const { LIMITES } = require('../../packages/core');
+    return res.status(413).json({ error: { code: 'taille_fichier', message: `Fichier trop volumineux : ${Math.round(LIMITES.taille_fichier / 1048576)} Mo au plus par fichier (réglage MAX_UPLOAD_MB).` } });
   }
   if (err && err.code === 'LIMIT_FILE_COUNT') {
     return res.status(400).json({ error: { code: 'nombre_fichiers', message: 'Trop de fichiers en un seul envoi (50 au plus).' } });

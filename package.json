@@ -24,12 +24,19 @@
     "test:personnalisation": "node --test server/personnalisation.test.js",
     "worker": "node server/worker.js",
     "lint": "eslint packages server/plateforme server/worker.js server/migrations/020_create_plateforme.js",
-    "test": "node --test packages/core/core.test.js server/plateforme/plateforme.test.js server/prospection/prospection.test.js server/personnalisation.test.js",
+    "test": "node --test packages/core/core.test.js server/plateforme/stockage.test.js server/plateforme/plateforme.test.js server/plateforme/worker-separe.test.js server/prospection/prospection.test.js server/personnalisation.test.js",
     "test:core": "node --test packages/core/core.test.js",
-    "test:plateforme": "node --test server/plateforme/plateforme.test.js"
+    "test:plateforme": "node --test server/plateforme/plateforme.test.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:stockage": "node --test server/plateforme/stockage.test.js",
+    "test:worker": "node --test server/plateforme/worker-separe.test.js",
+    "check:db": "node scripts/check-db.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/s3-request-presigner": "^3.1156.0",
+    "@napi-rs/canvas": "^1.0.13",
     "@sentry/node": "^11.8.0",
     "adm-zip": "^0.6.1",
     "bcryptjs": "^3.0.3",
@@ -48,15 +55,18 @@
     "pg": "^8.23.0",
     "pg-boss": "^12.38.0",
     "posthog-node": "^5.48.1",
+    "tesseract.js": "^7.0.0",
     "uuid": "^11.0.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
     "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^10.13.0",
     "globals": "^17.13.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "typescript": "^7.0.2"
   },
   "nodemonConfig": {
     "ignore": [

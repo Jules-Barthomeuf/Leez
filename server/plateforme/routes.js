@@ -140,6 +140,7 @@ router.patch('/deals/:id', h(async (req, res) => {
 // ---------- Documents ----------
 const TMP = path.join(os.tmpdir(), 'leez-plateforme-uploads');
 fs.mkdirSync(TMP, { recursive: true });
+// Taille maximale par fichier : MAX_UPLOAD_MB (defaut 100). Lue ici et dans le worker (packages/core, LIMITES).
 const upload = multer({ storage: multer.diskStorage({ destination: TMP }), limits: { fileSize: Core.LIMITES.taille_fichier, files: 50 } });
 // Les navigateurs envoient le nom de fichier en latin1 dans le multipart : on le remet en UTF-8.
 const nomOriginal = (f) => { try { return Buffer.from(f.originalname, 'latin1').toString('utf8'); } catch { return f.originalname; } };
@@ -151,6 +152,32 @@ function formatDocument(d) {
     doc_type: d.doc_type, doc_type_confidence: d.doc_type_confidence, doc_type_source: d.doc_type_source,
     status: d.status, error: d.error, document_date: d.document_date, duplicate_of: d.duplicate_of, created_at: d.created_at,
   };
+}
+
+/**
+ * Insere un document ; si le dossier a deja ce contenu (meme sha256, pas un segment), la ligne est creee
+ * en `duplicate` avec `duplicate_of`. Un depot simultane du meme contenu est rattrape par l'index unique.
+ */
+async function insererDocument(c, { orgId, dealId, filename, mime, size, sha, cle, parentId = null }) {
+  const existant = () => c.query(
+    'SELECT id FROM plateforme.documents WHERE deal_id = $1 AND sha256 = $2 AND org_id = $3 AND page_range IS NULL AND duplicate_of IS NULL ORDER BY created_at LIMIT 1',
+    [dealId, sha, orgId],
+  );
+  const inserer = (dup) => c.query(
+    `INSERT INTO plateforme.documents (org_id, deal_id, parent_document_id, filename, mime, size_bytes, sha256, storage_path, status, duplicate_of)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+    [orgId, dealId, parentId, filename, mime, size, sha, cle, dup ? 'duplicate' : 'uploaded', dup],
+  );
+  const { rows: [deja] } = await existant();
+  await c.query('SAVEPOINT depot');
+  try {
+    return (await inserer(deja ? deja.id : null)).rows[0];
+  } catch (e) {
+    if (e.code !== '23505') throw e;
+    await c.query('ROLLBACK TO SAVEPOINT depot');
+    const { rows: [autre] } = await existant();
+    return (await inserer(autre ? autre.id : null)).rows[0];
+  }
 }
 
 router.post('/deals/:id/uploads', upload.array('files', 50), h(async (req, res) => {
@@ -175,25 +202,24 @@ router.post('/deals/:id/uploads', upload.array('files', 50), h(async (req, res) 
       if (deal.documents_total + acceptes.length > Core.LIMITES.documents_par_deal) throw new ErreurApi(409, 'limite_documents', `Limite de ${Core.LIMITES.documents_par_deal} documents par dossier.`);
       const crees = [];
       for (const { f, nom, type } of acceptes) {
-        const { rows: [doc] } = await c.query(
-          "INSERT INTO plateforme.documents (org_id, deal_id, filename, mime, size_bytes, status) VALUES ($1, $2, $3, $4, $5, 'uploaded') RETURNING *",
-          [orgId, id, St.nomSur(nom), type.mime, f.size],
-        );
-        const relatif = St.cheminRelatif(orgId, id, doc.id, nom);
-        await St.deposer(relatif, f.path);
-        await c.query('UPDATE plateforme.documents SET storage_path = $2 WHERE id = $1', [doc.id, relatif]);
-        await journaliser(c, { orgId, acteur: userId, action: 'document.upload', type: 'document', id: doc.id, payload: { deal_id: id, filename: doc.filename, size: f.size } });
-        crees.push({ ...doc, storage_path: relatif });
+        // La cle de stockage depend du contenu (sha256), jamais du nom : deux depots identiques partagent le meme objet.
+        const sha = await St.sha256DeFichier(f.path);
+        const cle = St.cleDocument(orgId, sha);
+        await St.put(cle, f.path);
+        // Un meme contenu deja present dans le dossier : le document est cree marque doublon (duplicate_of),
+        // sans job d'ingestion. L'index unique (deal, sha256) arbitre les depots simultanes.
+        const doc = await insererDocument(c, { orgId, dealId: id, filename: St.nomSur(nom), mime: type.mime, size: f.size, sha, cle });
+        await journaliser(c, { orgId, acteur: userId, action: 'document.upload', type: 'document', id: doc.id, payload: { deal_id: id, filename: doc.filename, size: f.size, sha256: sha, duplicate_of: doc.duplicate_of } });
+        crees.push(doc);
       }
       await c.query('UPDATE plateforme.deals SET updated_at = now() WHERE id = $1 AND org_id = $2', [id, orgId]);
       return crees;
     });
-  } catch (e) {
+  } finally {
     await nettoyer();
-    throw e;
   }
-  // Les jobs partent apres le COMMIT : le worker doit voir les lignes.
-  for (const d of documents) await envoyer('document.ingest', { org_id: ctx(req).orgId, document_id: d.id });
+  // Les jobs partent apres le COMMIT : le worker doit voir les lignes. Un doublon n'a pas de chaine.
+  for (const d of documents.filter((x) => !x.duplicate_of)) await envoyer('document.ingest', { org_id: ctx(req).orgId, document_id: d.id });
   if (!documents.length) return res.status(400).json({ error: { code: 'type_fichier', message: 'Aucun des fichiers n\'est d\'un type accepté (pdf, docx, xlsx, xls, csv, eml, msg, zip, jpg, png).' }, refuses });
   res.status(201).json({ documents: documents.map(formatDocument), refuses });
 }));
@@ -227,29 +253,35 @@ router.post('/documents/:id/reprocess', h(async (req, res) => {
 router.get('/documents/:id/file', h(async (req, res, next) => {
   const id = req.params.id;
   if (!uuidValide(id)) return next();
-  const doc = await dansOrg(req, async (c, { orgId }) => (await c.query('SELECT id, storage_path FROM plateforme.documents WHERE id = $1 AND org_id = $2', [id, orgId])).rows[0]);
+  const doc = await dansOrg(req, async (c, { orgId }) => (await c.query('SELECT id, filename, mime, storage_path FROM plateforme.documents WHERE id = $1 AND org_id = $2', [id, orgId])).rows[0]);
   if (!doc) return next(); // pas un document de la plateforme : l'ancien routeur (Simulateur) prend le relais
   if (!doc.storage_path) throw new ErreurApi(409, 'sans_fichier', 'Ce document n\'a pas de fichier.');
-  const { jeton, expires_at } = St.signerLien({ document_id: doc.id, org_id: ctx(req).orgId });
-  res.json({ url: `/api/storage/${jeton}`, expires_at });
+  // Lien signe de 5 minutes par le pilote de stockage : URL presignee S3 en production, jeton local en developpement.
+  const { url, expires_at } = await St.signedUrl(doc.storage_path, { filename: doc.filename, mime: doc.mime });
+  res.json({ url, expires_at });
 }));
 
-// Telechargement par lien signe : l'authentification est le jeton lui-meme (5 minutes).
+// Telechargement par jeton signe (pilote local seulement) : l'authentification est le jeton lui-meme (5 minutes).
+// Avec le pilote s3, les liens pointent directement sur le stockage objet et cette route ne sert jamais un fichier.
 publique.get('/storage/:jeton', h(async (req, res) => {
+  if (St.DRIVER !== 'local') throw new ErreurApi(404, 'stockage', 'Les fichiers sont servis par le stockage objet, pas par Leez.');
   const lien = St.verifierLien(req.params.jeton);
-  if (!lien || !uuidValide(lien.org_id) || !uuidValide(lien.document_id)) throw new ErreurApi(401, 'lien', 'Lien invalide ou expiré.');
-  const doc = await avecOrg(lien.org_id, 'viewer', async (c) => (await c.query('SELECT filename, mime, storage_path FROM plateforme.documents WHERE id = $1 AND org_id = $2', [lien.document_id, lien.org_id])).rows[0]);
-  if (!doc || !doc.storage_path || !(await St.existe(doc.storage_path))) throw introuvable('Fichier');
-  res.setHeader('Content-Type', doc.mime || 'application/octet-stream');
-  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(doc.filename)}`);
+  if (!lien) throw new ErreurApi(401, 'lien', 'Lien invalide ou expiré.');
+  if (!(await St.exists(lien.cle))) throw introuvable('Fichier');
+  res.setHeader('Content-Type', lien.mime || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(St.nomSur(lien.filename))}`);
   res.setHeader('Cache-Control', 'private, max-age=0');
-  St.flux(doc.storage_path).on('error', () => res.status(500).end()).pipe(res);
+  (await St.get(lien.cle)).on('error', () => res.status(500).end()).pipe(res);
 }));
 publique.use(gererErreurs);
 
 // ---------- Organisation ----------
 function formatOrg(w) {
-  return { id: w.id, name: w.name, slug: w.slug, settings: { ...Core.REGLAGES_DEFAUT, ...(w.settings_json || {}) } };
+  return {
+    id: w.id, name: w.name, slug: w.slug, settings: { ...Core.REGLAGES_DEFAUT, ...(w.settings_json || {}) },
+    // Limites en vigueur sur ce serveur, pour que l'interface refuse un fichier trop gros avant de l'envoyer.
+    limites: { max_upload_mb: Math.round(Core.LIMITES.taille_fichier / 1048576), documents_par_deal: Core.LIMITES.documents_par_deal, stockage: St.DRIVER },
+  };
 }
 router.get('/org/settings', h(async (req, res) => {
   const { rows: [w] } = await pool.query('SELECT id, name, slug, settings_json FROM workspaces WHERE id = $1', [ctx(req).orgId]);
@@ -306,4 +338,4 @@ router.get('/jobs', h(async (req, res) => {
 
 router.use(gererErreurs);
 
-module.exports = { router, publique };
+module.exports = { router, publique, insererDocument };

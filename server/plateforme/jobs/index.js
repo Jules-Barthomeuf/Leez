@@ -3,5 +3,5 @@
 const { ingest } = require('./ingest');
 
 module.exports = {
-  'document.ingest': { executer: ingest, concurrence: 2, parOrganisation: 4 },
+  'document.ingest': { executer: ingest, parOrganisation: 4 },
 };
