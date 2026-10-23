@@ -6,6 +6,8 @@ const { demarrerFile, arreterFile } = require('./file');
 const JOBS = require('./jobs');
 
 let actif = false;
+// WORKER_CONCURRENCY (defaut 2) : jobs simultanes par file dans ce processus. Par organisation, 4 au plus (spec, section 4).
+const CONCURRENCE = Number(process.env.WORKER_CONCURRENCY) > 0 ? Number(process.env.WORKER_CONCURRENCY) : 2;
 
 async function demarrerWorker() {
   if (actif) return;
@@ -13,7 +15,7 @@ async function demarrerWorker() {
   for (const [nom, def] of Object.entries(JOBS)) {
     await boss.work(nom, {
       batchSize: 1,
-      localConcurrency: def.concurrence || 1,
+      localConcurrency: Math.min(CONCURRENCE, def.concurrence || CONCURRENCE),
       groupConcurrency: def.parOrganisation || 4,
       pollingIntervalSeconds: 2,
     }, async ([job]) => {
@@ -29,7 +31,7 @@ async function demarrerWorker() {
     });
   }
   actif = true;
-  console.log(`[worker] prêt : ${Object.keys(JOBS).join(', ')}`);
+  console.log(`[worker] prêt : ${Object.keys(JOBS).join(', ')} (concurrence ${CONCURRENCE})`);
 }
 
 async function arreterWorker() {

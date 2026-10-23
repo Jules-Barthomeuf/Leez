@@ -37,11 +37,11 @@ test('migrations rejouables sur une base vide, puis retour arriere et retour ava
   assert.deepEqual(rls.map((r) => r.relname).sort(), ['index_values', 'public_data_cache'], 'seules les tables sans org_id sont sans RLS');
   const deuxieme = await base.migrer('up');
   assert.equal(deuxieme.length, 0, 'rien a rejouer : les migrations sont idempotentes');
-  await base.migrer('down', 1);
+  await base.migrer('down', 2); // 021 (extensions, sans retour) puis 020 (le schema)
   const { rows: apres } = await base.requete("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'plateforme'");
   assert.equal(apres.length, 0, 'le retour arriere supprime le schema');
   const retour = await base.migrer('up');
-  assert.equal(retour.length, 1);
+  assert.equal(retour.length, 2);
 });
 
 test('isolation : aucune route ni requete ne renvoie les donnees d\'une autre organisation', async () => {
@@ -131,18 +131,26 @@ test('un fichier depose cree un document et un job document.ingest visible dans 
     { nom: 'data-room.zip', contenu: zip.toBuffer() },
     { nom: 'virus.exe', contenu: 'MZ' },
   ]);
-  assert.equal(depot.status, 201, JSON.stringify(depot.json));
+  assert.equal(depot.status, 201, `${JSON.stringify(depot.json)}\n${serveur.journal().split('\n').filter((l) => /plateforme|Error|error/.test(l)).slice(-10).join('\n')}`);
   assert.equal(depot.json.documents.length, 3);
   assert.deepEqual(depot.json.refuses.map((r) => r.filename), ['virus.exe']);
-  assert.ok(depot.json.documents.every((d) => d.status === 'uploaded' && d.sha256 === null));
+  assert.ok(depot.json.documents.every((d) => d.sha256), 'le sha256 est calculé au dépôt : il fait la clé de stockage');
+  assert.ok(depot.json.documents.every((d) => d.storage_path === undefined), 'la clé de stockage ne sort pas de l\'API');
+  const copie = depot.json.documents.find((d) => d.filename === 'Teaser (copie).pdf');
+  assert.equal(copie.status, 'duplicate', 'un contenu déjà présent est marqué doublon dès le dépôt, sans job');
+  assert.equal(copie.duplicate_of, depot.json.documents.find((d) => d.filename === 'Teaser Victor Hugo.pdf').id);
 
   // Le worker (dans le serveur) ingere : sha256, doublon, enfants du zip.
+  // Le sha256 est connu des le depot : on attend que la file d'ingestion soit vide (enfants compris).
+  const ingestAuRepos = async (minimum) => {
+    const q = (await cA.get('/api/jobs')).json.queues.find((x) => x.name === 'document.ingest');
+    return q.en_attente === 0 && q.actifs === 0 && q.termines >= minimum;
+  };
   let documents = [];
   const limite = Date.now() + 60000;
   while (Date.now() < limite) {
     documents = (await cA.get(`/api/deals/${deal.id}/documents`)).json.documents;
-    const termines = documents.filter((d) => d.sha256 || ['failed', 'duplicate'].includes(d.status));
-    if (documents.length >= 6 && termines.length === documents.length) break;
+    if (documents.length >= 6 && (await ingestAuRepos(5))) break;
     await new Promise((r) => setTimeout(r, 500));
   }
   const parNom = Object.fromEntries(documents.map((d) => [d.filename, d]));
@@ -190,8 +198,7 @@ test('un fichier depose cree un document et un job document.ingest visible dans 
   let apres = [];
   while (Date.now() < limite2) {
     apres = (await cA.get(`/api/deals/${deal.id}/documents`)).json.documents;
-    const z = apres.find((d) => d.id === zipDoc.id);
-    if (z && z.sha256 && apres.filter((d) => d.parent_document_id === zipDoc.id).every((d) => d.sha256 || d.status === 'failed')) break;
+    if (await ingestAuRepos(6)) break;
     await new Promise((r) => setTimeout(r, 500));
   }
   assert.equal(apres.length, 6, 'relancer ingest ne recree pas les enfants');

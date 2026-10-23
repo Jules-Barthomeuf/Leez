@@ -109,3 +109,60 @@ services:
       # Sentry, optionnel.
       - key: SENTRY_DSN
         sync: false
+      # Stockage objet S3 (decision A1) : a renseigner avant de passer
+      # STORAGE_DRIVER a `s3` (valeurs dans le dashboard, jamais ici).
+      - key: STORAGE_DRIVER
+        value: local
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MAX_UPLOAD_MB
+        value: "100"
+
+  # ---- Worker separe (decision A4), PAS ENCORE ACTIVE ----
+  # Pour l'activer : (1) STORAGE_DRIVER=s3 sur les deux services (le disque du
+  # web n'est pas partage), (2) decommenter ce bloc, (3) WORKER_INLINE=false sur
+  # le service web. Plan `standard` (2 Go) : la lecture des PDF et l'OCR tiennent
+  # mal dans 512 Mo ; le web peut rester en `starter`.
+  # - type: worker
+  #   name: leez-worker
+  #   runtime: node
+  #   region: frankfurt
+  #   plan: standard
+  #   buildCommand: npm install
+  #   startCommand: npm run worker
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       fromDatabase: leez-db
+  #       property: connectionString
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: SESSION_SECRET
+  #       fromService: { type: web, name: leez, envVarKey: SESSION_SECRET }
+  #     - key: STORAGE_DRIVER
+  #       value: s3
+  #     - key: S3_ENDPOINT
+  #       sync: false
+  #     - key: S3_BUCKET
+  #       sync: false
+  #     - key: S3_REGION
+  #       sync: false
+  #     - key: S3_ACCESS_KEY_ID
+  #       sync: false
+  #     - key: S3_SECRET_ACCESS_KEY
+  #       sync: false
+  #     - key: WORKER_CONCURRENCY
+  #       value: "2"
+  #     - key: MAX_UPLOAD_MB
+  #       value: "100"
+  #     - key: ANTHROPIC_API_KEY
+  #       sync: false
+  #     - key: SENTRY_DSN
+  #       sync: false

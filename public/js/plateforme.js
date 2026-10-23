@@ -18,7 +18,7 @@
   const SOURCE = { upload: 'Dépôt', email: 'Email', data_room_link: 'Lien' };
   const TYPES = 'pdf, docx, xlsx, xls, csv, eml, msg, zip, jpg, png';
 
-  const E = { vue: 'boite', dealId: null, deals: [], deal: null, documents: [], jobs: [], filtres: { stage: '', conformity: '', q: '' }, sondage: null, erreur: null, occupe: false };
+  const E = { vue: 'boite', dealId: null, deals: [], deal: null, documents: [], jobs: [], filtres: { stage: '', conformity: '', q: '' }, sondage: null, erreur: null, occupe: false, limites: null };
 
   async function api(chemin, opts = {}) {
     const init = opts.formData
@@ -248,7 +248,19 @@
     E.occupe = true;
     try { await envoyerFichiers(dealId, fichiers); await chargerDeal(); } catch (e) { avis(e.message, true); } finally { E.occupe = false; }
   }
+  async function limites() {
+    if (!E.limites) { try { E.limites = (await api('/org/settings')).organization.limites; } catch { E.limites = { max_upload_mb: 100 }; } }
+    return E.limites;
+  }
   async function envoyerFichiers(dealId, fichiers) {
+    // Refus avant envoi des fichiers au-dessus de MAX_UPLOAD_MB : message clair, pas d'attente inutile.
+    const { max_upload_mb } = await limites();
+    const tropGros = fichiers.filter((f) => f.size > max_upload_mb * 1048576);
+    if (tropGros.length) {
+      avis(`Trop volumineux (${max_upload_mb} Mo au plus par fichier) : ${tropGros.map((f) => `${f.name} (${octets(f.size)})`).join(', ')}.`, true);
+      fichiers = fichiers.filter((f) => !tropGros.includes(f));
+      if (!fichiers.length) return;
+    }
     const fd = new FormData();
     fichiers.forEach((f) => fd.append('files', f, f.name));
     avis(`Envoi de ${fichiers.length} fichier${fichiers.length > 1 ? 's' : ''}…`);

@@ -50,9 +50,9 @@ async function creerBaseJetable() {
 }
 
 /** Lance `node server/index.js` sur la base donnee et attend qu'il reponde. */
-async function lancerServeur(urlBase) {
+async function lancerServeur(urlBase, { env: supplement = {}, dossier: dossierImpose } = {}) {
   const port = 3200 + Math.floor(Math.random() * 600);
-  const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'leez-test-'));
+  const dossier = dossierImpose || fs.mkdtempSync(path.join(os.tmpdir(), 'leez-test-'));
   const env = {
     ...process.env,
     DATABASE_URL: urlBase, PORT: String(port), SESSION_SECRET: 'secret-de-test', NODE_ENV: 'test',
@@ -60,6 +60,7 @@ async function lancerServeur(urlBase) {
     UPLOAD_DIR: path.join(dossier, 'uploads'), PROSPECTION_DIR: path.join(dossier, 'prospection'),
     LEEZ_ACCES_LIBRE: '', WORKER_INLINE: 'true', POSTHOG_API_KEY: '', SENTRY_DSN: '', BOOTSTRAP_ADMIN_PASSWORD: '',
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || 'cle-de-test',
+    ...supplement,
   };
   const enfant = spawn(process.execPath, [path.join(__dirname, '..', 'index.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   const journal = [];
@@ -81,6 +82,34 @@ async function lancerServeur(urlBase) {
       enfant.kill('SIGTERM');
       await new Promise((r) => { enfant.on('exit', r); setTimeout(() => { enfant.kill('SIGKILL'); }, 5000); });
       fs.rmSync(dossier, { recursive: true, force: true });
+    },
+  };
+}
+
+/** Lance `node server/worker.js` seul sur la base donnee (meme dossier de stockage que le web) et attend qu'il soit pret. */
+async function lancerWorker(urlBase, { dossier, env: supplement = {} } = {}) {
+  const env = {
+    ...process.env,
+    DATABASE_URL: urlBase, NODE_ENV: 'test', NODE_TEST_CONTEXT: '1', SESSION_SECRET: 'secret-de-test',
+    UPLOAD_DIR: path.join(dossier, 'uploads'), PROSPECTION_DIR: path.join(dossier, 'prospection'), SENTRY_DSN: '',
+    ...supplement,
+  };
+  const enfant = spawn(process.execPath, [path.join(__dirname, '..', 'worker.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  const journal = [];
+  enfant.stdout.on('data', (d) => journal.push(String(d)));
+  enfant.stderr.on('data', (d) => journal.push(String(d)));
+  const limite = Date.now() + 90000;
+  while (Date.now() < limite && !journal.join('').includes('[worker] prêt')) {
+    if (enfant.exitCode !== null) throw new Error(`Le worker de test s'est arrêté :\n${journal.join('')}`);
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  if (!journal.join('').includes('[worker] prêt')) { enfant.kill('SIGKILL'); throw new Error(`Le worker de test ne démarre pas :\n${journal.join('')}`); }
+  return {
+    journal: () => journal.join(''),
+    async arreter() {
+      if (enfant.exitCode !== null) return;
+      enfant.kill('SIGTERM');
+      await new Promise((r) => { enfant.on('exit', r); setTimeout(() => { enfant.kill('SIGKILL'); }, 5000); });
     },
   };
 }
@@ -130,4 +159,4 @@ async function creerCompte(base, { nomOrg, email, password = 'motdepasse-test', 
   return { orgId: w.id, userId: u.id, email, password };
 }
 
-module.exports = { creerBaseJetable, lancerServeur, clientHttp, creerCompte };
+module.exports = { creerBaseJetable, lancerServeur, lancerWorker, clientHttp, creerCompte };
